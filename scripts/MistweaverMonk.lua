@@ -134,7 +134,7 @@ local function GetRandomInterruptDelay()
 end
 
 local function GetRandomDispelDelay()
-    return math.random(800,1300)/1000
+    return math.random(1000,1500)/1000
 end
 
 local function GetRandomCocoonDelay()
