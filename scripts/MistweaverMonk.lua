@@ -2,6 +2,632 @@
 
 local Tinkr, Bastion = ...
 
+-- Data from MonkData.lua
+local dispelList = {
+    [378020] = true,
+    [374389] = true,
+    [373733] = true,
+    [372718] = true,
+    [376634] = true,
+    [378768] = true, -- Paralytic Fangs
+    [320788] = true, -- Frozen Binds
+    -- TWW S3
+    [1213805] = true,
+    [1214523] = true,
+    [1215600] = true,
+    [1217821] = true,
+    [1219535] = true,
+    [1220390] = true,
+    [1221190] = true,
+    [1221483] = true,
+    [1222341] = true,
+    [1225175] = true,
+    [1226444] = true,
+    [1227745] = true,
+    [1229474] = true,
+    [1231497] = true,
+    [1235060] = true,
+    [1235245] = true,
+    [1235368] = true,
+    [1235762] = true,
+    [1235766] = true,
+    [1236126] = true,
+    [1236513] = true,
+    [1236614] = true,
+    [1237220] = true,
+    [1237602] = true,
+    [1240097] = true,
+    [1240912] = true,
+    [1241785] = true,
+    [1242678] = true,
+    [1248209] = true,
+    [257168] = true,
+    [262268] = true,
+    [262270] = true,
+    [268797] = true,
+    [269302] = true,
+    [272588] = true,
+    [275014] = true,
+    [275836] = true,
+    [285460] = true,
+    [294195] = true,
+    [294929] = true,
+    [319603] = true,
+    [319941] = true,
+    [320596] = true,
+    [321039] = true,
+    [321821] = true,
+    [322486] = true,
+    [322557] = true,
+    [322968] = true,
+    [323437] = true,
+    [323825] = true,
+    [324485] = true,
+    [324859] = true,
+    [325224] = true,
+    [325876] = true,
+    [326092] = true,
+    [328664] = true,
+    [328791] = true,
+    [330614] = true,
+    [330697] = true,
+    [330700] = true,
+    [330703] = true,
+    [330725] = true,
+    [333299] = true,
+    [338353] = true,
+    [339237] = true,
+    [340283] = true,
+    [340288] = true,
+    [340300] = true,
+    [341902] = true,
+    [341949] = true,
+    [341969] = true,
+    [345598] = true,
+    [346006] = true,
+    [346844] = true,
+    [347149] = true,
+    [347481] = true,
+    [347716] = true,
+    [349627] = true,
+    [349954] = true,
+    [349987] = true,
+    [350101] = true,
+    [350799] = true,
+    [350885] = true,
+    [351096] = true,
+    [351119] = true,
+    [352345] = true,
+    [355473] = true,
+    [355479] = true,
+    [355641] = true,
+    [355830] = true,
+    [355915] = true,
+    [356001] = true,
+    [356324] = true,
+    [356407] = true,
+    [356548] = true,
+    [356929] = true,
+    [356943] = true,
+    [357029] = true,
+    [357188] = true,
+    [357512] = true,
+    [357827] = true,
+    [358919] = true,
+    [424414] = true,
+    [424420] = true,
+    [424426] = true,
+    [424621] = true,
+    [424889] = true,
+    [425974] = true,
+    [426145] = true,
+    [426295] = true,
+    [426308] = true,
+    [426734] = true,
+    [426735] = true,
+    [427621] = true,
+    [427897] = true,
+    [427929] = true,
+    [428019] = true,
+    [428161] = true,
+    [428169] = true,
+    [429487] = true,
+    [429493] = true,
+    [429545] = true,
+    [430179] = true,
+    [431309] = true,
+    [431491] = true,
+    [431494] = true,
+    [432031] = true,
+    [432117] = true,
+    [432448] = true,
+    [433740] = true,
+    [433785] = true,
+    [433841] = true,
+    [434083] = true,
+    [434655] = true,
+    [434722] = true,
+    [434802] = true,
+    [435165] = true,
+    [436322] = true,
+    [436637] = true,
+    [437956] = true,
+    [438471] = true,
+    [438599] = true,
+    [438618] = true,
+    [439202] = true,
+    [439324] = true,
+    [439325] = true,
+    [439784] = true,
+    [439790] = true,
+    [439792] = true,
+    [440238] = true,
+    [440313] = true,
+    [441397] = true,
+    [441434] = true,
+    [443401] = true,
+    [443427] = true,
+    [443430] = true,
+    [443437] = true,
+    [446368] = true,
+    [446718] = true,
+    [446776] = true,
+    [448215] = true,
+    [448248] = true,
+    [448492] = true,
+    [448515] = true,
+    [448561] = true,
+    [448787] = true,
+    [448888] = true,
+    [449455] = true,
+    [450095] = true,
+    [451098] = true,
+    [451107] = true,
+    [451119] = true,
+    [451224] = true,
+    [451606] = true,
+    [451871] = true,
+    [453345] = true,
+    [453461] = true,
+    [454440] = true,
+    [456773] = true,
+    [460867] = true,
+    [461487] = true,
+    [461630] = true,
+    [462735] = true,
+    [462737] = true,
+    [463218] = true,
+    [464876] = true,
+    [465813] = true,
+    [465820] = true,
+    [465827] = true,
+    [466190] = true,
+    [468631] = true,
+    [468672] = true,
+    [468680] = true,
+    [468813] = true,
+    [469478] = true,
+    [469610] = true,
+    [469620] = true,
+    [469721] = true,
+    [469799] = true,
+    [470005] = true,
+    [470038] = true,
+    [473351] = true,
+    [473713] = true,
+}
+
+local sootheList = {
+    [1217971] = true,
+    [353706] = true,
+    [473165] = true,
+    [1213139] = true,
+    [356133] = true,
+    [451040] = true,
+    [424419] = true,
+    [355057] = true,
+    [333241] = true,
+    [320012] = true,
+    [326450] = true,
+    [1221133] = true,
+    [1242074] = true,
+    [451112] = true,
+    [473533] = true,
+    [1215975] = true,
+    [1244446] = true,
+    [1213497] = true,
+    [472335] = true,
+    [471186] = true,
+    [473984] = true,
+    [324737] = true,
+    [451379] = true,
+    [1215084] = true,
+    [1215054] = true,
+    [1216852] = true,
+    [474001] = true,
+    [441645] = true,
+}
+
+local debuffList = {
+    [1213805] = true, -- Nailgun
+    [427621] = true,  -- Impale
+    [448787] = true,  -- Purification
+    [424431] = true,  -- Holy Radiance
+    [446776] = true,  -- Pounce
+    [438599] = true,  -- Bleeding Jab
+    [431364] = true,  -- Tormenting Ray
+    -- TWW S3
+    [436322] = true,  -- Poison Bolt
+    [433002] = true,  -- Extraction Strike
+    [1241785] = true, -- Tainted Blood
+    [438471] = true,  -- Voracious Bite
+    [1242072] = true, -- Intensifying Aggression
+    [431491] = true,  -- Tainted Slash
+    [451113] = true,  -- Web Bolt
+    [451112] = true,  -- Tactician's Rage
+    [1242678] = true, -- Shadow Blades
+    [451117] = true,  -- Terrifying Slam
+    [452502] = true,  -- Dark Fervor
+    [428086] = true,  -- shadow-bolt
+    [453212] = true,  -- Obsidian Beam
+    [427001] = true,  -- Terrifying Slam
+    [427629] = true,  -- Shoot
+    [427950] = true,  --seal-of-flame
+    [448515] = true,  -- divine-judgment
+    [427596] = true,  -- seal-of-lights-fury
+    [444728] = true,  -- templars-wrath
+    [435165] = true,  -- blazing-strike
+    [424414] = true,  -- pierce-armor
+    [422969] = true,  -- vindictive-wrath
+    [462735] = true,  -- blood-infused-strikes
+    [469766] = true,  -- pack-tactics
+    [468672] = true,  -- pinch
+    [465820] = true,  -- vicious-chomp
+    [455588] = true,  -- blood-bolt
+    [470005] = true,  -- vicious-bite
+    [465666] = true,  -- sparkslam
+    [473351] = true,  -- electrocrush
+    [459799] = true,  -- wallop
+    [469478] = true,  -- sludge-claws
+    [466190] = true,  -- thunder-punch
+    [1221133] = true, -- hungering-rage
+    [1235368] = true, -- arcane-slash
+    [1231608] = true, -- alacrity
+    [1222341] = true, -- Gloom Bite
+    [1219535] = true, -- Rift Claws
+    [1235060] = true, -- Anima Tainted Armor
+    [326450] = true,  -- Loyal Beasts
+    [1237602] = true, -- Gushing Wound
+    [1237071] = true, -- Stone Fist
+    [1235766] = true, -- Mortal Strike
+    [326829] = true,  -- Wicked Bolt
+    [322936] = true,  -- Crumbling Slam
+    [328322] = true,  -- Villainous Bolt
+    [323538] = true,  -- Anima Bolt
+    [323437] = true,  -- Stigma of Pride
+    [352796] = true,  -- Proxy Strike
+    [355888] = true,  -- Hard Light Baton
+    [354297] = true,  -- Hyperlight Bolt
+    [355830] = true,  -- Quickblade
+    [356967] = true,  -- Hyperlight Backhand
+    [357229] = true,  -- Chronolight Enhancer
+    [1240912] = true, -- Pierce
+    [1242960] = true, -- Gang Up
+    [358919] = true,  -- Static Mace
+    [347716] = true,  -- Letter Opener
+    [355477] = true,  -- Power Kick
+    [356943] = true,  -- Lockdown
+    [348128] = true,  -- Fully Armed
+    [350916] = true,  -- Security Slam
+    [349934] = true,  -- Flagellation Protocol
+    [355048] = true,  -- Shellcracker
+    [355057] = true,  -- Cry of Mrrggllrrgg
+    [356133] = true,  -- Super Saison
+    [356843] = true,  -- Brackish Bolt
+    [346116] = true,  -- Shearing Swings
+    [451107] = true,  -- Bursting Cocoon
+    [453345] = true,  -- Abyssal Rot
+    [451119] = true,  -- Abyssal Blast
+    [427378] = true,  -- Dark Scars
+}
+
+-- UnitScanner implementation
+local MythicPlusUtils = Bastion.require("MythicPlusUtils"):New()
+
+-- Helper functions
+local function canDamage(unit)
+    local Paralysis = Bastion.Globals.SpellBook:GetSpell(115078)
+    local Polymorph = Bastion.Globals.SpellBook:GetSpell(118)
+    if unit:GetAuras():FindAny(Paralysis):IsUp() or unit:GetAuras():FindAny(Polymorph):IsUp() then
+        return false
+    end
+    return true
+end
+
+local function GetRandomInterruptDelay()
+    return math.random(40, 60)
+end
+
+local function GetRandomStunDelay()
+    return math.random(20, 40)
+end
+
+local function GetRandomDispelDelay()
+    return math.random(700, 1300) / 1000
+end
+
+local function GetRandomCocoonDelay()
+    return math.random(500, 900) / 1000
+end
+
+local function dispelCheck(aura)
+    local ImprovedDetox = Bastion.Globals.SpellBook:GetSpell(388874)
+    if aura:IsDebuff() and aura:IsUp() then
+        if aura:GetDispelType() == 'Poison' or aura:GetDispelType() == 'Disease' then
+            if ImprovedDetox:IsKnown() then
+                return true
+            end
+        end
+        if aura:GetDispelType() == 'Magic' then
+            return true
+        end
+    end
+    return false
+end
+
+---@class UnitScanner
+local UnitScanner = {}
+UnitScanner.__index = UnitScanner
+
+function UnitScanner:New()
+    local self = setmetatable({}, UnitScanner)
+    self.cache = Bastion.Cache:New()
+
+    -- Healer targets
+    self.lowest = Bastion.UnitManager:Get('none')
+    self.hpLowest = Bastion.UnitManager:Get('none')
+    self.renewLowest = Bastion.UnitManager:Get('none')
+    self.envelopeLowest = Bastion.UnitManager:Get('none')
+    self.busterTarget = Bastion.UnitManager:Get('none')
+    self.debuffTarget = Bastion.UnitManager:Get('none')
+    self.dispelTarget = Bastion.UnitManager:Get('none')
+
+    -- Damage targets
+    self.nearTarget = Bastion.UnitManager:Get('none')
+    self.rangeTarget = Bastion.UnitManager:Get('none')
+    self.touchOfDeathTarget = Bastion.UnitManager:Get('none')
+    self.sootheTarget = Bastion.UnitManager:Get('none')
+
+    -- Interrupt targets
+    self.interruptTargetMelee = Bastion.UnitManager:Get('none')
+    self.interruptTargetRange = Bastion.UnitManager:Get('none')
+    self.interruptTargetStun = Bastion.UnitManager:Get('none')
+
+    -- Tanks
+    self.tankTarget = Bastion.UnitManager:Get('player')
+    self.tankTarget2 = Bastion.UnitManager:Get('none')
+
+    -- Counts
+    self.renewCount = 0
+    self.envelopCount = 0
+
+    -- Debuff thresholds
+    self.debuffThresholds = {}
+    self.cocoonThresholds = {}
+
+    return self
+end
+
+function UnitScanner:Update()
+    -- This function will be called once per frame to scan all units
+    -- and update the properties of the scanner instance.
+
+    -- Clear previous results
+    self.lowest = Bastion.UnitManager:Get('none')
+    self.hpLowest = Bastion.UnitManager:Get('none')
+    self.renewLowest = Bastion.UnitManager:Get('none')
+    self.envelopeLowest = Bastion.UnitManager:Get('none')
+    self.busterTarget = Bastion.UnitManager:Get('none')
+    self.debuffTarget = Bastion.UnitManager:Get('none')
+    self.dispelTarget = Bastion.UnitManager:Get('none')
+    self.nearTarget = Bastion.UnitManager:Get('none')
+    self.rangeTarget = Bastion.UnitManager:Get('none')
+    self.touchOfDeathTarget = Bastion.UnitManager:Get('none')
+    self.sootheTarget = Bastion.UnitManager:Get('none')
+    self.interruptTargetMelee = Bastion.UnitManager:Get('none')
+    self.interruptTargetRange = Bastion.UnitManager:Get('none')
+    self.interruptTargetStun = Bastion.UnitManager:Get('none')
+    self.tankTarget = Bastion.UnitManager:Get('player')
+    self.tankTarget2 = Bastion.UnitManager:Get('none')
+    self.renewCount = 0
+    self.envelopCount = 0
+
+    local lowestHP = math.huge
+    local lowestRealizedHP = math.huge
+    local lowestRenewHP = math.huge
+    local lowestEnvelopeHP = math.huge
+    local lowestDispelHP = math.huge
+
+    local Player = Bastion.UnitManager:Get('player')
+    local Target = Bastion.UnitManager:Get('target')
+    local RenewingMistBuff = Bastion.Globals.SpellBook:GetSpell(119611)
+    local EnvelopingMist = Bastion.Globals.SpellBook:GetSpell(124682)
+    local LifeCocoon = Bastion.Globals.SpellBook:GetSpell(116849)
+    local BlessingofProtection = Bastion.Globals.SpellBook:GetSpell(1022)
+    local DivineShield = Bastion.Globals.SpellBook:GetSpell(642)
+    local ImprovedToD = Bastion.Globals.SpellBook:GetSpell(322113)
+
+    -- Scan friendly units
+    Bastion.UnitManager:EnumFriends(function(unit)
+        if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) then
+            return false
+        end
+
+        local hp = unit:GetHP()
+        if hp < lowestHP then
+            self.hpLowest = unit
+            lowestHP = hp
+        end
+
+        local realizedHP = unit:GetRealizedHP()
+        if realizedHP < lowestRealizedHP then
+            self.lowest = unit
+            lowestRealizedHP = realizedHP
+        end
+
+        if unit:GetAuras():FindMy(RenewingMistBuff):IsDown() then
+            if realizedHP < lowestRenewHP then
+                self.renewLowest = unit
+                lowestRenewHP = realizedHP
+            end
+        else
+            self.renewCount = self.renewCount + 1
+        end
+
+        local envelopingMistAura = unit:GetAuras():FindMy(EnvelopingMist)
+        if envelopingMistAura and envelopingMistAura:IsDown() then
+            if realizedHP < lowestEnvelopeHP then
+                self.envelopeLowest = unit
+                lowestEnvelopeHP = realizedHP
+            end
+        else
+            self.envelopCount = self.envelopCount + 1
+        end
+
+        if unit:IsTank() and self.tankTarget:IsPlayer() then
+            self.tankTarget = unit
+        elseif unit:IsTank() and not self.tankTarget2:IsValid() and not self.tankTarget:IsUnit(unit) then
+            self.tankTarget2 = unit
+        end
+
+        -- Dispel and Debuff Target
+        for _, auras in pairs(unit:GetAuras():GetUnitAuras()) do
+            for _, aura in pairs(auras) do
+                if dispelCheck(aura) then
+                    local SpellID = aura:GetSpell():GetID()
+                    if dispelList[SpellID] or Bastion.dispelAll then
+                        if SpellID == 432448 and unit:GetPartyHPAround(8, 100) >= 1 then
+                            return false
+                        end
+                        if SpellID == 320788 and unit:GetPartyHPAround(16, 100) >= 1 then
+                            return false
+                        end
+                        if SpellID == 462737 and aura:GetCount() < 6 then
+                            return false
+                        end
+                        if SpellID == 469620 and aura:GetCount() < 8 then
+                            return false
+                        end
+                        if hp < lowestDispelHP then
+                            self.dispelTarget = unit
+                            lowestDispelHP = hp
+                        end
+                    end
+                end
+                local SpellID = aura:GetSpell():GetID()
+                if debuffList[SpellID] and not dispelCheck(aura) and aura:GetRemainingTime() > 3 and SpellID ~= 124682 then
+                    self.debuffTarget = unit
+                end
+            end
+        end
+    end)
+
+    -- Dispel threshold
+    if self.dispelTarget:IsValid() and not self.debuffThresholds[self.dispelTarget:GetID()] then
+        self.debuffThresholds[self.dispelTarget:GetID()] = GetTime() + GetRandomDispelDelay()
+    end
+
+    -- Cocoon Threshold
+    if self.hpLowest:IsValid() then
+        if self.hpLowest:GetHP() > 40 and self.cocoonThresholds[self.hpLowest:GetID()] then
+            self.cocoonThresholds[self.hpLowest:GetID()] = nil
+        elseif self.hpLowest:GetHP() < 40 and not self.cocoonThresholds[self.hpLowest:GetID()] then
+            self.cocoonThresholds[self.hpLowest:GetID()] = GetTime() + GetRandomCocoonDelay()
+        end
+    end
+
+
+    -- Scan enemy units
+    local distTarget = 40
+    local healthTarget = 0
+
+    Bastion.UnitManager:EnumEnemies(function(unit)
+        if unit:IsDead() or Player:GetDistance(unit) > 40 then return end
+
+        -- Near and Range Target
+        if Player:IsWithinCombatDistance(unit, 40) and Player:CanSee(unit) and unit:IsAffectingCombat() and Player:IsWithinCone(unit, 90, 40) and canDamage(unit) then
+            local dist = Player:GetDistance(unit)
+            if dist < distTarget then
+                self.nearTarget = unit
+                distTarget = dist
+            end
+
+            local health = unit:GetHealth()
+            if health > healthTarget then
+                self.rangeTarget = unit
+                healthTarget = health
+            end
+        end
+
+        -- Touch of Death Target
+        if Player:GetDistance(unit) < 5 and Player:CanSee(unit) and canDamage(unit) then
+            if ImprovedToD:IsKnown() and (unit:GetHP() < 15) and (unit:GetHealth() >= Player:GetMaxHealth() * 0.35) then
+                self.touchOfDeathTarget = unit
+            elseif unit:GetHealth() <= Player:GetMaxHealth() * 0.15 or Player:GetHealth() > unit:GetMaxHealth() then
+                self.touchOfDeathTarget = unit
+            end
+        end
+
+        -- Interrupt Targets
+        if Player:CanSee(unit) and unit:IsCastingOrChanneling() then
+            if Player:InMelee(unit) and (MythicPlusUtils:CastingCriticalKick(unit, GetRandomInterruptDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomInterruptDelay()))) then
+                self.interruptTargetMelee = unit
+            end
+
+            if Player:GetDistance(unit) > 20 and not Player:InMelee(unit) and (MythicPlusUtils:CastingCriticalKick(unit, GetRandomInterruptDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomInterruptDelay()))) then
+                self.interruptTargetRange = unit
+            end
+
+            if Player:GetDistance(unit) < 20 and (MythicPlusUtils:CastingCriticalStun(unit, GetRandomStunDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomStunDelay(), true))) then
+                self.interruptTargetStun = unit
+            end
+        end
+
+        -- Soothe Target
+        if Player:CanSee(unit) then
+            for _, auras in pairs(unit:GetAuras():GetUnitAuras()) do
+                for _, aura in pairs(auras) do
+                    local SpellID = aura:GetSpell():GetID()
+                    if sootheList[SpellID] then
+                        self.sootheTarget = unit
+                        return true
+                    end
+                end
+            end
+        end
+
+        -- Buster Target
+        if not unit:IsDead() and Player:GetDistance(unit) < 40 and unit:IsCasting() and not unit:IsInterruptible() and MythicPlusUtils:CastingCriticalBusters(unit) then
+            local castTarget = Bastion.UnitManager:Get(ObjectCastingTarget(unit:GetOMToken()))
+            if castTarget and Player:GetDistance(castTarget) <= 40 and Player:CanSee(castTarget) and castTarget:IsAlive() then
+                self.busterTarget = castTarget
+            elseif self.tankTarget:IsTanking(unit) and Player:GetDistance(self.tankTarget) <= 40 and Player:CanSee(self.tankTarget) and self.tankTarget:IsAlive() then
+                self.busterTarget = self.tankTarget
+            else
+                self.busterTarget = self.tankTarget2:IsValid() and self.tankTarget2 or self.tankTarget
+            end
+        end
+    end)
+
+    if not self.nearTarget:IsValid() and Target:IsAlive() and Target:IsEnemy() and Player:IsWithinCombatDistance(Target, 40) and Player:CanSee(Target) and canDamage(Target) then
+        self.nearTarget = Target
+    end
+    if not self.rangeTarget:IsValid() and Target:IsAlive() and Target:IsEnemy() and Player:IsWithinCombatDistance(Target, 40) and Player:CanSee(Target) and canDamage(Target) then
+        self.rangeTarget = Target
+    end
+end
+
+-- Main script content
 local RestoMonkModule = Bastion.Module:New('MistweaverMonk')
 local Player = Bastion.UnitManager:Get('player')
 local Target = Bastion.UnitManager:Get('target')
@@ -9,9 +635,6 @@ local Target = Bastion.UnitManager:Get('target')
 -- Initialize SpellBook
 local SpellBook = Bastion.SpellBook:New()
 local ItemBook = Bastion.ItemBook:New()
-
-local MythicPlusUtils = Bastion.require("MythicPlusUtils"):New()
-local UnitScanner = Bastion.require('UnitScanner')
 
 -- Spells
 local RenewingMist = SpellBook:GetSpell(115151)
@@ -84,8 +707,6 @@ local Signet = ItemBook:GetItem(219308) -- Signet of Priory
 local GoldCenser = ItemBook:GetItem(225656)
 local Funhouse = ItemBook:GetItem(234217)
 local HouseOfCards = ItemBook:GetItem(230027)
-
-local autoTarget = {}
 
 Bastion.dispelAll = false
 Bastion.interrAll = false
