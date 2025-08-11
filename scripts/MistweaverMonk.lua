@@ -1355,8 +1355,8 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         return BusterTarget:IsValid() and ShouldUseEnvelopingMist(BusterTarget)
-            --and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and (Player:GetAuras():FindMy(ThunderFocusTea):IsUp() or (not Player:IsMoving() and not stopCasting()))
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() -- Ensure we don't double cast with the TFT version
+            and not Player:IsMoving() and not stopCasting()
     end):SetTarget(BusterTarget)
 )
 
