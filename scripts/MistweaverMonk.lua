@@ -627,7 +627,8 @@ local function scanFriends()
     cachedUnits.envelopeLowest = nil
     cachedUnits.envelopCount = 0
     cachedUnits.dispelTarget = nil
-    cachedUnits.debuffTarget = nil
+    cachedUnits.debuffTargetTFT = nil
+    cachedUnits.debuffTargetHardcast = nil
     cachedUnits.tankTarget = Player -- Default to player
     cachedUnits.tankTarget2 = nil
 
@@ -712,9 +713,13 @@ local function scanFriends()
         end
 
         if hasBadDebuff and ShouldUseEnvelopingMist(unit) then
-             if not cachedUnits.debuffTarget then -- take the first valid one
-                cachedUnits.debuffTarget = unit
-             end
+            if not cachedUnits.debuffTargetTFT and not cachedUnits.debuffTargetHardcast then -- take the first valid one
+                if ThunderFocusTea:IsKnownAndUsable() and ThunderFocusTea:GetCharges() > 0 then
+                    cachedUnits.debuffTargetTFT = unit
+                else
+                    cachedUnits.debuffTargetHardcast = unit
+                end
+            end
         end
     end)
 
@@ -724,7 +729,8 @@ local function scanFriends()
     if not cachedUnits.renewLowest then cachedUnits.renewLowest = Bastion.UnitManager:Get('none') end
     if not cachedUnits.envelopeLowest then cachedUnits.envelopeLowest = Bastion.UnitManager:Get('none') end
     if not cachedUnits.dispelTarget then cachedUnits.dispelTarget = Bastion.UnitManager:Get('none') end
-    if not cachedUnits.debuffTarget then cachedUnits.debuffTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.debuffTargetTFT then cachedUnits.debuffTargetTFT = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.debuffTargetHardcast then cachedUnits.debuffTargetHardcast = Bastion.UnitManager:Get('none') end
     if not cachedUnits.tankTarget2 then cachedUnits.tankTarget2 = Bastion.UnitManager:Get('none') end
 end
 
@@ -865,7 +871,8 @@ local DispelTarget = Bastion.UnitManager:CreateCustomUnit('dispel', function()
     end
     return cachedUnits.dispelTarget or Bastion.UnitManager:Get('none')
 end)
-local DebuffTarget = Bastion.UnitManager:CreateCustomUnit('debuff', function() return cachedUnits.debuffTarget or Bastion.UnitManager:Get('none') end)
+local DebuffTargetTFT = Bastion.UnitManager:CreateCustomUnit('debuffTFT', function() return cachedUnits.debuffTargetTFT or Bastion.UnitManager:Get('none') end)
+local DebuffTargetHardcast = Bastion.UnitManager:CreateCustomUnit('debuffHardcast', function() return cachedUnits.debuffTargetHardcast or Bastion.UnitManager:Get('none') end)
 local TankTarget = Bastion.UnitManager:CreateCustomUnit('tanktarget', function() return cachedUnits.tankTarget or Player end)
 local TankTarget2 = Bastion.UnitManager:CreateCustomUnit('tanktarget2', function() return cachedUnits.tankTarget2 or Bastion.UnitManager:Get('none') end)
 
@@ -1287,19 +1294,18 @@ DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and DebuffTarget:IsValid() and ShouldUseEnvelopingMist(DebuffTarget)
-        --and Player:IsAffectingCombat()
+            and DebuffTargetTFT:IsValid() and ShouldUseEnvelopingMist(DebuffTargetTFT)
     end):SetTarget(Player):OnCast(function()
-        EnvelopingMist:Cast(DebuffTarget)
+        EnvelopingMist:Cast(DebuffTargetTFT)
     end)
 )
 
 DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
-        return DebuffTarget:IsValid() and ShouldUseEnvelopingMist(DebuffTarget)
+        return DebuffTargetHardcast:IsValid() and ShouldUseEnvelopingMist(DebuffTargetHardcast)
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and ((not Player:IsMoving() and not stopCasting()) or Player:GetAuras():FindMy(ThunderFocusTea):IsUp())
-    end):SetTarget(DebuffTarget)
+            and not Player:IsMoving() and not stopCasting()
+    end):SetTarget(DebuffTargetHardcast)
 )
 
 DefensiveAPL:AddSpell(
