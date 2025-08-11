@@ -617,7 +617,138 @@ local function mostFriends()
     return unit
 end
 
--- Dynamic target selection and threat management
+-- Unit caching and scanning
+local cachedUnits = {}
+local function scanFriends()
+    -- Reset cached friend data
+    cachedUnits.lowest = nil
+    cachedUnits.hpLowest = nil
+    cachedUnits.renewLowest = nil
+    cachedUnits.envelopeLowest = nil
+    cachedUnits.envelopCount = 0
+    cachedUnits.dispelTarget = nil
+    cachedUnits.debuffTarget = nil
+    cachedUnits.tankTarget = Player -- Default to player
+    cachedUnits.tankTarget2 = nil
+
+    local lowestHP = math.huge
+    local hpLowestHP = math.huge
+    local renewLowestHP = math.huge
+    local envelopeLowestHP = math.huge
+    local dispelLowestHP = math.huge
+
+    Bastion.UnitManager:EnumFriends(function(unit)
+        if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) then
+            return
+        end
+
+        -- Tank logic
+        if unit:IsTank() then
+            if not cachedUnits.tankTarget:IsTank() or cachedUnits.tankTarget:IsPlayer() then
+                cachedUnits.tankTarget = unit
+            elseif not cachedUnits.tankTarget2 then
+                cachedUnits.tankTarget2 = unit
+            end
+        end
+
+        -- Lowest HP logic
+        local realizedHP = unit:GetRealizedHP()
+        if realizedHP < lowestHP then
+            cachedUnits.lowest = unit
+            lowestHP = realizedHP
+        end
+
+        local hp = unit:GetHP()
+        if hp < hpLowestHP then
+            cachedUnits.hpLowest = unit
+            hpLowestHP = hp
+        end
+
+        -- RenewLowest logic
+        if unit:GetAuras():FindMy(RenewingMistBuff):IsDown() then
+            if realizedHP < renewLowestHP then
+                cachedUnits.renewLowest = unit
+                renewLowestHP = realizedHP
+            end
+        end
+
+        -- EnvelopeLowest and envelopCount logic
+        local envelopeAura = unit:GetAuras():FindMy(EnvelopingMist)
+        if envelopeAura:IsDown() then
+            if realizedHP < envelopeLowestHP then
+                cachedUnits.envelopeLowest = unit
+                envelopeLowestHP = realizedHP
+            end
+        else
+            cachedUnits.envelopCount = cachedUnits.envelopCount + 1
+        end
+
+        -- Dispel and Debuff logic
+        local hasDispelable = false
+        local hasBadDebuff = false
+        for _, auras in pairs(unit:GetAuras():GetUnitAuras()) do
+            for _, aura in pairs(auras) do
+                local spellID = aura:GetSpell():GetID()
+                if not hasDispelable and dispelCheck(aura) and (dispelList[spellID] or Bastion.dispelAll) then
+                    -- Special checks for certain debuffs
+                    if not (spellID == 432448 and unit:GetPartyHPAround(8, 100) >= 1) and
+                       not (spellID == 320788 and unit:GetPartyHPAround(16, 100) >= 1) and
+                       not (spellID == 462737 and aura:GetCount() < 6) and
+                       not (spellID == 469620 and aura:GetCount() < 8) then
+                        hasDispelable = true
+                    end
+                end
+                if not hasBadDebuff and debuffList[spellID] and not dispelCheck(aura) and aura:GetRemainingTime() > 3 and spellID ~= 124682 then
+                    hasBadDebuff = true
+                end
+            end
+        end
+
+        if hasDispelable then
+            if realizedHP < dispelLowestHP then
+                cachedUnits.dispelTarget = unit
+                dispelLowestHP = realizedHP
+            end
+        end
+
+        if hasBadDebuff and ShouldUseEnvelopingMist(unit) then
+             if not cachedUnits.debuffTarget then -- take the first valid one
+                cachedUnits.debuffTarget = unit
+             end
+        end
+    end)
+
+    -- Finalize default units
+    if not cachedUnits.lowest then cachedUnits.lowest = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.hpLowest then cachedUnits.hpLowest = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.renewLowest then cachedUnits.renewLowest = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.envelopeLowest then cachedUnits.envelopeLowest = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.dispelTarget then cachedUnits.dispelTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.debuffTarget then cachedUnits.debuffTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.tankTarget2 then cachedUnits.tankTarget2 = Bastion.UnitManager:Get('none') end
+end
+
+local function scanEnemies()
+    -- This will be populated later
+end
+
+-- Custom Units (now getters for cached data)
+local Lowest = Bastion.UnitManager:CreateCustomUnit('lowest', function() return cachedUnits.lowest or Bastion.UnitManager:Get('none') end)
+local hpLowest = Bastion.UnitManager:CreateCustomUnit('hplowest', function() return cachedUnits.hpLowest or Bastion.UnitManager:Get('none') end)
+local RenewLowest = Bastion.UnitManager:CreateCustomUnit('renewlowest', function() return cachedUnits.renewLowest or Bastion.UnitManager:Get('none') end)
+local EnvelopeLowest = Bastion.UnitManager:CreateCustomUnit('envelopelowest', function() return cachedUnits.envelopeLowest or Bastion.UnitManager:Get('none') end)
+local envelopCount = Bastion.UnitManager:CreateCustomUnit('envelopcount', function() return cachedUnits.envelopCount or 0 end)
+local DispelTarget = Bastion.UnitManager:CreateCustomUnit('dispel', function()
+    if cachedUnits.dispelTarget and cachedUnits.dispelTarget:IsValid() and not debuffThresholds[cachedUnits.dispelTarget:GetID()] then
+        debuffThresholds[cachedUnits.dispelTarget:GetID()] = GetTime() + GetRandomDispelDelay()
+    end
+    return cachedUnits.dispelTarget or Bastion.UnitManager:Get('none')
+end)
+local DebuffTarget = Bastion.UnitManager:CreateCustomUnit('debuff', function() return cachedUnits.debuffTarget or Bastion.UnitManager:Get('none') end)
+local TankTarget = Bastion.UnitManager:CreateCustomUnit('tanktarget', function() return cachedUnits.tankTarget or Player end)
+local TankTarget2 = Bastion.UnitManager:CreateCustomUnit('tanktarget2', function() return cachedUnits.tankTarget2 or Bastion.UnitManager:Get('none') end)
+
+-- Dynamic target selection and threat management (TODO: Refactor these into scanEnemies)
 local nearTarget = Bastion.UnitManager:CreateCustomUnit('nearTarget', function(unit)
     local target = nil
     local distance = math.huge
@@ -696,113 +827,6 @@ local function hasNoAggroTarget()
     return found
 end
 
--- Custom Units
-local Lowest = Bastion.UnitManager:CreateCustomUnit('lowest', function(unit)
-    local lowest = nil
-    local lowestHP = math.huge
-    Bastion.UnitManager:EnumFriends(function(unit)
-        if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) then
-            return false
-        end
-
-        local hp = unit:GetRealizedHP()
-        if hp < lowestHP then
-            lowest = unit
-            lowestHP = hp
-        end
-    end)
-
-    return lowest or Bastion.UnitManager:Get('none')
-end)
-
--- Custom Units
-local hpLowest = Bastion.UnitManager:CreateCustomUnit('hplowest', function(unit)
-    local lowest = nil
-    local lowestHP = math.huge
-
-    Bastion.UnitManager:EnumFriends(function(unit)
-        if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) then
-            return false
-        end
-
-        local hp = unit:GetHP()
-        if hp < lowestHP then
-            lowest = unit
-            lowestHP = hp
-        end
-    end)
-
-    return lowest or Bastion.UnitManager:Get('none')
-end)
-
-local RenewLowest = Bastion.UnitManager:CreateCustomUnit('renewlowest', function(unit)
-    local lowest = nil
-    local lowestHP = math.huge
-    Bastion.UnitManager:EnumFriends(function(unit)
-        local renewingMist = unit:GetAuras():FindMy(RenewingMistBuff)
-
-        if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) or renewingMist:IsUp() then
-            return false
-        end
-        --if not unit:IsPlayer() and unit:GetAuras():FindMy(Insurance):IsUp() and RenewingMist:GetCharges() < 2 then
-        --    return false
-        --end
-        local hp = unit:GetRealizedHP()
-        if (hp < lowestHP) and not renewingMist:IsUp() then
-            lowest = unit
-            lowestHP = hp
-        end
-    end)
-    return lowest or Bastion.UnitManager:Get('none')
-end)
-
-local EnvelopeLowest = Bastion.UnitManager:CreateCustomUnit('envelopelowest', function(unit)
-    local lowest = nil
-    local lowestHP = math.huge
-    Bastion.UnitManager:EnumFriends(function(unit)
-        local envelope = unit:GetAuras():FindMy(EnvelopingMist)
-
-        if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) or envelope:IsUp() then
-            return false
-        end
-        local hp = unit:GetRealizedHP()
-        if (hp < lowestHP) and not envelope:IsUp() then
-            lowest = unit
-            lowestHP = hp
-        end
-    end)
-    return lowest or Bastion.UnitManager:Get('none')
-end)
---[[
-local renewCount = Bastion.UnitManager:CreateCustomUnit('renewcount', function(unit)
-    local renewCount = 0
-    Bastion.UnitManager:EnumFriends(function(unit)
-        local renewingMist = unit:GetAuras():FindMy(RenewingMistBuff)
-
-        if unit:IsDead() or not renewingMist:IsUp() then
-            return false
-        end
-        if renewingMist:IsUp() then
-            renewCount = renewCount+1
-        end
-    end)
-    return renewCount
-end)
-]] --
-local envelopCount = Bastion.UnitManager:CreateCustomUnit('envelopcount', function(unit)
-    local envelopCount = 0
-    Bastion.UnitManager:EnumFriends(function(unit)
-        local envelopingMist = unit:GetAuras():FindMy(EnvelopingMist)
-
-        if unit:IsDead() or not envelopingMist:IsUp() then
-            return false
-        end
-        if envelopingMist:IsUp() then
-            envelopCount = envelopCount + 1
-        end
-    end)
-    return envelopCount
-end)
 -- Create a custom unit for finding a Touch of Death target
 local TouchOfDeathTarget = Bastion.UnitManager:CreateCustomUnit('touchofdeath', function(unit)
     local todTarget = nil
@@ -875,29 +899,6 @@ local InterruptTargetStun = Bastion.UnitManager:CreateCustomUnit('interrupttarge
     return intTargetStun or Bastion.UnitManager:Get('none')
 end)
 
--- Select tank
-local TankTarget = Bastion.UnitManager:CreateCustomUnit('tanktarget', function()
-    local tank = nil
-    Bastion.UnitManager:EnumFriends(function(unit)
-        if unit:IsTank() and Player:GetDistance(unit) <= 40 and Player:CanSee(unit) then
-            tank = unit
-            return true
-        end
-    end)
-    return tank or Player
-end)
-
--- Select tank 2nd tank not Blood DK
-local TankTarget2 = Bastion.UnitManager:CreateCustomUnit('tanktarget2', function()
-    local tank = nil
-    Bastion.UnitManager:EnumFriends(function(unit)
-        if unit:IsTank() and Player:GetDistance(unit) <= 40 and Player:CanSee(unit) and not unit:IsUnit(TankTarget) then
-            tank = unit
-        end
-    end)
-    return tank or Bastion.UnitManager:Get('none')
-end)
-
 -- Target tank busters
 local BusterTarget = Bastion.UnitManager:CreateCustomUnit('bustertarget', function(unit)
     local busterTarget = nil
@@ -933,75 +934,6 @@ local BusterTarget = Bastion.UnitManager:CreateCustomUnit('bustertarget', functi
     end)
 
     return busterTarget or Bastion.UnitManager:Get('none')
-end)
-
-local DispelTarget = Bastion.UnitManager:CreateCustomUnit('dispel', function(unit)
-    local lowest = nil
-    local lowestHP = math.huge
-
-    Bastion.UnitManager:EnumFriends(function(unit)
-        if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) then
-            return false
-        end
-
-        if not unit:IsDead() and Player:CanSee(unit) then
-            local hp = unit:GetRealizedHP()
-            for _, auras in pairs(unit:GetAuras():GetUnitAuras()) do
-                for _, aura in pairs(auras) do
-                    if dispelCheck(aura) then
-                        local SpellID = aura:GetSpell():GetID()
-                        if dispelList[SpellID] or Bastion.dispelAll then
-                            if SpellID == 432448 and unit:GetPartyHPAround(8, 100) >= 1 then
-                                return false
-                            end
-                            -- Frozen Binds. No players within 16 yards
-                            if SpellID == 320788 and unit:GetPartyHPAround(16, 100) >= 1 then
-                                return false
-                            end
-                            if SpellID == 462737 and aura:GetCount() < 6 then
-                                return false
-                            end
-                            if SpellID == 469620 and aura:GetCount() < 8 then
-                                return false
-                            end
-                            --- more special debuffs
-                            if hp < lowestHP then
-                                lowest = unit
-                                lowestHP = hp
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end)
-    -- Generate a random debuff threshold if it doesn't exist
-    if lowest and lowest:IsValid() and not debuffThresholds[lowest:GetID()] then
-        debuffThresholds[lowest:GetID()] = GetTime() + GetRandomDispelDelay()
-    end
-    return lowest or Bastion.UnitManager:Get('none')
-end)
-
-local DebuffTarget = Bastion.UnitManager:CreateCustomUnit('debuff', function(unit)
-    local debuff = nil
-
-    Bastion.UnitManager:EnumFriends(function(unit)
-        if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) or not ShouldUseEnvelopingMist(unit) then
-            return false
-        end
-        if not unit:IsDead() and Player:CanSee(unit) and ShouldUseEnvelopingMist(unit) then
-            for _, auras in pairs(unit:GetAuras():GetUnitAuras()) do
-                for _, aura in pairs(auras) do
-                    local SpellID = aura:GetSpell():GetID()
-                    if debuffList[SpellID] and not dispelCheck(aura) and aura:GetRemainingTime() > 3 and SpellID ~= 124682 then -- check for enveloping mist buff
-                        debuff = unit
-                        return true
-                    end
-                end
-            end
-        end
-    end)
-    return debuff or Bastion.UnitManager:Get('none')
 end)
 
 local sootheTarget = Bastion.UnitManager:CreateCustomUnit('soothe', function(unit)
@@ -1675,6 +1607,9 @@ manaAPL:AddSpell(
 
 -- Module Sync
 RestoMonkModule:Sync(function()
+    -- Scan units once per frame
+    scanFriends()
+    scanEnemies()
 
     --[[    if (select(4,GetNetStats()) and select(3,GetNetStats())) > Player:GetMaxGCD()*1000 then
         Bastion.Notifications:AddNotification(CracklingJadeLightning:GetIcon(), "Network is LAGGING AS FUCK")
