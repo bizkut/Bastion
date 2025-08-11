@@ -155,6 +155,8 @@ end
 local function NeedsUrgentHealing(scanner)
     return scanner.lowest:GetRealizedHP() < 70 or Player:GetPartyHPAround(40, 85) >= 3
 end
+
+local scanner = UnitScanner:New()
 -- APLs
 local DispelAPL = Bastion.APL:New('dispel')
 local RenewAPL = Bastion.APL:New('renewmist')
@@ -801,7 +803,6 @@ manaAPL:AddSpell(
 )
 
 -- Module Sync
-local scanner = UnitScanner:New()
 
 RestoMonkModule:Sync(function()
     scanner:Update()
