@@ -1251,9 +1251,7 @@ DefensiveAPL:AddSpell(
             Player:IsFacing(sootheTarget) and
             Player:GetDistance(sootheTarget) < 20
             and not Player:IsCastingOrChanneling()
-    end):SetTarget(sootheTarget):OnCast(function()
-        print("Soothe target: " .. sootheTarget:GetName())
-    end)
+    end):SetTarget(sootheTarget)
 )
 -- DefensiveAPL:AddSpell(
 --     Vivify:CastableIf(function(self)
@@ -1285,7 +1283,6 @@ DefensiveAPL:AddSpell(
             and DebuffTarget:IsValid() and ShouldUseEnvelopingMist(DebuffTarget)
         --and Player:IsAffectingCombat()
     end):SetTarget(Player):OnCast(function()
-        print("Casting TFT Enveloping Mist on Debuff Target: " .. DebuffTarget:GetName())
         EnvelopingMist:Cast(DebuffTarget)
     end)
 )
@@ -1295,9 +1292,7 @@ DefensiveAPL:AddSpell(
         return DebuffTarget:IsValid() and ShouldUseEnvelopingMist(DebuffTarget)
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
             and ((not Player:IsMoving() and not stopCasting()) or Player:GetAuras():FindMy(ThunderFocusTea):IsUp())
-    end):SetTarget(DebuffTarget):OnCast(function()
-        print("Casting Enveloping Mist on Debuff Target: " .. DebuffTarget:GetName())
-    end)
+    end):SetTarget(DebuffTarget)
 )
 
 DefensiveAPL:AddSpell(
@@ -1307,7 +1302,6 @@ DefensiveAPL:AddSpell(
             and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetRealizedHP() < 60)
         --and Player:IsAffectingCombat()
     end):SetTarget(Player):OnCast(function()
-        print("Casting TFT and Enveloping Mist on Lowest: " .. EnvelopeLowest:GetName())
         EnvelopingMist:Cast(EnvelopeLowest)
     end)
 )
@@ -1317,9 +1311,7 @@ DefensiveAPL:AddSpell(
         return EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetRealizedHP() < 60)
             and Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-    end):SetTarget(EnvelopeLowest):OnCast(function()
-        print("Casting Enveloping Mist with TFT on Lowest: " .. EnvelopeLowest:GetName())
-    end)
+    end):SetTarget(EnvelopeLowest)
 )
 
 --[[
@@ -1356,7 +1348,6 @@ DefensiveAPL:AddSpell(
             and self:GetCharges() >= 2
         --and Player:IsAffectingCombat()
     end):SetTarget(Player):OnCast(function()
-        print("Casting TFT Enveloping Mist on Buster Target: " .. BusterTarget:GetName())
         EnvelopingMist:Cast(BusterTarget)
     end)
 )
@@ -1366,9 +1357,7 @@ DefensiveAPL:AddSpell(
         return BusterTarget:IsValid() and ShouldUseEnvelopingMist(BusterTarget)
             --and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
             and (Player:GetAuras():FindMy(ThunderFocusTea):IsUp() or (not Player:IsMoving() and not stopCasting()))
-    end):SetTarget(BusterTarget):OnCast(function()
-        print("Casting Enveloping Mist on Buster Target: " .. BusterTarget:GetName())
-    end)
+    end):SetTarget(BusterTarget)
 )
 
 
