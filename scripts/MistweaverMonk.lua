@@ -629,7 +629,7 @@ StompAPL:AddSpell(
             --and Player:IsWithinCone(scanner.tankTarget,90,40)
             --and waitingGCDcast(JadefireStomp)
             and waitingGCD()
-    end):SetTarget(Player):OnCast(function()
+    end):SetTarget(Player):PreCast(function()
         if not Player:IsFacing(scanner.nearTarget) and not Player:IsMoving() then
             FaceObject(scanner.nearTarget:GetOMToken())
         end
