@@ -87,6 +87,27 @@ local HouseOfCards = ItemBook:GetItem(230027)
 
 local autoTarget = {}
 
+Bastion.dispelAll = false
+Bastion.interrAll = false
+
+Bastion.Command:New('dispel', function()
+    Bastion.dispelAll = not Bastion.dispelAll
+    if Bastion.dispelAll then
+        Bastion:Print("Dispel all Enabled")
+    else
+        Bastion:Print("Dispel all Disabled")
+    end
+end)
+
+Bastion.Command:New('interr', function()
+    Bastion.interrAll = not Bastion.interrAll
+    if Bastion.interrAll then
+        Bastion:Print("Interrupt all Enabled")
+    else
+        Bastion:Print("Interrupt all Disabled")
+    end
+end)
+
 local function waitingGCD()
     return Player:GetGCD() * 1000 < (select(4, GetNetStats()) and select(3, GetNetStats()))
 end
