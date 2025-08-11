@@ -1045,7 +1045,9 @@ DispelAPL:AddSpell(
 
 RenewAPL:AddSpell(
     RenewingMist:CastableIf(function(self)
-        return MustUseRenewingMist(scanner.renewLowest)
+        return RenewingMist:IsKnownAndUsable()
+            and scanner.renewLowest:IsValid()
+            and scanner.renewLowest:GetAuras():FindMy(RenewingMistBuff):IsDown()
             and not Player:IsCastingOrChanneling()
     end):SetTarget(scanner.renewLowest)
 )
