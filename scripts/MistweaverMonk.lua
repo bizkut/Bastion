@@ -186,53 +186,501 @@ local manaTeaStacks = 0
 local function UpdateManaTeaStacks() local aura = Player:GetAuras():FindMy(manaTeaSt); manaTeaStacks = aura and aura:GetCount() or 0 end
 
 -- APLs
-InterruptAPL:AddSpell(LegSweep:CastableIf(function(self) return self:IsKnownAndUsable() and scanner.interruptTargetMelee:IsValid() and Player:IsFacing(scanner.interruptTargetMelee) and Player:GetEnemies(10) >= 3 and not recentInterrupt() end):SetTarget(function() return scanner.interruptTargetMelee end))
-InterruptAPL:AddSpell(RingOfPeace:CastableIf(function(self) return self:IsKnownAndUsable() and scanner.interruptTargetMelee:IsValid() and Player:IsFacing(scanner.interruptTargetMelee) and Player:GetEnemies(10) >= 3 and not LegSweep:IsKnownAndUsable() and not recentInterrupt() end):SetTarget(function() return scanner.interruptTargetMelee end):OnCast(function(self) if IsSpellPending() == 64 then local x, y, z = ObjectPosition(scanner.interruptTargetMelee:GetOMToken()); if x and y and z then self:Click(x, y, z) end end end))
-InterruptAPL:AddSpell(SpearHandStrike:CastableIf(function(self) return self:IsKnownAndUsable() and scanner.interruptTargetMelee:IsValid() and Player:IsFacing(scanner.interruptTargetMelee) and not recentInterrupt() end):SetTarget(function() return scanner.interruptTargetMelee end))
-InterruptAPL:AddSpell(Paralysis:CastableIf(function(self) return self:IsKnownAndUsable() and scanner.interruptTargetMelee:IsValid() and not SpearHandStrike:IsKnownAndUsable() and Player:IsFacing(scanner.interruptTargetMelee) and not recentInterrupt() end):SetTarget(function() return scanner.interruptTargetMelee end))
-InterruptAPL:AddSpell(Paralysis:CastableIf(function(self) return self:IsKnownAndUsable() and scanner.interruptTargetRange:IsValid() and Player:IsFacing(scanner.interruptTargetRange) and not recentInterrupt() end):SetTarget(function() return scanner.interruptTargetRange end))
-InterruptAPL:AddSpell(LegSweep:CastableIf(function(self) return self:IsKnownAndUsable() and scanner.interruptTargetStun:IsValid() and Player:IsFacing(scanner.interruptTargetStun) and Player:GetEnemies(10) >= 3 and Player:GetDistance(scanner.interruptTargetStun) < 10 end):SetTarget(function() return scanner.interruptTargetStun end))
-InterruptAPL:AddSpell(Paralysis:CastableIf(function(self) return self:IsKnownAndUsable() and scanner.interruptTargetStun:IsValid() and Player:IsFacing(scanner.interruptTargetStun) and Player:GetDistance(scanner.interruptTargetStun) < 20 end):SetTarget(function() return scanner.interruptTargetStun end))
-AspectAPL:AddSpell(ThunderFocusTea:CastableIf(function(self) return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and (not Player:IsCastingOrChanneling() or spinningCrane()) and self:GetCharges() >= 2 and Player:GetAuras():FindMy(AspectFull):IsUp() end):SetTarget(Player))
-DefaultAPL:AddSpell(Vivify:CastableIf(function(self) return scanner.lowest:IsValid() and scanner.lowest:GetRealizedHP() < 60 and self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane()) and ((not Player:IsMoving() and not stopCasting()) or Player:GetAuras():FindMy(Vivacious):IsUp()) and (scanner.lowest:GetAuras():FindMy(EnvelopingMist):IsUp() or not Player:IsAffectingCombat()) end):SetTarget(function() return scanner.lowest end))
-DefaultAPL:AddSpell(Vivify:CastableIf(function(self) return scanner.lowest:IsValid() and scanner.lowest:GetRealizedHP() < 70 and self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane()) and ((not Player:IsMoving() and not stopCasting()) or Player:GetAuras():FindMy(Vivacious):IsUp()) and Player:GetAuras():FindMy(ZenPulse):IsUp() end):SetTarget(function() return scanner.lowest end):PreCast(function() UpdateManaTeaStacks(); if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 and scanner.lowest:GetAuras():FindMy(EnvelopingMist):IsDown() then manaAPL:Execute() end end))
-DefaultAPL:AddSpell(TigerPalm:CastableIf(function(self) return scanner.nearTarget:IsValid() and self:IsKnownAndUsable() and not Player:IsCastingOrChanneling() and Player:InMelee(scanner.nearTarget) and Player:IsFacing(scanner.nearTarget) and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4 and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() end):SetTarget(function() return scanner.nearTarget end))
-CooldownAPL:AddSpell(CelestialConduit:CastableIf(function(self) return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea()) and Player:GetPartyHPAround(20, 80) >= 3 and Player:GetEnemies(20) >= 2 end):SetTarget(Player):OnCast(function() C_Timer.NewTicker(0.5, function() if not Player:IsCastingOrChanneling() then return end; local currentNearTarget = scanner.nearTarget; if RisingSunKick:IsKnownAndUsable() and Player:InMelee(currentNearTarget) then RisingSunKick:Cast(currentNearTarget) elseif BlackoutKick:IsKnownAndUsable() and Player:InMelee(currentNearTarget) then BlackoutKick:Cast(currentNearTarget) end end, 8) end))
-TrinketAPL:AddItem(Signet:UsableIf(function(self) return self:IsUsable() and not self:IsOnCooldown() and self:IsEquipped() and not Player:IsCastingOrChanneling() and waitingGCD() and (Player:GetPartyHPAround(40, 80) >= 2 or scanner.nearTarget:IsBoss()) end):SetTarget(Player))
-CooldownAPL:AddSpell(InvokeYulon:CastableIf(function(self) return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea()) and Player:GetPartyHPAround(40, 75) >= 3 end):SetTarget(Player))
-CooldownAPL:AddSpell(InvokeChiJi:CastableIf(function(self) return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea()) and Player:GetPartyHPAround(40, 80) >= 3 end):SetTarget(Player))
-CooldownAPL:AddSpell(SheilunsGift:CastableIf(function(self) return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea()) and (Player:GetPartyHPAround(40, 85) >= 2) and (SheilunsGift:GetCount() >= 5) and not Player:IsMoving() and not stopCasting() end):SetTarget(Player))
-CooldownAPL:AddSpell(EnvelopingMist:CastableIf(function(self) return scanner.envelopeLowest:IsValid() and ShouldUseEnvelopingMist(scanner.envelopeLowest) and (scanner.envelopeLowest:GetRealizedHP() < 60) and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea()) and not Player:IsMoving() and not stopCasting() and ThunderFocusTea:GetCharges() < 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() end):SetTarget(function() return scanner.envelopeLowest end):PreCast(function() if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 then manaAPL:Execute() end end))
-CooldownAPL:AddSpell(UnityWithin:CastableIf(function(self) return self:IsKnownAndUsable() end):SetTarget(Player))
-DispelAPL:AddSpell(Detox:CastableIf(function(self) return scanner.dispelTarget:IsValid() and self:IsKnownAndUsable() and not Player:IsCastingOrChanneling() and ((scanner.debuffThresholds[scanner.dispelTarget:GetID()] and (GetTime() > scanner.debuffThresholds[scanner.dispelTarget:GetID()])) or scanner.dispelTarget:IsMouseover()) end):SetTarget(function() return scanner.dispelTarget end):OnCast(function(self) for k in pairs(scanner.debuffThresholds) do scanner.debuffThresholds[k] = nil end end))
-RenewAPL:AddSpell(RenewingMist:CastableIf(function(self) return RenewingMist:IsKnownAndUsable() and scanner.renewLowest:IsValid() and not Player:IsCastingOrChanneling() end):SetTarget(function() return scanner.renewLowest end))
-DefensiveAPL:AddSpell(ThunderFocusTea:CastableIf(function(self) return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and not Player:GetAuras():FindAny(LifeCocoon):IsUp() and (Player:GetHP() < 70) and ExpelHarm:IsKnownAndUsable() end):SetTarget(Player):OnCast(function() ExpelHarm:Cast(Player) end))
-DefensiveAPL:AddSpell(ExpelHarm:CastableIf(function(self) return Player:GetHP() < 70 and self:IsKnownAndUsable() and not Player:GetAuras():FindAny(LifeCocoon):IsUp() end):SetTarget(Player):OnCast(function(self) return waitingGCD() end))
-DefensiveAPL:AddItem(Healthstone:UsableIf(function(self) return self:IsUsable() and Player:GetHP() < 50 and not Player:GetAuras():FindAny(LifeCocoon):IsUp() and self:GetTimeSinceLastUseAttempt() > Player:GetGCD() end):SetTarget(Player):OnUse(function(self) return waitingGCD() end))
-DefensiveAPL:AddItem(AlgariHealingPotion:UsableIf(function(self) return self:IsUsable() and Player:GetHP() < 30 and not Player:GetAuras():FindAny(LifeCocoon):IsUp() end):SetTarget(Player):OnUse(function(self) return waitingGCD() end))
-DefensiveAPL:AddSpell(LifeCocoon:CastableIf(function(self) local ShouldUseCocoon = function(unit) if unit:GetAuras():FindAny(BlessingofProtection):IsUp() or unit:GetAuras():FindAny(DivineShield):IsUp() or unit:GetAuras():FindAny(LifeCocoon):IsUp() or (ObjectSpecializationID(unit:GetOMToken()) == 250) then return false end; if unit:GetHP() > 40 and scanner.cocoonThresholds[unit:GetID()] then scanner.cocoonThresholds[unit:GetID()] = nil elseif unit:GetHP() < 40 and not scanner.cocoonThresholds[unit:GetID()] then scanner.cocoonThresholds[unit:GetID()] = GetTime() + GetRandomCocoonDelay() elseif unit:GetHP() < 40 and scanner.cocoonThresholds[unit:GetID()] and (GetTime() > scanner.cocoonThresholds[unit:GetID()]) then return true end; return false end; return scanner.hpLowest:IsValid() and self:IsKnownAndUsable() and ShouldUseCocoon(scanner.hpLowest) end):SetTarget(function() return scanner.hpLowest end):OnCast(function() for k in pairs(scanner.cocoonThresholds) do scanner.cocoonThresholds[k] = nil end end))
-DefensiveAPL:AddSpell(FortifyingBrew:CastableIf(function(self) return self:IsKnownAndUsable() and Player:GetRealizedHP() < 40 and not Player:GetAuras():FindAny(LifeCocoon):IsUp() end):SetTarget(Player):OnCast(function(self) return waitingGCD() end))
-DefensiveAPL:AddSpell(DiffuseMagic:CastableIf(function(self) return self:IsKnownAndUsable() and Player:GetRealizedHP() < 60 end):SetTarget(Player):OnCast(function(self) return waitingGCD() end))
-DefensiveAPL:AddSpell(Paralysis:CastableIf(function(self) return self:IsKnownAndUsable() and PressurePoints:IsKnown() and scanner.sootheTarget:IsValid() and Player:IsFacing(scanner.sootheTarget) and Player:GetDistance(scanner.sootheTarget) < 20 and not Player:IsCastingOrChanneling() end):SetTarget(function() return scanner.sootheTarget end):OnCast(function() print("Soothe target: " .. scanner.sootheTarget:GetName()) end))
-DefensiveAPL:AddSpell(Vivify:CastableIf(function(self) return scanner.lowest:IsValid() and scanner.lowest:GetRealizedHP() < 80 and self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane()) and Player:GetAuras():FindMy(Vivacious):IsUp() end):SetTarget(function() return scanner.lowest end):PreCast(function() if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 and scanner.lowest:GetAuras():FindMy(EnvelopingMist):IsDown() then manaAPL:Execute() end end))
-DefensiveAPL:AddSpell(ThunderFocusTea:CastableIf(function(self) return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea()) and scanner.debuffTarget:IsValid() and ShouldUseEnvelopingMist(scanner.debuffTarget) end):SetTarget(Player):OnCast(function() print("Casting TFT Enveloping Mist on Debuff Target: " .. scanner.debuffTarget:GetName()); EnvelopingMist:Cast(scanner.debuffTarget) end))
-DefensiveAPL:AddSpell(EnvelopingMist:CastableIf(function(self) return scanner.debuffTarget:IsValid() and ShouldUseEnvelopingMist(scanner.debuffTarget) and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea()) and ((not Player:IsMoving() and not stopCasting()) or Player:GetAuras():FindMy(ThunderFocusTea):IsUp()) end):SetTarget(function() return scanner.debuffTarget end):OnCast(function() print("Casting Enveloping Mist on Debuff Target: " .. scanner.debuffTarget:GetName()) end))
-DefensiveAPL:AddSpell(ThunderFocusTea:CastableIf(function(self) return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea()) and ShouldUseEnvelopingMist(scanner.envelopeLowest) and (scanner.envelopeLowest:GetRealizedHP() < 60) end):SetTarget(Player):OnCast(function() print("Casting TFT and Enveloping Mist on Lowest: " .. scanner.envelopeLowest:GetName()); EnvelopingMist:Cast(scanner.envelopeLowest) end))
-DefensiveAPL:AddSpell(EnvelopingMist:CastableIf(function(self) return scanner.envelopeLowest:IsValid() and ShouldUseEnvelopingMist(scanner.envelopeLowest) and (scanner.envelopeLowest:GetRealizedHP() < 60) and Player:GetAuras():FindMy(ThunderFocusTea):IsUp() and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea()) end):SetTarget(function() return scanner.envelopeLowest end):OnCast(function() print("Casting Enveloping Mist with TFT on Lowest: " .. scanner.envelopeLowest:GetName()) end))
-DefensiveAPL:AddSpell(ThunderFocusTea:CastableIf(function(self) return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and scanner.busterTarget:IsValid() and ShouldUseEnvelopingMist(scanner.busterTarget) and scanner.busterTarget:GetRealizedHP() < 90 and self:GetCharges() >= 2 end):SetTarget(Player):OnCast(function() print("Casting TFT Enveloping Mist on Buster Target: " .. scanner.busterTarget:GetName()); EnvelopingMist:Cast(scanner.busterTarget) end))
-DefensiveAPL:AddSpell(EnvelopingMist:CastableIf(function(self) return scanner.busterTarget:IsValid() and ShouldUseEnvelopingMist(scanner.busterTarget) and (Player:GetAuras():FindMy(ThunderFocusTea):IsUp() or (not Player:IsMoving() and not stopCasting())) end):SetTarget(function() return scanner.busterTarget end):OnCast(function() print("Casting Enveloping Mist on Buster Target: " .. scanner.busterTarget:GetName()) end))
-StompAPL:AddSpell(JadefireStomp:CastableIf(function(self) return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane()) and not Player:IsMoving() and ((not (Player:GetAuras():FindMy(JadefireStomp):GetRemainingTime() > 2) and Player:InMelee(scanner.nearTarget)) or (not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2) and Player:InMelee(scanner.nearTarget))) and scanner.nearTarget:IsValid() and waitingGCD() end):SetTarget(Player):PreCast(function() if not Player:IsFacing(scanner.nearTarget) and not Player:IsMoving() then FaceObject(scanner.nearTarget:GetOMToken()) end end))
-StompAPL:AddSpell(ThunderFocusTea:CastableIf(function(self) return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea()) and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsDown() and not JadefireStomp:IsKnownAndUsable() and self:GetCharges() >= 2 and Player:InMelee(scanner.nearTarget) end):SetTarget(Player))
-StompAPL:AddSpell(RisingSunKick:CastableIf(function(self) return scanner.nearTarget:IsValid() and self:IsKnownAndUsable() and Player:InMelee(scanner.nearTarget) and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea()) and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() end):SetTarget(function() return scanner.nearTarget end):PreCast(function() if not Player:IsFacing(scanner.nearTarget) and not Player:IsMoving() then FaceObject(scanner.nearTarget:GetOMToken()) end end))
-DpsAPL:AddSpell(ChiBurst:CastableIf(function(self) return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling() and not JadefireStomp:IsKnownAndUsable() and not Player:IsMoving() and not stopCasting() and waitingGCD() and mostEnemies():IsValid() end):SetTarget(Player):PreCast(function() if not Player:IsFacing(mostEnemies()) and not Player:IsMoving() then FaceObject(mostEnemies():GetOMToken()) end end))
-DpsAPL:AddSpell(ThunderFocusTea:CastableIf(function(self) return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea()) and self:GetCharges() >= 2 and RisingSunKick:IsKnownAndUsable() and Player:InMelee(scanner.nearTarget) and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and Player:IsFacing(scanner.nearTarget) end):SetTarget(Player):OnCast(function() if RisingSunKick:IsKnownAndUsable() and Player:InMelee(scanner.nearTarget) then RisingSunKick:Cast(scanner.nearTarget) end end))
-DpsAPL:AddSpell(BlackoutKick:CastableIf(function(self) return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane()) and Player:InMelee(scanner.nearTarget) and Player:IsFacing(scanner.nearTarget) and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4 and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() end):SetTarget(function() return scanner.nearTarget end))
-DpsAPL:AddSpell(ThunderFocusTea:CastableIf(function(self) local GetEnemiesInRange = function(range) local count = 0; Bastion.UnitManager:EnumEnemies(function(unit) if unit:GetDistance(Player) <= range and unit:IsAffectingCombat() then count = count + 1 end end); return count end; local ShouldUseCrackling = function(unit) return CracklingJadeLightning:IsKnownAndUsable() and unit:IsValid() and canDamage(unit) and not Player:IsMoving() and waitingGCDcast(CracklingJadeLightning) and Player:GetAuras():FindMy(JadeEmpowerment):IsUp() and not Player:IsCastingOrChanneling() and not stopCasting() end; return self:IsKnownAndUsable() and not Player:GetAuras():FindMy(ThunderFocusTea):IsUp() and not Player:IsCastingOrChanneling() and self:GetCharges() >= 2 and GetEnemiesInRange(40) >= 5 and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and scanner.rangeTarget:GetHealth() > 2000000 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() end):SetTarget(Player):OnCast(function() if ShouldUseCrackling(scanner.rangeTarget) and waitingGCD() then CracklingJadeLightning:Cast(scanner.rangeTarget) end end))
-DpsAPL:AddSpell(CracklingJadeLightning:CastableIf(function(self) local ShouldUseCrackling = function(unit) return CracklingJadeLightning:IsKnownAndUsable() and unit:IsValid() and canDamage(unit) and not Player:IsMoving() and waitingGCDcast(CracklingJadeLightning) and Player:GetAuras():FindMy(JadeEmpowerment):IsUp() and not Player:IsCastingOrChanneling() and not stopCasting() end; return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling() and ShouldUseCrackling(scanner.rangeTarget) and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and scanner.rangeTarget:GetHealth() > 2000000 and waitingGCD() end):SetTarget(function() return scanner.rangeTarget end))
-DpsAPL:AddSpell(SpinningCraneKick:CastableIf(function(self) local GetEnemiesInRange = function(range) local count = 0; Bastion.UnitManager:EnumEnemies(function(unit) if unit:GetDistance(Player) <= range and unit:IsAffectingCombat() then count = count + 1 end end); return count end; return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling() and GetEnemiesInRange(8) >= 4 and Player:GetAuras():FindMy(AwakenedJadefire):IsUp() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4 and Player:GetAuras():FindMy(AncientConcordance):IsDown() end):SetTarget(Player))
-DpsAPL:AddSpell(TigerPalm:CastableIf(function(self) return scanner.nearTarget:IsValid() and self:IsKnownAndUsable() and not Player:IsCastingOrChanneling() and Player:InMelee(scanner.nearTarget) and Player:IsFacing(scanner.nearTarget) end):SetTarget(function() return scanner.nearTarget end))
-ToDAPL:AddSpell(TouchOfDeath:CastableIf(function(self) return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling() and scanner.touchOfDeathTarget:IsValid() and Player:IsFacing(scanner.touchOfDeathTarget) and Player:InMelee(scanner.touchOfDeathTarget) end):SetTarget(function() return scanner.touchOfDeathTarget end))
-manaAPL:AddSpell(ManaTea:CastableIf(function(self) return self:IsKnownAndUsable() end):SetTarget(Player))
+InterruptAPL:AddSpell(
+    LegSweep:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and scanner.interruptTargetMelee:IsValid()
+            and Player:IsFacing(scanner.interruptTargetMelee)
+            and Player:GetEnemies(10) >= 3
+            and not recentInterrupt()
+    end):SetTarget(function() return scanner.interruptTargetMelee end)
+)
+InterruptAPL:AddSpell(
+    RingOfPeace:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and scanner.interruptTargetMelee:IsValid()
+            and Player:IsFacing(scanner.interruptTargetMelee)
+            and Player:GetEnemies(10) >= 3
+            and not LegSweep:IsKnownAndUsable()
+            and not recentInterrupt()
+    end):SetTarget(function() return scanner.interruptTargetMelee end):OnCast(function(self)
+        if IsSpellPending() == 64 then
+            local x, y, z = ObjectPosition(scanner.interruptTargetMelee:GetOMToken())
+            if x and y and z then
+                self:Click(x, y, z)
+            end
+        end
+    end)
+)
+InterruptAPL:AddSpell(
+    SpearHandStrike:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and scanner.interruptTargetMelee:IsValid()
+            and Player:IsFacing(scanner.interruptTargetMelee)
+            and not recentInterrupt()
+    end):SetTarget(function() return scanner.interruptTargetMelee end)
+)
+InterruptAPL:AddSpell(
+    Paralysis:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and scanner.interruptTargetMelee:IsValid()
+            and not SpearHandStrike:IsKnownAndUsable()
+            and Player:IsFacing(scanner.interruptTargetMelee)
+            and not recentInterrupt()
+    end):SetTarget(function() return scanner.interruptTargetMelee end)
+)
+InterruptAPL:AddSpell(
+    Paralysis:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and scanner.interruptTargetRange:IsValid()
+            and Player:IsFacing(scanner.interruptTargetRange)
+            and not recentInterrupt()
+    end):SetTarget(function() return scanner.interruptTargetRange end)
+)
+InterruptAPL:AddSpell(
+    LegSweep:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and scanner.interruptTargetStun:IsValid()
+            and Player:IsFacing(scanner.interruptTargetStun)
+            and Player:GetEnemies(10) >= 3
+            and Player:GetDistance(scanner.interruptTargetStun) < 10
+    end):SetTarget(function() return scanner.interruptTargetStun end)
+)
+InterruptAPL:AddSpell(
+    Paralysis:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and scanner.interruptTargetStun:IsValid()
+            and Player:IsFacing(scanner.interruptTargetStun)
+            and Player:GetDistance(scanner.interruptTargetStun) < 20
+    end):SetTarget(function() return scanner.interruptTargetStun end)
+)
+AspectAPL:AddSpell(
+    ThunderFocusTea:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and self:GetCharges() >= 2
+            and Player:GetAuras():FindMy(AspectFull):IsUp()
+    end):SetTarget(Player)
+)
+DefaultAPL:AddSpell(
+    Vivify:CastableIf(function(self)
+        return scanner.lowest:IsValid()
+            and scanner.lowest:GetRealizedHP() < 60
+            and self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and ((not Player:IsMoving() and not stopCasting()) or Player:GetAuras():FindMy(Vivacious):IsUp())
+            and (scanner.lowest:GetAuras():FindMy(EnvelopingMist):IsUp() or not Player:IsAffectingCombat())
+    end):SetTarget(function() return scanner.lowest end)
+)
+DefaultAPL:AddSpell(
+    Vivify:CastableIf(function(self)
+        return scanner.lowest:IsValid()
+            and scanner.lowest:GetRealizedHP() < 70
+            and self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and ((not Player:IsMoving() and not stopCasting()) or Player:GetAuras():FindMy(Vivacious):IsUp())
+            and Player:GetAuras():FindMy(ZenPulse):IsUp()
+    end):SetTarget(function() return scanner.lowest end):PreCast(function()
+        UpdateManaTeaStacks()
+        if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 and scanner.lowest:GetAuras():FindMy(EnvelopingMist):IsDown() then
+            manaAPL:Execute()
+        end
+    end)
+)
+DefaultAPL:AddSpell(
+    TigerPalm:CastableIf(function(self)
+        return scanner.nearTarget:IsValid()
+            and self:IsKnownAndUsable()
+            and not Player:IsCastingOrChanneling()
+            and Player:InMelee(scanner.nearTarget)
+            and Player:IsFacing(scanner.nearTarget)
+            and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+    end):SetTarget(function() return scanner.nearTarget end)
+)
+CooldownAPL:AddSpell(
+    CelestialConduit:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and Player:GetPartyHPAround(20, 80) >= 3
+            and Player:GetEnemies(20) >= 2
+    end):SetTarget(Player):OnCast(function()
+        C_Timer.NewTicker(0.5, function()
+            if not Player:IsCastingOrChanneling() then return end
+            local currentNearTarget = scanner.nearTarget
+            if RisingSunKick:IsKnownAndUsable() and Player:InMelee(currentNearTarget) then
+                RisingSunKick:Cast(currentNearTarget)
+            elseif BlackoutKick:IsKnownAndUsable() and Player:InMelee(currentNearTarget) then
+                BlackoutKick:Cast(currentNearTarget)
+            end
+        end, 8)
+    end)
+)
+TrinketAPL:AddItem(
+    Signet:UsableIf(function(self)
+        return self:IsUsable()
+            and not self:IsOnCooldown()
+            and self:IsEquipped()
+            and not Player:IsCastingOrChanneling()
+            and waitingGCD()
+            and (Player:GetPartyHPAround(40, 80) >= 2 or scanner.nearTarget:IsBoss())
+    end):SetTarget(Player)
+)
+CooldownAPL:AddSpell(
+    InvokeYulon:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and Player:GetPartyHPAround(40, 75) >= 3
+    end):SetTarget(Player)
+)
+CooldownAPL:AddSpell(
+    InvokeChiJi:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and Player:GetPartyHPAround(40, 80) >= 3
+    end):SetTarget(Player)
+)
+CooldownAPL:AddSpell(
+    SheilunsGift:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and (Player:GetPartyHPAround(40, 85) >= 2)
+            and (SheilunsGift:GetCount() >= 5)
+            and not Player:IsMoving()
+            and not stopCasting()
+    end):SetTarget(Player)
+)
+CooldownAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return scanner.envelopeLowest:IsValid()
+            and ShouldUseEnvelopingMist(scanner.envelopeLowest)
+            and (scanner.envelopeLowest:GetRealizedHP() < 60)
+            and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
+            and not Player:IsMoving()
+            and not stopCasting()
+            and ThunderFocusTea:GetCharges() < 1
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(function() return scanner.envelopeLowest end):PreCast(function()
+        if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 then
+            manaAPL:Execute()
+        end
+    end)
+)
+CooldownAPL:AddSpell(
+    UnityWithin:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+    end):SetTarget(Player)
+)
+DispelAPL:AddSpell(
+    Detox:CastableIf(function(self)
+        return scanner.dispelTarget:IsValid()
+            and self:IsKnownAndUsable()
+            and not Player:IsCastingOrChanneling()
+            and ((scanner.debuffThresholds[scanner.dispelTarget:GetID()] and (GetTime() > scanner.debuffThresholds[scanner.dispelTarget:GetID()])) or scanner.dispelTarget:IsMouseover())
+    end):SetTarget(function() return scanner.dispelTarget end):OnCast(function(self)
+        for k in pairs(scanner.debuffThresholds) do
+            scanner.debuffThresholds[k] = nil
+        end
+    end)
+)
+RenewAPL:AddSpell(
+    RenewingMist:CastableIf(function(self)
+        return RenewingMist:IsKnownAndUsable()
+            and scanner.renewLowest:IsValid()
+            and not Player:IsCastingOrChanneling()
+    end):SetTarget(function() return scanner.renewLowest end)
+)
+DefensiveAPL:AddSpell(
+    ThunderFocusTea:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
+            and (Player:GetHP() < 70)
+            and ExpelHarm:IsKnownAndUsable()
+    end):SetTarget(Player):OnCast(function() ExpelHarm:Cast(Player) end)
+)
+DefensiveAPL:AddSpell(
+    ExpelHarm:CastableIf(function(self)
+        return Player:GetHP() < 70
+            and self:IsKnownAndUsable()
+            and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
+    end):SetTarget(Player):OnCast(function(self) return waitingGCD() end)
+)
+DefensiveAPL:AddItem(
+    Healthstone:UsableIf(function(self)
+        return self:IsUsable()
+            and Player:GetHP() < 50
+            and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
+            and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
+    end):SetTarget(Player):OnUse(function(self) return waitingGCD() end)
+)
+DefensiveAPL:AddItem(
+    AlgariHealingPotion:UsableIf(function(self)
+        return self:IsUsable()
+            and Player:GetHP() < 30
+            and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
+    end):SetTarget(Player):OnUse(function(self) return waitingGCD() end)
+)
+DefensiveAPL:AddSpell(
+    LifeCocoon:CastableIf(function(self)
+        local ShouldUseCocoon = function(unit)
+            if unit:GetAuras():FindAny(BlessingofProtection):IsUp() or unit:GetAuras():FindAny(DivineShield):IsUp() or unit:GetAuras():FindAny(LifeCocoon):IsUp() or (ObjectSpecializationID(unit:GetOMToken()) == 250) then return false end
+            if unit:GetHP() > 40 and scanner.cocoonThresholds[unit:GetID()] then scanner.cocoonThresholds[unit:GetID()] = nil
+            elseif unit:GetHP() < 40 and not scanner.cocoonThresholds[unit:GetID()] then scanner.cocoonThresholds[unit:GetID()] = GetTime() + GetRandomCocoonDelay()
+            elseif unit:GetHP() < 40 and scanner.cocoonThresholds[unit:GetID()] and (GetTime() > scanner.cocoonThresholds[unit:GetID()]) then return true end
+            return false
+        end
+        return scanner.hpLowest:IsValid() and self:IsKnownAndUsable() and ShouldUseCocoon(scanner.hpLowest)
+    end):SetTarget(function() return scanner.hpLowest end):OnCast(function()
+        for k in pairs(scanner.cocoonThresholds) do scanner.cocoonThresholds[k] = nil end
+    end)
+)
+DefensiveAPL:AddSpell(
+    FortifyingBrew:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Player:GetRealizedHP() < 40
+            and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
+    end):SetTarget(Player):OnCast(function(self) return waitingGCD() end)
+)
+DefensiveAPL:AddSpell(
+    DiffuseMagic:CastableIf(function(self)
+        return self:IsKnownAndUsable() and Player:GetRealizedHP() < 60
+    end):SetTarget(Player):OnCast(function(self) return waitingGCD() end)
+)
+DefensiveAPL:AddSpell(
+    Paralysis:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and PressurePoints:IsKnown()
+            and scanner.sootheTarget:IsValid()
+            and Player:IsFacing(scanner.sootheTarget)
+            and Player:GetDistance(scanner.sootheTarget) < 20
+            and not Player:IsCastingOrChanneling()
+    end):SetTarget(function() return scanner.sootheTarget end):OnCast(function() print("Soothe target: " .. scanner.sootheTarget:GetName()) end)
+)
+DefensiveAPL:AddSpell(
+    Vivify:CastableIf(function(self)
+        return scanner.lowest:IsValid()
+            and scanner.lowest:GetRealizedHP() < 80
+            and self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and Player:GetAuras():FindMy(Vivacious):IsUp()
+    end):SetTarget(function() return scanner.lowest end):PreCast(function()
+        if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 and scanner.lowest:GetAuras():FindMy(EnvelopingMist):IsDown() then
+            manaAPL:Execute()
+        end
+    end)
+)
+DefensiveAPL:AddSpell(
+    ThunderFocusTea:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
+            and scanner.debuffTarget:IsValid()
+            and ShouldUseEnvelopingMist(scanner.debuffTarget)
+    end):SetTarget(Player):OnCast(function()
+        print("Casting TFT Enveloping Mist on Debuff Target: " .. scanner.debuffTarget:GetName())
+        EnvelopingMist:Cast(scanner.debuffTarget)
+    end)
+)
+DefensiveAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return scanner.debuffTarget:IsValid()
+            and ShouldUseEnvelopingMist(scanner.debuffTarget)
+            and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
+            and ((not Player:IsMoving() and not stopCasting()) or Player:GetAuras():FindMy(ThunderFocusTea):IsUp())
+    end):SetTarget(function() return scanner.debuffTarget end):OnCast(function()
+        print("Casting Enveloping Mist on Debuff Target: " .. scanner.debuffTarget:GetName())
+    end)
+)
+DefensiveAPL:AddSpell(
+    ThunderFocusTea:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
+            and ShouldUseEnvelopingMist(scanner.envelopeLowest)
+            and (scanner.envelopeLowest:GetRealizedHP() < 60)
+    end):SetTarget(Player):OnCast(function()
+        print("Casting TFT and Enveloping Mist on Lowest: " .. scanner.envelopeLowest:GetName())
+        EnvelopingMist:Cast(scanner.envelopeLowest)
+    end)
+)
+DefensiveAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return scanner.envelopeLowest:IsValid()
+            and ShouldUseEnvelopingMist(scanner.envelopeLowest)
+            and (scanner.envelopeLowest:GetRealizedHP() < 60)
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
+            and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
+    end):SetTarget(function() return scanner.envelopeLowest end):OnCast(function()
+        print("Casting Enveloping Mist with TFT on Lowest: " .. scanner.envelopeLowest:GetName())
+    end)
+)
+DefensiveAPL:AddSpell(
+    ThunderFocusTea:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and scanner.busterTarget:IsValid()
+            and ShouldUseEnvelopingMist(scanner.busterTarget)
+            and scanner.busterTarget:GetRealizedHP() < 90
+            and self:GetCharges() >= 2
+    end):SetTarget(Player):OnCast(function()
+        print("Casting TFT Enveloping Mist on Buster Target: " .. scanner.busterTarget:GetName())
+        EnvelopingMist:Cast(scanner.busterTarget)
+    end)
+)
+DefensiveAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return scanner.busterTarget:IsValid()
+            and ShouldUseEnvelopingMist(scanner.busterTarget)
+            and (Player:GetAuras():FindMy(ThunderFocusTea):IsUp() or (not Player:IsMoving() and not stopCasting()))
+    end):SetTarget(function() return scanner.busterTarget end):OnCast(function()
+        print("Casting Enveloping Mist on Buster Target: " .. scanner.busterTarget:GetName())
+    end)
+)
+StompAPL:AddSpell(
+    JadefireStomp:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and not Player:IsMoving()
+            and ((not (Player:GetAuras():FindMy(JadefireStomp):GetRemainingTime() > 2) and Player:InMelee(scanner.nearTarget)) or (not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2) and Player:InMelee(scanner.nearTarget)))
+            and scanner.nearTarget:IsValid()
+            and waitingGCD()
+    end):SetTarget(Player):PreCast(function()
+        if not Player:IsFacing(scanner.nearTarget) and not Player:IsMoving() then
+            FaceObject(scanner.nearTarget:GetOMToken())
+        end
+    end)
+)
+StompAPL:AddSpell(
+    ThunderFocusTea:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsDown()
+            and not JadefireStomp:IsKnownAndUsable()
+            and self:GetCharges() >= 2
+            and Player:InMelee(scanner.nearTarget)
+    end):SetTarget(Player)
+)
+StompAPL:AddSpell(
+    RisingSunKick:CastableIf(function(self)
+        return scanner.nearTarget:IsValid()
+            and self:IsKnownAndUsable()
+            and Player:InMelee(scanner.nearTarget)
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+    end):SetTarget(function() return scanner.nearTarget end):PreCast(function()
+        if not Player:IsFacing(scanner.nearTarget) and not Player:IsMoving() then
+            FaceObject(scanner.nearTarget:GetOMToken())
+        end
+    end)
+)
+DpsAPL:AddSpell(
+    ChiBurst:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and not Player:IsCastingOrChanneling()
+            and not JadefireStomp:IsKnownAndUsable()
+            and not Player:IsMoving()
+            and not stopCasting()
+            and waitingGCD()
+            and mostEnemies():IsValid()
+    end):SetTarget(Player):PreCast(function()
+        if not Player:IsFacing(mostEnemies()) and not Player:IsMoving() then
+            FaceObject(mostEnemies():GetOMToken())
+        end
+    end)
+)
+DpsAPL:AddSpell(
+    ThunderFocusTea:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and self:GetCharges() >= 2
+            and RisingSunKick:IsKnownAndUsable()
+            and Player:InMelee(scanner.nearTarget)
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and Player:IsFacing(scanner.nearTarget)
+    end):SetTarget(Player):OnCast(function()
+        if RisingSunKick:IsKnownAndUsable() and Player:InMelee(scanner.nearTarget) then
+            RisingSunKick:Cast(scanner.nearTarget)
+        end
+    end)
+)
+DpsAPL:AddSpell(
+    BlackoutKick:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and Player:InMelee(scanner.nearTarget)
+            and Player:IsFacing(scanner.nearTarget)
+            and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+    end):SetTarget(function() return scanner.nearTarget end)
+)
+DpsAPL:AddSpell(
+    ThunderFocusTea:CastableIf(function(self)
+        local GetEnemiesInRange = function(range) local count = 0; Bastion.UnitManager:EnumEnemies(function(unit) if unit:GetDistance(Player) <= range and unit:IsAffectingCombat() then count = count + 1 end end); return count end
+        local ShouldUseCrackling = function(unit) return CracklingJadeLightning:IsKnownAndUsable() and unit:IsValid() and canDamage(unit) and not Player:IsMoving() and waitingGCDcast(CracklingJadeLightning) and Player:GetAuras():FindMy(JadeEmpowerment):IsUp() and not Player:IsCastingOrChanneling() and not stopCasting() end
+        return self:IsKnownAndUsable()
+            and not Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
+            and not Player:IsCastingOrChanneling()
+            and self:GetCharges() >= 2
+            and GetEnemiesInRange(40) >= 5
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and scanner.rangeTarget:GetHealth() > 2000000
+            and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()
+    end):SetTarget(Player):OnCast(function()
+        if ShouldUseCrackling(scanner.rangeTarget) and waitingGCD() then
+            CracklingJadeLightning:Cast(scanner.rangeTarget)
+        end
+    end)
+)
+DpsAPL:AddSpell(
+    CracklingJadeLightning:CastableIf(function(self)
+        local ShouldUseCrackling = function(unit) return CracklingJadeLightning:IsKnownAndUsable() and unit:IsValid() and canDamage(unit) and not Player:IsMoving() and waitingGCDcast(CracklingJadeLightning) and Player:GetAuras():FindMy(JadeEmpowerment):IsUp() and not Player:IsCastingOrChanneling() and not stopCasting() end
+        return self:IsKnownAndUsable()
+            and not Player:IsCastingOrChanneling()
+            and ShouldUseCrackling(scanner.rangeTarget)
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and scanner.rangeTarget:GetHealth() > 2000000
+            and waitingGCD()
+    end):SetTarget(function() return scanner.rangeTarget end)
+)
+DpsAPL:AddSpell(
+    SpinningCraneKick:CastableIf(function(self)
+        local GetEnemiesInRange = function(range) local count = 0; Bastion.UnitManager:EnumEnemies(function(unit) if unit:GetDistance(Player) <= range and unit:IsAffectingCombat() then count = count + 1 end end); return count end
+        return self:IsKnownAndUsable()
+            and not Player:IsCastingOrChanneling()
+            and GetEnemiesInRange(8) >= 4
+            and Player:GetAuras():FindMy(AwakenedJadefire):IsUp()
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4
+            and Player:GetAuras():FindMy(AncientConcordance):IsDown()
+    end):SetTarget(Player)
+)
+DpsAPL:AddSpell(
+    TigerPalm:CastableIf(function(self)
+        return scanner.nearTarget:IsValid()
+            and self:IsKnownAndUsable()
+            and not Player:IsCastingOrChanneling()
+            and Player:InMelee(scanner.nearTarget)
+            and Player:IsFacing(scanner.nearTarget)
+    end):SetTarget(function() return scanner.nearTarget end)
+)
+ToDAPL:AddSpell(
+    TouchOfDeath:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and not Player:IsCastingOrChanneling()
+            and scanner.touchOfDeathTarget:IsValid()
+            and Player:IsFacing(scanner.touchOfDeathTarget)
+            and Player:InMelee(scanner.touchOfDeathTarget)
+    end):SetTarget(function() return scanner.touchOfDeathTarget end)
+)
+manaAPL:AddSpell(
+    ManaTea:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+    end):SetTarget(Player)
+)
 
 RestoMonkModule:Sync(function()
     scanner:Update()
