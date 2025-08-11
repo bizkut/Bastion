@@ -7,8 +7,8 @@ local MonkData = Bastion.require('MonkData')
 
 -- Helper functions
 local function canDamage(unit)
-    local Paralysis = Bastion.SpellBook:GetSpell(115078)
-    local Polymorph = Bastion.SpellBook:GetSpell(118)
+    local Paralysis = Bastion.Globals.SpellBook:GetSpell(115078)
+    local Polymorph = Bastion.Globals.SpellBook:GetSpell(118)
     if unit:GetAuras():FindAny(Paralysis):IsUp() or unit:GetAuras():FindAny(Polymorph):IsUp() then
         return false
     end
@@ -32,7 +32,7 @@ local function GetRandomCocoonDelay()
 end
 
 local function dispelCheck(aura)
-    local ImprovedDetox = Bastion.SpellBook:GetSpell(388874)
+    local ImprovedDetox = Bastion.Globals.SpellBook:GetSpell(388874)
     if aura:IsDebuff() and aura:IsUp() then
         if aura:GetDispelType() == 'Poison' or aura:GetDispelType() == 'Disease' then
             if ImprovedDetox:IsKnown() then
@@ -121,12 +121,12 @@ function UnitScanner:Update()
 
     local Player = Bastion.UnitManager:Get('player')
     local Target = Bastion.UnitManager:Get('target')
-    local RenewingMistBuff = Bastion.SpellBook:GetSpell(119611)
-    local EnvelopingMist = Bastion.SpellBook:GetSpell(124682)
-    local LifeCocoon = Bastion.SpellBook:GetSpell(116849)
-    local BlessingofProtection = Bastion.SpellBook:GetSpell(1022)
-    local DivineShield = Bastion.SpellBook:GetSpell(642)
-    local ImprovedToD = Bastion.SpellBook:GetSpell(322113)
+    local RenewingMistBuff = Bastion.Globals.SpellBook:GetSpell(119611)
+    local EnvelopingMist = Bastion.Globals.SpellBook:GetSpell(124682)
+    local LifeCocoon = Bastion.Globals.SpellBook:GetSpell(116849)
+    local BlessingofProtection = Bastion.Globals.SpellBook:GetSpell(1022)
+    local DivineShield = Bastion.Globals.SpellBook:GetSpell(642)
+    local ImprovedToD = Bastion.Globals.SpellBook:GetSpell(322113)
 
     -- Scan friendly units
     Bastion.UnitManager:EnumFriends(function(unit)
