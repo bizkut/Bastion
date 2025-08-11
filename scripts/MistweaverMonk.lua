@@ -1350,7 +1350,6 @@ DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and BusterTargetTFT:IsValid() and ShouldUseEnvelopingMist(BusterTargetTFT)
-            and BusterTargetTFT:GetRealizedHP() < 90
             and self:GetCharges() >= 2
     end):SetTarget(Player):OnCast(function()
         EnvelopingMist:Cast(BusterTargetTFT)
