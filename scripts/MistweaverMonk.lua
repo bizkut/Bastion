@@ -799,15 +799,11 @@ local function scanEnemies()
         end
 
         -- Buster Target Logic
-        if unit:IsCasting() and not unit:IsInterruptible() and MythicPlusUtils:CastingCriticalBusters(unit) then
+        if unit:IsCastingOrChanneling() and not unit:IsInterruptible() and MythicPlusUtils:CastingCriticalBusters(unit) then
             if not cachedUnits.busterTarget then -- Only need one
                 local castTarget = Bastion.UnitManager:Get(ObjectCastingTarget(unit:GetOMToken()))
                 if castTarget and Player:GetDistance(castTarget) <= 40 and Player:CanSee(castTarget) and castTarget:IsAlive() then
                     cachedUnits.busterTarget = castTarget
-                elseif cachedUnits.tankTarget and cachedUnits.tankTarget:IsTanking(unit) and Player:GetDistance(cachedUnits.tankTarget) <= 40 and Player:CanSee(cachedUnits.tankTarget) and cachedUnits.tankTarget:IsAlive() then
-                    cachedUnits.busterTarget = cachedUnits.tankTarget
-                else
-                    cachedUnits.busterTarget = cachedUnits.tankTarget2 or cachedUnits.tankTarget
                 end
             end
         end
