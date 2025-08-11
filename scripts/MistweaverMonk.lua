@@ -91,6 +91,11 @@ local debuffThresholds = {}
 local loggedDebuffs = {}
 local cocoonThresholds = {}
 local autoTarget = {}
+local isCastingEnveloping = false
+local hasUsedOffGCDDefensive = false
+local hasUsedOffGCDInterrupt = false
+local hasUsedOffGCDDps = false
+
 -- Add this helper function near the top of the file
 
 -- Add this helper function near the top of the file, after the SpellBook initialization
@@ -118,12 +123,6 @@ local function GetRandomCocoonDelay()
     return math.random(500, 900) / 1000
 end
 
-local function recentInterrupt()
-    if (LegSweep:GetTimeSinceLastCastAttempt() < 2) or (SpearHandStrike:GetTimeSinceLastCastAttempt() < 2) or (Paralysis:GetTimeSinceLastCastAttempt() < 2) then
-        return true
-    end
-    return false
-end
 local dispelList = {
     [378020] = true,
     [374389] = true,
@@ -627,8 +626,7 @@ local function scanFriends()
     cachedUnits.envelopeLowest = nil
     cachedUnits.envelopCount = 0
     cachedUnits.dispelTarget = nil
-    cachedUnits.debuffTargetTFT = nil
-    cachedUnits.debuffTargetHardcast = nil
+    cachedUnits.debuffTarget = nil
     cachedUnits.tankTarget = Player -- Default to player
     cachedUnits.tankTarget2 = nil
 
@@ -637,6 +635,7 @@ local function scanFriends()
     local renewLowestHP = math.huge
     local envelopeLowestHP = math.huge
     local dispelLowestHP = math.huge
+    local debuffLowestHP = math.huge
 
     Bastion.UnitManager:EnumFriends(function(unit)
         if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) then
@@ -713,12 +712,9 @@ local function scanFriends()
         end
 
         if hasBadDebuff and ShouldUseEnvelopingMist(unit) then
-            if not cachedUnits.debuffTargetTFT and not cachedUnits.debuffTargetHardcast then -- take the first valid one
-                if ThunderFocusTea:IsKnownAndUsable() and ThunderFocusTea:GetCharges() > 0 then
-                    cachedUnits.debuffTargetTFT = unit
-                else
-                    cachedUnits.debuffTargetHardcast = unit
-                end
+            if realizedHP < debuffLowestHP then
+                cachedUnits.debuffTarget = unit
+                debuffLowestHP = realizedHP
             end
         end
     end)
@@ -729,8 +725,7 @@ local function scanFriends()
     if not cachedUnits.renewLowest then cachedUnits.renewLowest = Bastion.UnitManager:Get('none') end
     if not cachedUnits.envelopeLowest then cachedUnits.envelopeLowest = Bastion.UnitManager:Get('none') end
     if not cachedUnits.dispelTarget then cachedUnits.dispelTarget = Bastion.UnitManager:Get('none') end
-    if not cachedUnits.debuffTargetTFT then cachedUnits.debuffTargetTFT = Bastion.UnitManager:Get('none') end
-    if not cachedUnits.debuffTargetHardcast then cachedUnits.debuffTargetHardcast = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.debuffTarget then cachedUnits.debuffTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.tankTarget2 then cachedUnits.tankTarget2 = Bastion.UnitManager:Get('none') end
 end
 
@@ -742,8 +737,7 @@ local function scanEnemies()
     cachedUnits.interruptTargetMelee = nil
     cachedUnits.interruptTargetRange = nil
     cachedUnits.interruptTargetStun = nil
-    cachedUnits.busterTargetTFT = nil
-    cachedUnits.busterTargetHardcast = nil
+    cachedUnits.busterTarget = nil
     cachedUnits.sootheTarget = nil
     cachedUnits.hasNoAggroTarget = false
 
@@ -807,14 +801,10 @@ local function scanEnemies()
 
         -- Buster Target Logic
         if unit:IsCastingOrChanneling() and not unit:IsInterruptible() and MythicPlusUtils:CastingCriticalBusters(unit) then
-            if not cachedUnits.busterTargetTFT and not cachedUnits.busterTargetHardcast then -- Only find one
+            if not cachedUnits.busterTarget then -- Only find one
                 local busterTargetUnit = Bastion.UnitManager:Get(ObjectCastingTarget(unit:GetOMToken()))
                 if busterTargetUnit and Player:GetDistance(busterTargetUnit) <= 40 and Player:CanSee(busterTargetUnit) and busterTargetUnit:IsAlive() then
-                    if ThunderFocusTea:IsKnownAndUsable() and ThunderFocusTea:GetCharges() >= 2 then
-                        cachedUnits.busterTargetTFT = busterTargetUnit
-                    else
-                        cachedUnits.busterTargetHardcast = busterTargetUnit
-                    end
+                    cachedUnits.busterTarget = busterTargetUnit
                 end
             end
         end
@@ -854,8 +844,7 @@ local function scanEnemies()
     if not cachedUnits.interruptTargetMelee then cachedUnits.interruptTargetMelee = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetRange then cachedUnits.interruptTargetRange = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetStun then cachedUnits.interruptTargetStun = Bastion.UnitManager:Get('none') end
-    if not cachedUnits.busterTargetTFT then cachedUnits.busterTargetTFT = Bastion.UnitManager:Get('none') end
-    if not cachedUnits.busterTargetHardcast then cachedUnits.busterTargetHardcast = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.busterTarget then cachedUnits.busterTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.sootheTarget then cachedUnits.sootheTarget = Bastion.UnitManager:Get('none') end
 end
 
@@ -871,8 +860,7 @@ local DispelTarget = Bastion.UnitManager:CreateCustomUnit('dispel', function()
     end
     return cachedUnits.dispelTarget or Bastion.UnitManager:Get('none')
 end)
-local DebuffTargetTFT = Bastion.UnitManager:CreateCustomUnit('debuffTFT', function() return cachedUnits.debuffTargetTFT or Bastion.UnitManager:Get('none') end)
-local DebuffTargetHardcast = Bastion.UnitManager:CreateCustomUnit('debuffHardcast', function() return cachedUnits.debuffTargetHardcast or Bastion.UnitManager:Get('none') end)
+local DebuffTarget = Bastion.UnitManager:CreateCustomUnit('debuff', function() return cachedUnits.debuffTarget or Bastion.UnitManager:Get('none') end)
 local TankTarget = Bastion.UnitManager:CreateCustomUnit('tanktarget', function() return cachedUnits.tankTarget or Player end)
 local TankTarget2 = Bastion.UnitManager:CreateCustomUnit('tanktarget2', function() return cachedUnits.tankTarget2 or Bastion.UnitManager:Get('none') end)
 
@@ -882,8 +870,7 @@ local TouchOfDeathTarget = Bastion.UnitManager:CreateCustomUnit('touchofdeath', 
 local InterruptTargetMelee = Bastion.UnitManager:CreateCustomUnit('interrupttargetmelee', function() return cachedUnits.interruptTargetMelee or Bastion.UnitManager:Get('none') end)
 local InterruptTargetRange = Bastion.UnitManager:CreateCustomUnit('interrupttargetrange', function() return cachedUnits.interruptTargetRange or Bastion.UnitManager:Get('none') end)
 local InterruptTargetStun = Bastion.UnitManager:CreateCustomUnit('interrupttargetstun', function() return cachedUnits.interruptTargetStun or Bastion.UnitManager:Get('none') end)
-local BusterTargetTFT = Bastion.UnitManager:CreateCustomUnit('bustertargetTFT', function() return cachedUnits.busterTargetTFT or Bastion.UnitManager:Get('none') end)
-local BusterTargetHardcast = Bastion.UnitManager:CreateCustomUnit('bustertargetHardcast', function() return cachedUnits.busterTargetHardcast or Bastion.UnitManager:Get('none') end)
+local BusterTarget = Bastion.UnitManager:CreateCustomUnit('bustertarget', function() return cachedUnits.busterTarget or Bastion.UnitManager:Get('none') end)
 local sootheTarget = Bastion.UnitManager:CreateCustomUnit('soothe', function() return cachedUnits.sootheTarget or Bastion.UnitManager:Get('none') end)
 
 local function nearTargetBigger()
@@ -960,7 +947,10 @@ InterruptAPL:AddSpell(
         return self:IsKnownAndUsable() and InterruptTargetMelee:IsValid() and Player:IsFacing(InterruptTargetMelee)
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and not recentInterrupt()
-    end):SetTarget(InterruptTargetMelee)
+            and not hasUsedOffGCDInterrupt
+    end):SetTarget(InterruptTargetMelee):OnCast(function()
+        hasUsedOffGCDInterrupt = true
+    end)
 )
 
 InterruptAPL:AddSpell(
@@ -969,7 +959,10 @@ InterruptAPL:AddSpell(
             Player:IsFacing(InterruptTargetMelee)
             --and (not Player:IsCastingOrChanneling()  or spinningCrane() or checkManaTea())
             and not recentInterrupt()
-    end):SetTarget(InterruptTargetMelee)
+            and not hasUsedOffGCDInterrupt
+    end):SetTarget(InterruptTargetMelee):OnCast(function()
+        hasUsedOffGCDInterrupt = true
+    end)
 )
 
 InterruptAPL:AddSpell(
@@ -977,7 +970,10 @@ InterruptAPL:AddSpell(
         return self:IsKnownAndUsable() and InterruptTargetRange:IsValid() and Player:IsFacing(InterruptTargetRange)
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and not recentInterrupt()
-    end):SetTarget(InterruptTargetRange)
+            and not hasUsedOffGCDInterrupt
+    end):SetTarget(InterruptTargetRange):OnCast(function()
+        hasUsedOffGCDInterrupt = true
+    end)
 )
 
 InterruptAPL:AddSpell(
@@ -995,7 +991,10 @@ InterruptAPL:AddSpell(
             Player:GetDistance(InterruptTargetStun) < 20
         --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
         --and not recentInterrupt()
-    end):SetTarget(InterruptTargetStun)
+        and not hasUsedOffGCDInterrupt
+    end):SetTarget(InterruptTargetStun):OnCast(function()
+        hasUsedOffGCDInterrupt = true
+    end)
 )
 
 
@@ -1096,10 +1095,11 @@ TrinketAPL:AddItem(
             and not Player:IsCastingOrChanneling()
             and waitingGCD()
             and (Player:GetPartyHPAround(40, 80) >= 2 or nearTarget:IsBoss())
+            and not hasUsedOffGCDDefensive
         -- and Player:GetRealizedHP() < 50
-    end):SetTarget(Player) --:OnUse(function(self)
---return waitingGCD()
---end)
+    end):SetTarget(Player):OnUse(function()
+        hasUsedOffGCDDefensive = true
+    end)
 )
 
 CooldownAPL:AddSpell(
@@ -1138,7 +1138,10 @@ CooldownAPL:AddSpell(
             and not stopCasting()
             and ThunderFocusTea:GetCharges() < 1
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-    end):SetTarget(EnvelopeLowest):PreCast(function()
+            and not isCastingEnveloping
+    end):SetTarget(EnvelopeLowest):OnCast(function()
+        isCastingEnveloping = true
+    end):PreCast(function()
         --UpdateManaTeaStacks()
         if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 then
             manaAPL:Execute()
@@ -1194,10 +1197,11 @@ DefensiveAPL:AddSpell(
     ExpelHarm:CastableIf(function(self)
         return Player:GetHP() < 70 and self:IsKnownAndUsable()
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
-        --and waitingGCD()
+            and waitingGCD()
+            and not hasUsedOffGCDDefensive
         --and (not Player:IsCastingOrChanneling() or spinningCrane())
     end):SetTarget(Player):OnCast(function(self)
-        return waitingGCD()
+        hasUsedOffGCDDefensive = true
     end)
 )
 
@@ -1218,8 +1222,10 @@ DefensiveAPL:AddItem(
         return self:IsUsable()
             and Player:GetHP() < 30
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
+            and not hasUsedOffGCDDefensive
         --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
     end):SetTarget(Player):OnUse(function(self)
+        hasUsedOffGCDDefensive = true
         return waitingGCD()
     end)
 )
@@ -1242,8 +1248,10 @@ DefensiveAPL:AddSpell(
         return self:IsKnownAndUsable()
             and Player:GetRealizedHP() < 40
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
+            and not hasUsedOffGCDDefensive
         --and waitingGCD()
     end):SetTarget(Player):OnCast(function(self)
+        hasUsedOffGCDDefensive = true
         return waitingGCD()
     end)
 )
@@ -1253,8 +1261,10 @@ DefensiveAPL:AddSpell(
         return self:IsKnownAndUsable()
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetRealizedHP() < 60
+            and not hasUsedOffGCDDefensive
         --and waitingGCD()
     end):SetTarget(Player):OnCast(function(self)
+        hasUsedOffGCDDefensive = true
         return waitingGCD()
     end)
 )
@@ -1294,18 +1304,23 @@ DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and DebuffTargetTFT:IsValid() and ShouldUseEnvelopingMist(DebuffTargetTFT)
+            and DebuffTarget:IsValid() and ShouldUseEnvelopingMist(DebuffTarget)
+            and not isCastingEnveloping
     end):SetTarget(Player):OnCast(function()
-        EnvelopingMist:Cast(DebuffTargetTFT)
+        isCastingEnveloping = true
+        EnvelopingMist:Cast(DebuffTarget)
     end)
 )
 
 DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
-        return DebuffTargetHardcast:IsValid() and ShouldUseEnvelopingMist(DebuffTargetHardcast)
+        return DebuffTarget:IsValid() and ShouldUseEnvelopingMist(DebuffTarget)
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
             and not Player:IsMoving() and not stopCasting()
-    end):SetTarget(DebuffTargetHardcast)
+            and not isCastingEnveloping
+    end):SetTarget(DebuffTarget):OnCast(function()
+        isCastingEnveloping = true
+    end)
 )
 
 DefensiveAPL:AddSpell(
@@ -1313,8 +1328,10 @@ DefensiveAPL:AddSpell(
         return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
             and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetRealizedHP() < 60)
+            and not isCastingEnveloping
         --and Player:IsAffectingCombat()
     end):SetTarget(Player):OnCast(function()
+        isCastingEnveloping = true
         EnvelopingMist:Cast(EnvelopeLowest)
     end)
 )
@@ -1324,7 +1341,10 @@ DefensiveAPL:AddSpell(
         return EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetRealizedHP() < 60)
             and Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-    end):SetTarget(EnvelopeLowest)
+            and not isCastingEnveloping
+    end):SetTarget(EnvelopeLowest):OnCast(function()
+        isCastingEnveloping = true
+    end)
 )
 
 --[[
@@ -1355,17 +1375,22 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and BusterTargetTFT:IsValid() and ShouldUseEnvelopingMist(BusterTargetTFT)
+            and BusterTarget:IsValid() and ShouldUseEnvelopingMist(BusterTarget)
+            and not isCastingEnveloping
     end):SetTarget(Player):OnCast(function()
-        EnvelopingMist:Cast(BusterTargetTFT)
+        isCastingEnveloping = true
+        EnvelopingMist:Cast(BusterTarget)
     end)
 )
 
 DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
-        return BusterTargetHardcast:IsValid() and ShouldUseEnvelopingMist(BusterTargetHardcast)
+        return BusterTarget:IsValid() and ShouldUseEnvelopingMist(BusterTarget)
             and not Player:IsMoving() and not stopCasting()
-    end):SetTarget(BusterTargetHardcast)
+            and not isCastingEnveloping
+    end):SetTarget(BusterTarget):OnCast(function()
+        isCastingEnveloping = true
+    end)
 )
 
 
@@ -1382,7 +1407,9 @@ StompAPL:AddSpell(
             --and Player:IsWithinCone(TankTarget,90,40)
             --and waitingGCDcast(JadefireStomp)
             and waitingGCD()
+            and not hasUsedOffGCDDps
     end):SetTarget(Player):OnCast(function()
+        hasUsedOffGCDDps = true
         if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
             FaceObject(nearTarget:GetOMToken())
         end
@@ -1422,7 +1449,10 @@ DpsAPL:AddSpell(
             and not stopCasting()
             and waitingGCD()
             and mostEnemies():IsValid()
-    end):SetTarget(Player):PreCast(function()
+            and not hasUsedOffGCDDps
+    end):SetTarget(Player):OnCast(function()
+        hasUsedOffGCDDps = true
+    end):PreCast(function()
         if not Player:IsFacing(mostEnemies()) and not Player:IsMoving() then
             FaceObject(mostEnemies():GetOMToken())
         end
@@ -1534,6 +1564,10 @@ manaAPL:AddSpell(
 
 -- Module Sync
 RestoMonkModule:Sync(function()
+    isCastingEnveloping = false
+    hasUsedOffGCDDefensive = false
+    hasUsedOffGCDInterrupt = false
+    hasUsedOffGCDDps = false
     -- Scan units once per frame
     scanFriends()
     scanEnemies()
