@@ -736,7 +736,8 @@ local function scanEnemies()
     cachedUnits.interruptTargetMelee = nil
     cachedUnits.interruptTargetRange = nil
     cachedUnits.interruptTargetStun = nil
-    cachedUnits.busterTarget = nil
+    cachedUnits.busterTargetTFT = nil
+    cachedUnits.busterTargetHardcast = nil
     cachedUnits.sootheTarget = nil
     cachedUnits.hasNoAggroTarget = false
 
@@ -800,10 +801,14 @@ local function scanEnemies()
 
         -- Buster Target Logic
         if unit:IsCastingOrChanneling() and not unit:IsInterruptible() and MythicPlusUtils:CastingCriticalBusters(unit) then
-            if not cachedUnits.busterTarget then -- Only need one
-                local castTarget = Bastion.UnitManager:Get(ObjectCastingTarget(unit:GetOMToken()))
-                if castTarget and Player:GetDistance(castTarget) <= 40 and Player:CanSee(castTarget) and castTarget:IsAlive() then
-                    cachedUnits.busterTarget = castTarget
+            if not cachedUnits.busterTargetTFT and not cachedUnits.busterTargetHardcast then -- Only find one
+                local busterTargetUnit = Bastion.UnitManager:Get(ObjectCastingTarget(unit:GetOMToken()))
+                if busterTargetUnit and Player:GetDistance(busterTargetUnit) <= 40 and Player:CanSee(busterTargetUnit) and busterTargetUnit:IsAlive() then
+                    if ThunderFocusTea:IsKnownAndUsable() and ThunderFocusTea:GetCharges() >= 2 then
+                        cachedUnits.busterTargetTFT = busterTargetUnit
+                    else
+                        cachedUnits.busterTargetHardcast = busterTargetUnit
+                    end
                 end
             end
         end
@@ -843,7 +848,8 @@ local function scanEnemies()
     if not cachedUnits.interruptTargetMelee then cachedUnits.interruptTargetMelee = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetRange then cachedUnits.interruptTargetRange = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetStun then cachedUnits.interruptTargetStun = Bastion.UnitManager:Get('none') end
-    if not cachedUnits.busterTarget then cachedUnits.busterTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.busterTargetTFT then cachedUnits.busterTargetTFT = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.busterTargetHardcast then cachedUnits.busterTargetHardcast = Bastion.UnitManager:Get('none') end
     if not cachedUnits.sootheTarget then cachedUnits.sootheTarget = Bastion.UnitManager:Get('none') end
 end
 
@@ -869,7 +875,8 @@ local TouchOfDeathTarget = Bastion.UnitManager:CreateCustomUnit('touchofdeath', 
 local InterruptTargetMelee = Bastion.UnitManager:CreateCustomUnit('interrupttargetmelee', function() return cachedUnits.interruptTargetMelee or Bastion.UnitManager:Get('none') end)
 local InterruptTargetRange = Bastion.UnitManager:CreateCustomUnit('interrupttargetrange', function() return cachedUnits.interruptTargetRange or Bastion.UnitManager:Get('none') end)
 local InterruptTargetStun = Bastion.UnitManager:CreateCustomUnit('interrupttargetstun', function() return cachedUnits.interruptTargetStun or Bastion.UnitManager:Get('none') end)
-local BusterTarget = Bastion.UnitManager:CreateCustomUnit('bustertarget', function() return cachedUnits.busterTarget or Bastion.UnitManager:Get('none') end)
+local BusterTargetTFT = Bastion.UnitManager:CreateCustomUnit('bustertargetTFT', function() return cachedUnits.busterTargetTFT or Bastion.UnitManager:Get('none') end)
+local BusterTargetHardcast = Bastion.UnitManager:CreateCustomUnit('bustertargetHardcast', function() return cachedUnits.busterTargetHardcast or Bastion.UnitManager:Get('none') end)
 local sootheTarget = Bastion.UnitManager:CreateCustomUnit('soothe', function() return cachedUnits.sootheTarget or Bastion.UnitManager:Get('none') end)
 
 local function nearTargetBigger()
@@ -1342,22 +1349,19 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            --and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and BusterTarget:IsValid() and ShouldUseEnvelopingMist(BusterTarget)
-            and BusterTarget:GetRealizedHP() < 90
+            and BusterTargetTFT:IsValid() and ShouldUseEnvelopingMist(BusterTargetTFT)
+            and BusterTargetTFT:GetRealizedHP() < 90
             and self:GetCharges() >= 2
-        --and Player:IsAffectingCombat()
     end):SetTarget(Player):OnCast(function()
-        EnvelopingMist:Cast(BusterTarget)
+        EnvelopingMist:Cast(BusterTargetTFT)
     end)
 )
 
 DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
-        return BusterTarget:IsValid() and ShouldUseEnvelopingMist(BusterTarget)
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() -- Ensure we don't double cast with the TFT version
+        return BusterTargetHardcast:IsValid() and ShouldUseEnvelopingMist(BusterTargetHardcast)
             and not Player:IsMoving() and not stopCasting()
-    end):SetTarget(BusterTarget)
+    end):SetTarget(BusterTargetHardcast)
 )
 
 
