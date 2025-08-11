@@ -235,7 +235,7 @@ function Bastion.Bootstrap()
         print(str)
     end
 
-    local Command = Bastion.Command:New('pele')
+    local Command = Bastion.Command:New('bastion')
 
     Command:Register('toggle', 'Toggle bastion on/off', function()
         Bastion.Enabled = not Bastion.Enabled
@@ -280,17 +280,21 @@ function Bastion.Bootstrap()
         if C_SpellBook.GetSpellBookSkillLineInfo then
             for _, i in pairs{GetProfessions()} do
                 local skillLineInfo = C_SpellBook.GetSpellBookSkillLineInfo(i)
-                local offset, numSlots = skillLineInfo.itemIndexOffset, skillLineInfo.numSpellBookItems
-                    local name, subName = C_SpellBook.GetSpellBookItemName(j, Enum.SpellBookSpellBank.Player)
-                    local spellID = select(2,C_SpellBook.GetSpellBookItemType(j, Enum.SpellBookSpellBank.Player))
-                    if spellID then
-                        spellName = name:gsub("[%W%s]", "")
-                        WriteFile('bastion-' .. UnitClass('player') .. '-' .. rand ..
-                                      '.lua',
-                                  "local " .. spellName ..
-                                      " = Bastion.Globals.SpellBook:GetSpell(" ..
-                                      spellID .. ")\n", true)
+                if skillLineInfo then
+                    local offset, numSlots = skillLineInfo.itemIndexOffset, skillLineInfo.numSpellBookItems
+                    for j = offset+1, offset+numSlots do
+                        local name, subName = C_SpellBook.GetSpellBookItemName(j, Enum.SpellBookSpellBank.Player)
+                        local spellID = select(2,C_SpellBook.GetSpellBookItemType(j, Enum.SpellBookSpellBank.Player))
+                        if spellID then
+                            spellName = name:gsub("[%W%s]", "")
+                            WriteFile('bastion-' .. UnitClass('player') .. '-' .. rand ..
+                                          '.lua',
+                                      "local " .. spellName ..
+                                          " = Bastion.Globals.SpellBook:GetSpell(" ..
+                                          spellID .. ")\n", true)
+                        end
                     end
+                end
             end
         end
         local numSpells, petToken = C_SpellBook.HasPetSpells()  -- nil if pet does not have spellbook, 'petToken' will usually be "PET"
