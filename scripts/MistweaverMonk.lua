@@ -729,7 +729,126 @@ local function scanFriends()
 end
 
 local function scanEnemies()
-    -- This will be populated later
+    -- Reset cached enemy data
+    cachedUnits.nearTarget = nil
+    cachedUnits.rangeTarget = nil
+    cachedUnits.touchOfDeathTarget = nil
+    cachedUnits.interruptTargetMelee = nil
+    cachedUnits.interruptTargetRange = nil
+    cachedUnits.interruptTargetStun = nil
+    cachedUnits.busterTarget = nil
+    cachedUnits.sootheTarget = nil
+    cachedUnits.hasNoAggroTarget = false
+
+    local nearTargetDistance = math.huge
+    local rangeTargetHealth = 0
+
+    Bastion.UnitManager:EnumEnemies(function(unit)
+        if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) then
+            return
+        end
+
+        if not unit:IsAffectingCombat() and Player:IsFacing(unit) then
+            cachedUnits.hasNoAggroTarget = true
+        end
+
+        local isVisibleCone = Player:IsWithinCone(unit, 90, 40)
+
+        -- nearTarget and rangeTarget logic
+        if isVisibleCone and unit:IsAffectingCombat() and canDamage(unit) then
+            local distance = Player:GetCombatDistance(unit)
+            if distance < nearTargetDistance then
+                cachedUnits.nearTarget = unit
+                nearTargetDistance = distance
+            end
+
+            local health = unit:GetHealth()
+            if health > rangeTargetHealth then
+                cachedUnits.rangeTarget = unit
+                rangeTargetHealth = health
+            end
+        end
+
+        -- Touch of Death logic
+        if Player:GetDistance(unit) <= 5 and canDamage(unit) then
+            if (ImprovedToD:IsKnown() and unit:GetHP() < 15 and unit:GetHealth() >= Player:GetMaxHealth() * 0.35) or
+               (unit:GetHealth() <= Player:GetMaxHealth() * 0.15 or Player:GetHealth() > unit:GetMaxHealth()) then
+                if not cachedUnits.touchOfDeathTarget then -- Get first valid
+                    cachedUnits.touchOfDeathTarget = unit
+                end
+            end
+        end
+
+        -- Interrupt logic
+        if unit:IsCastingOrChanneling() then
+            if Player:InMelee(unit) and (MythicPlusUtils:CastingCriticalKick(unit, GetRandomInterruptDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomInterruptDelay()))) then
+                if not cachedUnits.interruptTargetMelee then
+                    cachedUnits.interruptTargetMelee = unit
+                end
+            end
+            if Player:GetDistance(unit) <= 20 and not Player:InMelee(unit) and (MythicPlusUtils:CastingCriticalKick(unit, GetRandomInterruptDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomInterruptDelay()))) then
+                 if not cachedUnits.interruptTargetRange then
+                    cachedUnits.interruptTargetRange = unit
+                end
+            end
+            if Player:GetDistance(unit) <= 20 and (MythicPlusUtils:CastingCriticalStun(unit, GetRandomStunDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomStunDelay(), true))) then
+                 if not cachedUnits.interruptTargetStun then
+                    cachedUnits.interruptTargetStun = unit
+                end
+            end
+        end
+
+        -- Buster Target Logic
+        if unit:IsCasting() and not unit:IsInterruptible() and MythicPlusUtils:CastingCriticalBusters(unit) then
+            if not cachedUnits.busterTarget then -- Only need one
+                local castTarget = Bastion.UnitManager:Get(ObjectCastingTarget(unit:GetOMToken()))
+                if castTarget and Player:GetDistance(castTarget) <= 40 and Player:CanSee(castTarget) and castTarget:IsAlive() then
+                    cachedUnits.busterTarget = castTarget
+                elseif cachedUnits.tankTarget and cachedUnits.tankTarget:IsTanking(unit) and Player:GetDistance(cachedUnits.tankTarget) <= 40 and Player:CanSee(cachedUnits.tankTarget) and cachedUnits.tankTarget:IsAlive() then
+                    cachedUnits.busterTarget = cachedUnits.tankTarget
+                else
+                    cachedUnits.busterTarget = cachedUnits.tankTarget2 or cachedUnits.tankTarget
+                end
+            end
+        end
+
+        -- Soothe Target Logic
+        if not cachedUnits.sootheTarget then
+            for _, auras in pairs(unit:GetAuras():GetUnitAuras()) do
+                for _, aura in pairs(auras) do
+                    if sootheList[aura:GetSpell():GetID()] then
+                        cachedUnits.sootheTarget = unit
+                        return -- break inner loops
+                    end
+                end
+            end
+        end
+    end)
+
+    -- Auto-targeting logic from nearTarget
+    if cachedUnits.nearTarget then
+        if cachedUnits.nearTarget:GetGUID() ~= autoTarget["Target"] then
+             autoTarget["Target"] = cachedUnits.nearTarget:GetGUID()
+             if not cachedUnits.nearTarget:IsTarget() then
+                TargetUnit(cachedUnits.nearTarget:GetOMToken())
+            end
+        end
+    else
+        -- Handle case where player's manual target is valid
+        if Target:IsTarget() and Target:IsAlive() and Target:IsValid() and Target:IsEnemy() and canDamage(Target) and Player:CanSee(Target) and Player:IsWithinCombatDistance(Target, 40) and Player:IsFacing(Target) then
+            cachedUnits.nearTarget = Target
+        end
+    end
+
+    -- Finalize default units
+    if not cachedUnits.nearTarget then cachedUnits.nearTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.rangeTarget then cachedUnits.rangeTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.touchOfDeathTarget then cachedUnits.touchOfDeathTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.interruptTargetMelee then cachedUnits.interruptTargetMelee = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.interruptTargetRange then cachedUnits.interruptTargetRange = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.interruptTargetStun then cachedUnits.interruptTargetStun = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.busterTarget then cachedUnits.busterTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.sootheTarget then cachedUnits.sootheTarget = Bastion.UnitManager:Get('none') end
 end
 
 -- Custom Units (now getters for cached data)
@@ -748,214 +867,29 @@ local DebuffTarget = Bastion.UnitManager:CreateCustomUnit('debuff', function() r
 local TankTarget = Bastion.UnitManager:CreateCustomUnit('tanktarget', function() return cachedUnits.tankTarget or Player end)
 local TankTarget2 = Bastion.UnitManager:CreateCustomUnit('tanktarget2', function() return cachedUnits.tankTarget2 or Bastion.UnitManager:Get('none') end)
 
--- Dynamic target selection and threat management (TODO: Refactor these into scanEnemies)
-local nearTarget = Bastion.UnitManager:CreateCustomUnit('nearTarget', function(unit)
-    local target = nil
-    local distance = math.huge
-    local autoTar = autoTarget["Target"] or nil
-
-    if autoTar ~= Target:GetGUID() and Target:IsTarget() and Target:IsAlive() and Target:IsValid() and Target:IsEnemy() and canDamage(Target) and Player:CanSee(Target) and Player:IsWithinCombatDistance(Target, 40) and Player:IsFacing(Target) then
-        target = Target
-        return target
-    else
-        Bastion.UnitManager:EnumEnemies(function(unit)
-            if unit:IsDead() or not Player:CanSee(unit) or not unit:IsEnemy() or not canDamage(unit) or not Player:IsWithinCombatDistance(unit, 40) or not Player:IsWithinCone(unit, 90, 40) then
-                autoTarget["Target"] = nil
-                return false
-            end
-            if unit:IsAlive() and unit:IsAffectingCombat() and Player:CanSee(unit) and canDamage(unit) and Player:IsWithinCombatDistance(unit, 40) and Player:IsWithinCone(unit, 90, 40) then
-                local distanceunit = Player:GetCombatDistance(unit)
-                if distanceunit < distance then
-                    target = unit
-                    distance = distanceunit
-                end
-            end
-        end)
-        if target then
-            autoTarget["Target"] = target:GetGUID()
-            if not target:IsTarget() then
-                TargetUnit(target:GetOMToken())
-            end
-        end
-    end
-    return target or Bastion.UnitManager:Get('none')
-end)
-
-local rangeTarget = Bastion.UnitManager:CreateCustomUnit('rangeTarget', function(unit)
-    local target = nil
-    local health = 0
-
-    Bastion.UnitManager:EnumEnemies(function(unit)
-        if unit:IsDead() or not Player:IsWithinCombatDistance(unit, 40) or not Player:CanSee(unit) or not unit:IsAffectingCombat() or not Player:IsWithinCone(unit, 90, 40) or not canDamage(unit) then
-            return false
-        end
-        if unit:IsAlive() and unit:IsAffectingCombat() and Player:IsWithinCombatDistance(unit, 40) and Player:CanSee(unit) and Player:IsWithinCone(unit, 90, 40) and canDamage(unit) then
-            local healthunit = unit:GetHealth()
-            if healthunit > health then
-                target = unit
-                health = healthunit
-            end
-        end
-    end)
-    -- if Target:IsTarget() and not nearTarget:IsTarget() and Target:IsAlive() and Target:IsAffectingCombat() and Player:IsWithinCombatDistance(Target, 40) and Player:CanSee(Target) and canDamage(Target) then
-    --     target = Target
-    --     return target
-    -- end
-
-    return target or Bastion.UnitManager:Get('none')
-end)
+local nearTarget = Bastion.UnitManager:CreateCustomUnit('nearTarget', function() return cachedUnits.nearTarget or Bastion.UnitManager:Get('none') end)
+local rangeTarget = Bastion.UnitManager:CreateCustomUnit('rangeTarget', function() return cachedUnits.rangeTarget or Bastion.UnitManager:Get('none') end)
+local TouchOfDeathTarget = Bastion.UnitManager:CreateCustomUnit('touchofdeath', function() return cachedUnits.touchOfDeathTarget or Bastion.UnitManager:Get('none') end)
+local InterruptTargetMelee = Bastion.UnitManager:CreateCustomUnit('interrupttargetmelee', function() return cachedUnits.interruptTargetMelee or Bastion.UnitManager:Get('none') end)
+local InterruptTargetRange = Bastion.UnitManager:CreateCustomUnit('interrupttargetrange', function() return cachedUnits.interruptTargetRange or Bastion.UnitManager:Get('none') end)
+local InterruptTargetStun = Bastion.UnitManager:CreateCustomUnit('interrupttargetstun', function() return cachedUnits.interruptTargetStun or Bastion.UnitManager:Get('none') end)
+local BusterTarget = Bastion.UnitManager:CreateCustomUnit('bustertarget', function() return cachedUnits.busterTarget or Bastion.UnitManager:Get('none') end)
+local sootheTarget = Bastion.UnitManager:CreateCustomUnit('soothe', function() return cachedUnits.sootheTarget or Bastion.UnitManager:Get('none') end)
 
 local function nearTargetBigger()
-    local bigger = nearTarget
-    if rangeTarget:GetHealth() > nearTarget:GetHealth() then
-        bigger = rangeTarget
+    local bigger = cachedUnits.nearTarget or Bastion.UnitManager:Get('none')
+    if (cachedUnits.rangeTarget or Bastion.UnitManager:Get('none')):GetHealth() > bigger:GetHealth() then
+        bigger = cachedUnits.rangeTarget
     else
-        bigger = nearTarget
+        bigger = cachedUnits.nearTarget
     end
     return bigger
 end
 
 -- No Aggro units
 local function hasNoAggroTarget()
-    local found = false
-    Bastion.UnitManager:EnumEnemies(function(unit)
-        if unit:IsAlive() and Player:GetDistance(unit) < 40 and not unit:IsAffectingCombat() and Player:IsFacing(unit) and Player:CanSee(unit) then
-            found = true
-            return true -- break early when a match is found
-        end
-    end)
-    return found
+    return cachedUnits.hasNoAggroTarget or false
 end
-
--- Create a custom unit for finding a Touch of Death target
-local TouchOfDeathTarget = Bastion.UnitManager:CreateCustomUnit('touchofdeath', function(unit)
-    local todTarget = nil
-
-    Bastion.UnitManager:EnumEnemies(function(unit)
-        if unit:IsDead() or Player:GetDistance(unit) > 5 or not Player:CanSee(unit) or not canDamage(unit) then
-            return false
-        end
-        -- Check if unit is eligible for Touch of Death
-        if ImprovedToD:IsKnown() and (unit:GetHP() < 15) and (unit:GetHealth() >= Player:GetMaxHealth() * 0.35) then
-            todTarget = unit
-            return todTarget
-        end
-        --if unit:GetHP() <= Player:GetMaxHealth() * 0.15 or Player:GetHP() > unit:GetMaxHealth() then
-        if unit:GetHealth() <= Player:GetMaxHealth() * 0.15 or Player:GetHealth() > unit:GetMaxHealth() then
-            --if (Player:GetHealth() > unit:GetHealth()) and (Player:GetMaxHealth() < unit:GetMaxHealth()*2) then
-            todTarget = unit
-            --Target = unit
-            return todTarget
-        end
-    end)
-    return todTarget or Bastion.UnitManager:Get('none')
-end)
-
--- Create a custom unit for finding a interruptible target melee
-local InterruptTargetMelee = Bastion.UnitManager:CreateCustomUnit('interrupttargetmelee', function(unit)
-    local intTargetMelee = nil
-    Bastion.UnitManager:EnumEnemies(function(unit)
-        if unit:IsDead() or not Player:InMelee(unit) or not Player:CanSee(unit) or not unit:IsCastingOrChanneling() then
-            return false
-        end
-
-        if MythicPlusUtils:CastingCriticalKick(unit, GetRandomInterruptDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomInterruptDelay())) then
-            intTargetMelee = unit
-        end
-    end)
-
-    return intTargetMelee or Bastion.UnitManager:Get('none')
-end)
-
--- Create a custom unit for finding a interruptible target range
-local InterruptTargetRange = Bastion.UnitManager:CreateCustomUnit('interrupttargetrange', function(unit)
-    local intTargetRange = nil
-    Bastion.UnitManager:EnumEnemies(function(unit)
-        if unit:IsDead() or Player:GetDistance(unit) > 20 or Player:InMelee(unit) or not Player:CanSee(unit) or not unit:IsCastingOrChanneling() then
-            return false
-        end
-
-        if MythicPlusUtils:CastingCriticalKick(unit, GetRandomInterruptDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomInterruptDelay())) then
-            intTargetRange = unit
-        end
-    end)
-
-    return intTargetRange or Bastion.UnitManager:Get('none')
-end)
-
--- Create a custom unit for finding a stun target
-local InterruptTargetStun = Bastion.UnitManager:CreateCustomUnit('interrupttargetstun', function(unit)
-    local intTargetStun = nil
-    Bastion.UnitManager:EnumEnemies(function(unit)
-        if unit:IsDead() or Player:GetDistance(unit) > 20 or not Player:CanSee(unit) or not unit:IsCastingOrChanneling() then
-            return false
-        end
-
-        if MythicPlusUtils:CastingCriticalStun(unit, GetRandomStunDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomStunDelay(), true)) then
-            intTargetStun = unit
-        end
-    end)
-
-    return intTargetStun or Bastion.UnitManager:Get('none')
-end)
-
--- Target tank busters
-local BusterTarget = Bastion.UnitManager:CreateCustomUnit('bustertarget', function(unit)
-    local busterTarget = nil
-
-    Bastion.UnitManager:EnumEnemies(function(unit)
-        if unit:IsDead() or Player:GetDistance(unit) > 40 or not unit:IsCasting() or unit:IsInterruptible() then
-            return false
-        end
-        if MythicPlusUtils:CastingCriticalBusters(unit) then
-            -- local castTarget = ObjectCastingTarget(unit:GetOMToken())
-            local castTarget = Bastion.UnitManager:Get(ObjectCastingTarget(unit:GetOMToken()))
-            if castTarget and Player:GetDistance(castTarget) <= 40 and Player:CanSee(castTarget) and castTarget:IsAlive() then
-                busterTarget = castTarget
-            elseif TankTarget:IsTanking(unit) and Player:GetDistance(TankTarget) <= 40 and Player:CanSee(TankTarget) and TankTarget:IsAlive() then
-                busterTarget = TankTarget
-            else
-                busterTarget = TankTarget2 or TankTarget
-            end
-            --[[
-            if ShouldUseEnvelopingMist(TankTarget) then
-                 busterTarget = TankTarget
-            elseif ShouldUseEnvelopingMist(TankTarget2) then
-                 busterTarget = TankTarget2
-            elseif LifeCocoon:IsKnownAndUsable() then
-                if ObjectSpecializationID(TankTarget:GetOMToken()) == 250 then
-                    busterTarget = TankTarget2
-                else
-                    busterTarget = TankTarget
-                end
-            end
-            ]]
-        end
-    end)
-
-    return busterTarget or Bastion.UnitManager:Get('none')
-end)
-
-local sootheTarget = Bastion.UnitManager:CreateCustomUnit('soothe', function(unit)
-    local sootheTarget = nil
-    Bastion.UnitManager:EnumEnemies(function(unit)
-        if unit:IsDead() or Player:GetDistance(unit) > 40 or not Player:CanSee(unit) then
-            return false
-        end
-        if not unit:IsDead() and Player:CanSee(unit) then
-            for _, auras in pairs(unit:GetAuras():GetUnitAuras()) do
-                for _, aura in pairs(auras) do
-                    local SpellID = aura:GetSpell():GetID()
-                    if sootheList[SpellID] then
-                        sootheTarget = unit
-                        return true
-                    end
-                end
-            end
-        end
-    end)
-    return sootheTarget or Bastion.UnitManager:Get('none')
-end)
 
 local function NeedsUrgentHealing()
     return Lowest:GetRealizedHP() < 70 or Player:GetPartyHPAround(40, 85) >= 3
