@@ -1155,10 +1155,8 @@ CooldownAPL:AddSpell(
             and not stopCasting()
             and ThunderFocusTea:GetCharges() < 1
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and not isCastingEnveloping
-    end):SetTarget(EnvelopeLowest):OnCast(function()
-        isCastingEnveloping = true
-    end):PreCast(function()
+            and waitingGCDcast(self)
+    end):SetTarget(EnvelopeLowest):PreCast(function()
         --UpdateManaTeaStacks()
         if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 then
             manaAPL:Execute()
@@ -1295,10 +1293,8 @@ DefensiveAPL:AddSpell(
         return EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetRealizedHP() < 80)
             and Player:GetAuras():FindMy(InvokeChiJi):IsUp()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and not isCastingEnveloping
-    end):SetTarget(EnvelopeLowest):OnCast(function()
-        isCastingEnveloping = true
-    end)
+            and waitingGCDcast(self)
+    end):SetTarget(EnvelopeLowest)
 )
 -- DefensiveAPL:AddSpell(
 --     Vivify:CastableIf(function(self)
@@ -1340,10 +1336,8 @@ DefensiveAPL:AddSpell(
         return DebuffTargetWithoutTFT:IsValid() and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
             and not Player:IsMoving() and not stopCasting()
-            and not isCastingEnveloping
-    end):SetTarget(DebuffTargetWithoutTFT):OnCast(function()
-        isCastingEnveloping = true
-    end)
+            and waitingGCDcast(self)
+    end):SetTarget(DebuffTargetWithoutTFT)
 )
 
 DefensiveAPL:AddSpell(
@@ -1364,10 +1358,8 @@ DefensiveAPL:AddSpell(
         return EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetRealizedHP() < 60)
             and Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and not isCastingEnveloping
-    end):SetTarget(EnvelopeLowest):OnCast(function()
-        isCastingEnveloping = true
-    end)
+            and waitingGCDcast(self)
+    end):SetTarget(EnvelopeLowest)
 )
 
 --[[
@@ -1410,10 +1402,8 @@ DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         return BusterTargetWithoutTFT:IsValid() and ShouldUseEnvelopingMist(BusterTargetWithoutTFT)
             and not Player:IsMoving() and not stopCasting()
-            and not isCastingEnveloping
-    end):SetTarget(BusterTargetWithoutTFT):OnCast(function()
-        isCastingEnveloping = true
-    end)
+            and waitingGCDcast(self)
+    end):SetTarget(BusterTargetWithoutTFT)
 )
 
 
