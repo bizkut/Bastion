@@ -627,7 +627,9 @@ local function scanFriends()
     cachedUnits.envelopeLowest = nil
     cachedUnits.envelopCount = 0
     cachedUnits.dispelTarget = nil
-    cachedUnits.debuffTarget = nil
+    cachedUnits.debuffTargetWithTFT = nil
+    cachedUnits.debuffTargetWithoutTFT = nil
+    cachedUnits.potentialDebuffTarget = nil
     cachedUnits.tankTarget = Player -- Default to player
     cachedUnits.tankTarget2 = nil
 
@@ -714,11 +716,19 @@ local function scanFriends()
 
         if hasBadDebuff and ShouldUseEnvelopingMist(unit) then
             if realizedHP < debuffLowestHP then
-                cachedUnits.debuffTarget = unit
+                cachedUnits.potentialDebuffTarget = unit
                 debuffLowestHP = realizedHP
             end
         end
     end)
+
+    if cachedUnits.potentialDebuffTarget then
+        if ThunderFocusTea:IsKnownAndUsable() and ThunderFocusTea:GetCharges() > 0 then
+            cachedUnits.debuffTargetWithTFT = cachedUnits.potentialDebuffTarget
+        else
+            cachedUnits.debuffTargetWithoutTFT = cachedUnits.potentialDebuffTarget
+        end
+    end
 
     -- Finalize default units
     if not cachedUnits.lowest then cachedUnits.lowest = Bastion.UnitManager:Get('none') end
@@ -726,7 +736,8 @@ local function scanFriends()
     if not cachedUnits.renewLowest then cachedUnits.renewLowest = Bastion.UnitManager:Get('none') end
     if not cachedUnits.envelopeLowest then cachedUnits.envelopeLowest = Bastion.UnitManager:Get('none') end
     if not cachedUnits.dispelTarget then cachedUnits.dispelTarget = Bastion.UnitManager:Get('none') end
-    if not cachedUnits.debuffTarget then cachedUnits.debuffTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.debuffTargetWithTFT then cachedUnits.debuffTargetWithTFT = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.debuffTargetWithoutTFT then cachedUnits.debuffTargetWithoutTFT = Bastion.UnitManager:Get('none') end
     if not cachedUnits.tankTarget2 then cachedUnits.tankTarget2 = Bastion.UnitManager:Get('none') end
 end
 
@@ -738,7 +749,8 @@ local function scanEnemies()
     cachedUnits.interruptTargetMelee = nil
     cachedUnits.interruptTargetRange = nil
     cachedUnits.interruptTargetStun = nil
-    cachedUnits.busterTarget = nil
+    cachedUnits.busterTargetWithTFT = nil
+    cachedUnits.busterTargetWithoutTFT = nil
     cachedUnits.sootheTarget = nil
     cachedUnits.hasNoAggroTarget = false
 
@@ -802,10 +814,14 @@ local function scanEnemies()
 
         -- Buster Target Logic
         if unit:IsCastingOrChanneling() and not unit:IsInterruptible() and MythicPlusUtils:CastingCriticalBusters(unit) then
-            if not cachedUnits.busterTarget then -- Only find one
+            if not cachedUnits.busterTargetWithTFT and not cachedUnits.busterTargetWithoutTFT then -- Only find one
                 local busterTargetUnit = Bastion.UnitManager:Get(ObjectCastingTarget(unit:GetOMToken()))
                 if busterTargetUnit and Player:GetDistance(busterTargetUnit) <= 40 and Player:CanSee(busterTargetUnit) and busterTargetUnit:IsAlive() then
-                    cachedUnits.busterTarget = busterTargetUnit
+                    if ThunderFocusTea:IsKnownAndUsable() and ThunderFocusTea:GetCharges() > 0 then
+                        cachedUnits.busterTargetWithTFT = busterTargetUnit
+                    else
+                        cachedUnits.busterTargetWithoutTFT = busterTargetUnit
+                    end
                 end
             end
         end
@@ -845,7 +861,8 @@ local function scanEnemies()
     if not cachedUnits.interruptTargetMelee then cachedUnits.interruptTargetMelee = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetRange then cachedUnits.interruptTargetRange = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetStun then cachedUnits.interruptTargetStun = Bastion.UnitManager:Get('none') end
-    if not cachedUnits.busterTarget then cachedUnits.busterTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.busterTargetWithTFT then cachedUnits.busterTargetWithTFT = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.busterTargetWithoutTFT then cachedUnits.busterTargetWithoutTFT = Bastion.UnitManager:Get('none') end
     if not cachedUnits.sootheTarget then cachedUnits.sootheTarget = Bastion.UnitManager:Get('none') end
 end
 
@@ -861,7 +878,8 @@ local DispelTarget = Bastion.UnitManager:CreateCustomUnit('dispel', function()
     end
     return cachedUnits.dispelTarget or Bastion.UnitManager:Get('none')
 end)
-local DebuffTarget = Bastion.UnitManager:CreateCustomUnit('debuff', function() return cachedUnits.debuffTarget or Bastion.UnitManager:Get('none') end)
+local DebuffTargetWithTFT = Bastion.UnitManager:CreateCustomUnit('debuffwithtft', function() return cachedUnits.debuffTargetWithTFT or Bastion.UnitManager:Get('none') end)
+local DebuffTargetWithoutTFT = Bastion.UnitManager:CreateCustomUnit('debuffwithouttft', function() return cachedUnits.debuffTargetWithoutTFT or Bastion.UnitManager:Get('none') end)
 local TankTarget = Bastion.UnitManager:CreateCustomUnit('tanktarget', function() return cachedUnits.tankTarget or Player end)
 local TankTarget2 = Bastion.UnitManager:CreateCustomUnit('tanktarget2', function() return cachedUnits.tankTarget2 or Bastion.UnitManager:Get('none') end)
 
@@ -871,7 +889,8 @@ local TouchOfDeathTarget = Bastion.UnitManager:CreateCustomUnit('touchofdeath', 
 local InterruptTargetMelee = Bastion.UnitManager:CreateCustomUnit('interrupttargetmelee', function() return cachedUnits.interruptTargetMelee or Bastion.UnitManager:Get('none') end)
 local InterruptTargetRange = Bastion.UnitManager:CreateCustomUnit('interrupttargetrange', function() return cachedUnits.interruptTargetRange or Bastion.UnitManager:Get('none') end)
 local InterruptTargetStun = Bastion.UnitManager:CreateCustomUnit('interrupttargetstun', function() return cachedUnits.interruptTargetStun or Bastion.UnitManager:Get('none') end)
-local BusterTarget = Bastion.UnitManager:CreateCustomUnit('bustertarget', function() return cachedUnits.busterTarget or Bastion.UnitManager:Get('none') end)
+local BusterTargetWithTFT = Bastion.UnitManager:CreateCustomUnit('bustertargetwithtft', function() return cachedUnits.busterTargetWithTFT or Bastion.UnitManager:Get('none') end)
+local BusterTargetWithoutTFT = Bastion.UnitManager:CreateCustomUnit('bustertargetwithouttft', function() return cachedUnits.busterTargetWithoutTFT or Bastion.UnitManager:Get('none') end)
 local sootheTarget = Bastion.UnitManager:CreateCustomUnit('soothe', function() return cachedUnits.sootheTarget or Bastion.UnitManager:Get('none') end)
 
 local function nearTargetBigger()
@@ -1308,21 +1327,21 @@ DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and DebuffTarget:IsValid() and ShouldUseEnvelopingMist(DebuffTarget)
+            and DebuffTargetWithTFT:IsValid() and ShouldUseEnvelopingMist(DebuffTargetWithTFT)
             and not isCastingEnveloping
     end):SetTarget(Player):OnCast(function()
         isCastingEnveloping = true
-        EnvelopingMist:Cast(DebuffTarget)
+        EnvelopingMist:Cast(DebuffTargetWithTFT)
     end)
 )
 
 DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
-        return DebuffTarget:IsValid() and ShouldUseEnvelopingMist(DebuffTarget)
+        return DebuffTargetWithoutTFT:IsValid() and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
             and not Player:IsMoving() and not stopCasting()
             and not isCastingEnveloping
-    end):SetTarget(DebuffTarget):OnCast(function()
+    end):SetTarget(DebuffTargetWithoutTFT):OnCast(function()
         isCastingEnveloping = true
     end)
 )
@@ -1379,20 +1398,20 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and BusterTarget:IsValid() and ShouldUseEnvelopingMist(BusterTarget)
+            and BusterTargetWithTFT:IsValid() and ShouldUseEnvelopingMist(BusterTargetWithTFT)
             and not isCastingEnveloping
     end):SetTarget(Player):OnCast(function()
         isCastingEnveloping = true
-        EnvelopingMist:Cast(BusterTarget)
+        EnvelopingMist:Cast(BusterTargetWithTFT)
     end)
 )
 
 DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
-        return BusterTarget:IsValid() and ShouldUseEnvelopingMist(BusterTarget)
+        return BusterTargetWithoutTFT:IsValid() and ShouldUseEnvelopingMist(BusterTargetWithoutTFT)
             and not Player:IsMoving() and not stopCasting()
             and not isCastingEnveloping
-    end):SetTarget(BusterTarget):OnCast(function()
+    end):SetTarget(BusterTargetWithoutTFT):OnCast(function()
         isCastingEnveloping = true
     end)
 )
