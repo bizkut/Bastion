@@ -1195,7 +1195,6 @@ DefensiveAPL:AddSpell(
     ExpelHarm:CastableIf(function(self)
         return Player:GetHP() < 70 and self:IsKnownAndUsable()
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
-            and waitingGCD()
             and not hasUsedOffGCDDefensive
         --and (not Player:IsCastingOrChanneling() or spinningCrane())
     end):SetTarget(Player):OnCast(function(self)
@@ -1410,8 +1409,7 @@ StompAPL:AddSpell(
             --and not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2) and Player:InMelee(nearTarget)
             and nearTarget:IsValid()
             --and Player:IsWithinCone(TankTarget,90,40)
-            --and waitingGCDcast(JadefireStomp)
-            and waitingGCD()
+            and waitingGCDcast(self)
             and not hasUsedOffGCDDps
     end):SetTarget(Player):OnCast(function()
         hasUsedOffGCDDps = true
@@ -1451,7 +1449,7 @@ DpsAPL:AddSpell(
             --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(nearTarget,90,40) or Player:IsWithinCone(TankTarget,90,40))
             and not Player:IsMoving()
             and not stopCasting()
-            and waitingGCD()
+            and waitingGCDcast(self)
             and mostEnemies():IsValid()
             and not hasUsedOffGCDDps
     end):SetTarget(Player):OnCast(function()
@@ -1525,7 +1523,6 @@ DpsAPL:AddSpell(
             and ShouldUseCrackling(rangeTarget)
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and rangeTarget:GetHealth() > 2000000
-            and waitingGCD()
             and not isCastingCrackling
         --and Player:GetAuras():FindMy(AspectDraining):IsUp()
         --and GetEnemiesInRange(40) >= 3
