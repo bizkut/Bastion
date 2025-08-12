@@ -1448,7 +1448,6 @@ StompAPL:AddSpell(
 DpsAPL:AddSpell(
     ChiBurst:CastableIf(function(self)
         return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
-            and not JadefireStomp:IsKnownAndUsable() --and Player:GetEnemies(10) >= 1
             --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(nearTarget,90,40) or Player:IsWithinCone(TankTarget,90,40))
             and not Player:IsMoving()
             and not stopCasting()
