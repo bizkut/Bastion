@@ -92,6 +92,7 @@ local loggedDebuffs = {}
 local cocoonThresholds = {}
 local autoTarget = {}
 local isCastingEnveloping = false
+local isCastingCrackling = false
 local hasUsedOffGCDDefensive = false
 local hasUsedOffGCDInterrupt = false
 local hasUsedOffGCDDps = false
@@ -1093,7 +1094,6 @@ TrinketAPL:AddItem(
     Signet:UsableIf(function(self)
         return self:IsUsable() and not self:IsOnCooldown() and self:IsEquipped()
             and not Player:IsCastingOrChanneling()
-            and waitingGCD()
             and (Player:GetPartyHPAround(40, 80) >= 2 or nearTarget:IsBoss())
             and not hasUsedOffGCDDefensive
         -- and Player:GetRealizedHP() < 50
@@ -1212,7 +1212,6 @@ DefensiveAPL:AddItem(
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
             and not hasUsedOffGCDDefensive
-            and waitingGCD()
     end):SetTarget(Player):OnUse(function(self)
         hasUsedOffGCDDefensive = true
     end)
@@ -1225,7 +1224,6 @@ DefensiveAPL:AddItem(
             and Player:GetHP() < 30
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             and not hasUsedOffGCDDefensive
-            and waitingGCD()
         --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
     end):SetTarget(Player):OnUse(function(self)
         hasUsedOffGCDDefensive = true
@@ -1251,7 +1249,6 @@ DefensiveAPL:AddSpell(
             and Player:GetRealizedHP() < 40
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             and not hasUsedOffGCDDefensive
-            and waitingGCD()
     end):SetTarget(Player):OnCast(function(self)
         hasUsedOffGCDDefensive = true
     end)
@@ -1263,7 +1260,6 @@ DefensiveAPL:AddSpell(
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetRealizedHP() < 60
             and not hasUsedOffGCDDefensive
-            and waitingGCD()
     end):SetTarget(Player):OnCast(function(self)
         hasUsedOffGCDDefensive = true
     end)
@@ -1519,9 +1515,12 @@ DpsAPL:AddSpell(
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and rangeTarget:GetHealth() > 2000000
             and waitingGCD()
+            and not isCastingCrackling
         --and Player:GetAuras():FindMy(AspectDraining):IsUp()
         --and GetEnemiesInRange(40) >= 3
-    end):SetTarget(rangeTarget)
+    end):SetTarget(rangeTarget):OnCast(function()
+        isCastingCrackling = true
+    end)
 )
 
 DpsAPL:AddSpell(
@@ -1565,6 +1564,7 @@ manaAPL:AddSpell(
 -- Module Sync
 RestoMonkModule:Sync(function()
     isCastingEnveloping = false
+    isCastingCrackling = false
     hasUsedOffGCDDefensive = false
     hasUsedOffGCDInterrupt = false
     hasUsedOffGCDDps = false
