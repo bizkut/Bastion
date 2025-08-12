@@ -1211,8 +1211,10 @@ DefensiveAPL:AddItem(
             and Player:GetHP() < 50
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
+            and not hasUsedOffGCDDefensive
+            and waitingGCD()
     end):SetTarget(Player):OnUse(function(self)
-        return waitingGCD()
+        hasUsedOffGCDDefensive = true
     end)
 )
 
@@ -1223,10 +1225,10 @@ DefensiveAPL:AddItem(
             and Player:GetHP() < 30
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             and not hasUsedOffGCDDefensive
+            and waitingGCD()
         --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
     end):SetTarget(Player):OnUse(function(self)
         hasUsedOffGCDDefensive = true
-        return waitingGCD()
     end)
 )
 
@@ -1249,10 +1251,9 @@ DefensiveAPL:AddSpell(
             and Player:GetRealizedHP() < 40
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             and not hasUsedOffGCDDefensive
-        --and waitingGCD()
+            and waitingGCD()
     end):SetTarget(Player):OnCast(function(self)
         hasUsedOffGCDDefensive = true
-        return waitingGCD()
     end)
 )
 
@@ -1262,10 +1263,9 @@ DefensiveAPL:AddSpell(
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetRealizedHP() < 60
             and not hasUsedOffGCDDefensive
-        --and waitingGCD()
+            and waitingGCD()
     end):SetTarget(Player):OnCast(function(self)
         hasUsedOffGCDDefensive = true
-        return waitingGCD()
     end)
 )
 
