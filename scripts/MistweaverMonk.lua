@@ -1136,6 +1136,7 @@ CooldownAPL:AddSpell(
             and not stopCasting()
             and ThunderFocusTea:GetCharges() < 1
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and not isCastingEnveloping
     end):SetTarget(EnvelopeLowest):OnCast(function()
         isCastingEnveloping = true
     end):PreCast(function()
@@ -1276,6 +1277,7 @@ DefensiveAPL:AddSpell(
         return EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetRealizedHP() < 80)
             and Player:GetAuras():FindMy(InvokeChiJi):IsUp()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
+            and not isCastingEnveloping
     end):SetTarget(EnvelopeLowest):OnCast(function()
         isCastingEnveloping = true
     end)
@@ -1320,6 +1322,7 @@ DefensiveAPL:AddSpell(
         return DebuffTarget:IsValid() and ShouldUseEnvelopingMist(DebuffTarget)
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
             and not Player:IsMoving() and not stopCasting()
+            and not isCastingEnveloping
     end):SetTarget(DebuffTarget):OnCast(function()
         isCastingEnveloping = true
     end)
@@ -1389,6 +1392,7 @@ DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         return BusterTarget:IsValid() and ShouldUseEnvelopingMist(BusterTarget)
             and not Player:IsMoving() and not stopCasting()
+            and not isCastingEnveloping
     end):SetTarget(BusterTarget):OnCast(function()
         isCastingEnveloping = true
     end)
