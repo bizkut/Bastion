@@ -1393,6 +1393,7 @@ DefensiveAPL:AddSpell(
             and BusterTargetWithTFT:IsValid() and ShouldUseEnvelopingMist(BusterTargetWithTFT)
             and not isCastingEnveloping
             and (not Player:GetCastingOrChannelingSpell() == EnvelopingMist)
+            and self:GetCharges() >= 2
     end):SetTarget(Player):OnCast(function()
         isCastingEnveloping = true
         EnvelopingMist:Cast(BusterTargetWithTFT)
