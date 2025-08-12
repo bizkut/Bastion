@@ -1155,7 +1155,7 @@ CooldownAPL:AddSpell(
             and not stopCasting()
             and ThunderFocusTea:GetCharges() < 1
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and waitingGCDcast(self)
+            and waitingGCD()
     end):SetTarget(EnvelopeLowest):PreCast(function()
         --UpdateManaTeaStacks()
         if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 then
@@ -1293,7 +1293,7 @@ DefensiveAPL:AddSpell(
         return EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetRealizedHP() < 80)
             and Player:GetAuras():FindMy(InvokeChiJi):IsUp()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and waitingGCDcast(self)
+            and waitingGCD()
     end):SetTarget(EnvelopeLowest)
 )
 -- DefensiveAPL:AddSpell(
@@ -1336,7 +1336,7 @@ DefensiveAPL:AddSpell(
         return DebuffTargetWithoutTFT:IsValid() and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
             and not Player:IsMoving() and not stopCasting()
-            and waitingGCDcast(self)
+            and waitingGCD()
     end):SetTarget(DebuffTargetWithoutTFT)
 )
 
@@ -1358,7 +1358,7 @@ DefensiveAPL:AddSpell(
         return EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetRealizedHP() < 60)
             and Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and waitingGCDcast(self)
+            and waitingGCD()
     end):SetTarget(EnvelopeLowest)
 )
 
@@ -1403,7 +1403,7 @@ DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         return BusterTargetWithoutTFT:IsValid() and ShouldUseEnvelopingMist(BusterTargetWithoutTFT)
             and not Player:IsMoving() and not stopCasting()
-            and waitingGCDcast(self)
+            and waitingGCD()
     end):SetTarget(BusterTargetWithoutTFT)
 )
 
