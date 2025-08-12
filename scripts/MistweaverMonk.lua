@@ -1460,6 +1460,8 @@ DpsAPL:AddSpell(
             and self:GetCharges() >= 2 and RisingSunKick:IsKnownAndUsable() and Player:InMelee(nearTarget)
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and Player:IsFacing(nearTarget)
+            and RisingSunKick:GetCooldownRemaining() > 5
+            and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 3
         --and Player:IsAffectingCombat()
     end):SetTarget(Player):OnCast(function()
         if RisingSunKick:IsKnownAndUsable() and Player:InMelee(nearTarget) then --and waitingGCDcast(RisingSunKick) then
