@@ -1010,7 +1010,7 @@ AspectAPL:AddSpell(
 -- Vivify with Enveloping Mist or out of combat
 DefaultAPL:AddSpell(
     Vivify:CastableIf(function(self)
-        return Lowest:IsValid() and Lowest:GetRealizedHP() < 60 and self:IsKnownAndUsable() and
+        return Lowest:IsValid() and Lowest:GetRealizedHP() < 80 and self:IsKnownAndUsable() and
             (not Player:IsCastingOrChanneling() or spinningCrane())
             and ((not Player:IsMoving() and not stopCasting()) or Player:GetAuras():FindMy(Vivacious):IsUp())
             and (Lowest:GetAuras():FindMy(EnvelopingMist):IsUp() or not Player:IsAffectingCombat())
