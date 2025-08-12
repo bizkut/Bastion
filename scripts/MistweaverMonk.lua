@@ -923,8 +923,9 @@ InterruptAPL:AddSpell(
         return self:IsKnownAndUsable() and InterruptTargetMelee:IsValid() and Player:IsFacing(InterruptTargetMelee) and
             Player:GetEnemies(10) >= 3
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and not recentInterrupt()
-    end):SetTarget(InterruptTargetMelee)
+    end):SetTarget(InterruptTargetMelee):OnCast(function()
+        hasUsedOffGCDInterrupt = true
+    end)
 )
 
 InterruptAPL:AddSpell(
@@ -932,8 +933,8 @@ InterruptAPL:AddSpell(
         return self:IsKnownAndUsable() and InterruptTargetMelee:IsValid() and Player:IsFacing(InterruptTargetMelee) and
             Player:GetEnemies(10) >= 3 and not LegSweep:IsKnownAndUsable()
             --and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-            and not recentInterrupt()
     end):SetTarget(InterruptTargetMelee):OnCast(function(self)
+        hasUsedOffGCDInterrupt = true
         if IsSpellPending() == 64 then
             local x, y, z = ObjectPosition(InterruptTargetMelee:GetOMToken())
             if x and y and z then
@@ -947,7 +948,6 @@ InterruptAPL:AddSpell(
     SpearHandStrike:CastableIf(function(self)
         return self:IsKnownAndUsable() and InterruptTargetMelee:IsValid() and Player:IsFacing(InterruptTargetMelee)
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and not recentInterrupt()
             and not hasUsedOffGCDInterrupt
     end):SetTarget(InterruptTargetMelee):OnCast(function()
         hasUsedOffGCDInterrupt = true
@@ -959,7 +959,6 @@ InterruptAPL:AddSpell(
         return self:IsKnownAndUsable() and InterruptTargetMelee:IsValid() and not SpearHandStrike:IsKnownAndUsable() and
             Player:IsFacing(InterruptTargetMelee)
             --and (not Player:IsCastingOrChanneling()  or spinningCrane() or checkManaTea())
-            and not recentInterrupt()
             and not hasUsedOffGCDInterrupt
     end):SetTarget(InterruptTargetMelee):OnCast(function()
         hasUsedOffGCDInterrupt = true
@@ -970,7 +969,6 @@ InterruptAPL:AddSpell(
     Paralysis:CastableIf(function(self)
         return self:IsKnownAndUsable() and InterruptTargetRange:IsValid() and Player:IsFacing(InterruptTargetRange)
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and not recentInterrupt()
             and not hasUsedOffGCDInterrupt
     end):SetTarget(InterruptTargetRange):OnCast(function()
         hasUsedOffGCDInterrupt = true
@@ -982,8 +980,9 @@ InterruptAPL:AddSpell(
         return self:IsKnownAndUsable() and InterruptTargetStun:IsValid() and Player:IsFacing(InterruptTargetStun) and
             Player:GetEnemies(10) >= 3 and Player:GetDistance(InterruptTargetStun) < 10
         --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-        --and not recentInterrupt()
-    end):SetTarget(InterruptTargetStun)
+    end):SetTarget(InterruptTargetStun):OnCast(function()
+        hasUsedOffGCDInterrupt = true
+    end)
 )
 
 InterruptAPL:AddSpell(
@@ -991,7 +990,6 @@ InterruptAPL:AddSpell(
         return self:IsKnownAndUsable() and InterruptTargetStun:IsValid() and Player:IsFacing(InterruptTargetStun) and
             Player:GetDistance(InterruptTargetStun) < 20
         --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-        --and not recentInterrupt()
         and not hasUsedOffGCDInterrupt
     end):SetTarget(InterruptTargetStun):OnCast(function()
         hasUsedOffGCDInterrupt = true
