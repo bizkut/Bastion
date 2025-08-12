@@ -1484,6 +1484,7 @@ DpsAPL:AddSpell(
             and Player:IsFacing(nearTarget)
             and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and RisingSunKick:GetCooldownRemaining() > 3
         --and waitingGCDcast(BlackoutKick)
     end):SetTarget(nearTarget)
 )
