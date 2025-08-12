@@ -1392,6 +1392,7 @@ DefensiveAPL:AddSpell(
         return self:IsKnownAndUsable() and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and BusterTargetWithTFT:IsValid() and ShouldUseEnvelopingMist(BusterTargetWithTFT)
             and not isCastingEnveloping
+            and (not Player:GetCastingOrChannelingSpell() == EnvelopingMist)
     end):SetTarget(Player):OnCast(function()
         isCastingEnveloping = true
         EnvelopingMist:Cast(BusterTargetWithTFT)
