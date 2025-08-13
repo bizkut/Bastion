@@ -1611,6 +1611,9 @@ RestoMonkModule:Sync(function()
     if Player:GetCastingOrChannelingSpell() == ManaTea and ((Lowest:GetRealizedHP() < 60) or (Player:GetPP() > 95)) then
         _G.SpellStopCasting()
     end
+    if Player:GetCastingOrChannelingSpell() == CracklingJadeLightning and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() then
+        _G.SpellStopCasting()
+    end
     DispelAPL:Execute()
     -- if (Player:IsInParty() and not Player:IsAffectingCombat()) or (Player:IsAffectingCombat() and RenewingMist:GetCharges() >= 2) then
     if Player:IsInParty() or Player:IsAffectingCombat() then
