@@ -745,8 +745,10 @@ local function scanEnemies()
     -- Reset cached enemy data
     cachedUnits.nearTarget = nil
     cachedUnits.rangeTarget = nil
-    cachedUnits.touchOfDeathTarget = nil
-    cachedUnits.interruptTargetMelee = nil
+    cachedUnits.interruptTargetMeleeSpear = nil
+    cachedUnits.interruptTargetMeleeParalysis = nil
+    cachedUnits.interruptTargetMeleeSweep = nil
+    cachedUnits.interruptTargetMeleeRing = nil
     cachedUnits.interruptTargetRange = nil
     cachedUnits.interruptTargetStun = nil
     cachedUnits.busterTargetWithTFT = nil
@@ -796,8 +798,22 @@ local function scanEnemies()
         -- Interrupt logic
         if unit:IsCastingOrChanneling() then
             if Player:InMelee(unit) and (MythicPlusUtils:CastingCriticalKick(unit, GetRandomInterruptDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomInterruptDelay()))) then
-                if not cachedUnits.interruptTargetMelee then
-                    cachedUnits.interruptTargetMelee = unit
+                if LegSweep:IsKnownAndUsable() and Player:GetEnemies(10) >= 3 then
+                    if not cachedUnits.interruptTargetMeleeSweep then
+                        cachedUnits.interruptTargetMeleeSweep = unit
+                    end
+                elseif SpearHandStrike:IsKnownAndUsable() then
+                    if not cachedUnits.interruptTargetMeleeSpear then
+                        cachedUnits.interruptTargetMeleeSpear = unit
+                    end
+                elseif Paralysis:IsKnownAndUsable() then
+                    if not cachedUnits.interruptTargetMeleeParalysis then
+                        cachedUnits.interruptTargetMeleeParalysis = unit
+                    end
+                elseif RingOfPeace:IsKnownAndUsable() and Player:GetEnemies(10) >= 3 then
+                    if not cachedUnits.interruptTargetMeleeRing then
+                        cachedUnits.interruptTargetMeleeRing = unit
+                    end
                 end
             end
             if Player:GetDistance(unit) <= 20 and not Player:InMelee(unit) and (MythicPlusUtils:CastingCriticalKick(unit, GetRandomInterruptDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomInterruptDelay()))) then
@@ -858,7 +874,10 @@ local function scanEnemies()
     if not cachedUnits.nearTarget then cachedUnits.nearTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.rangeTarget then cachedUnits.rangeTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.touchOfDeathTarget then cachedUnits.touchOfDeathTarget = Bastion.UnitManager:Get('none') end
-    if not cachedUnits.interruptTargetMelee then cachedUnits.interruptTargetMelee = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.interruptTargetMeleeSpear then cachedUnits.interruptTargetMeleeSpear = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.interruptTargetMeleeSweep then cachedUnits.interruptTargetMeleeSweep = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.interruptTargetMeleeRing then cachedUnits.interruptTargetMeleeRing = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.interruptTargetMeleeParalysis then cachedUnits.interruptTargetMeleeParalysis = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetRange then cachedUnits.interruptTargetRange = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetStun then cachedUnits.interruptTargetStun = Bastion.UnitManager:Get('none') end
     if not cachedUnits.busterTargetWithTFT then cachedUnits.busterTargetWithTFT = Bastion.UnitManager:Get('none') end
@@ -886,7 +905,10 @@ local TankTarget2 = Bastion.UnitManager:CreateCustomUnit('tanktarget2', function
 local nearTarget = Bastion.UnitManager:CreateCustomUnit('nearTarget', function() return cachedUnits.nearTarget or Bastion.UnitManager:Get('none') end)
 local rangeTarget = Bastion.UnitManager:CreateCustomUnit('rangeTarget', function() return cachedUnits.rangeTarget or Bastion.UnitManager:Get('none') end)
 local TouchOfDeathTarget = Bastion.UnitManager:CreateCustomUnit('touchofdeath', function() return cachedUnits.touchOfDeathTarget or Bastion.UnitManager:Get('none') end)
-local InterruptTargetMelee = Bastion.UnitManager:CreateCustomUnit('interrupttargetmelee', function() return cachedUnits.interruptTargetMelee or Bastion.UnitManager:Get('none') end)
+local interruptTargetMeleeSpear = Bastion.UnitManager:CreateCustomUnit('interruptTargetMeleeSpear', function() return cachedUnits.interruptTargetMeleeSpear or Bastion.UnitManager:Get('none') end)
+local interruptTargetMeleeRing = Bastion.UnitManager:CreateCustomUnit('interruptTargetMeleeRing', function() return cachedUnits.interruptTargetMeleeRing or Bastion.UnitManager:Get('none') end)
+local interruptTargetMeleeSweep = Bastion.UnitManager:CreateCustomUnit('interruptTargetMeleeSweep', function() return cachedUnits.interruptTargetMeleeSweep or Bastion.UnitManager:Get('none') end)
+local interruptTargetMeleeParalysis = Bastion.UnitManager:CreateCustomUnit('interruptTargetMeleeParalysis', function() return cachedUnits.interruptTargetMeleeParalysis or Bastion.UnitManager:Get('none') end)
 local InterruptTargetRange = Bastion.UnitManager:CreateCustomUnit('interrupttargetrange', function() return cachedUnits.interruptTargetRange or Bastion.UnitManager:Get('none') end)
 local InterruptTargetStun = Bastion.UnitManager:CreateCustomUnit('interrupttargetstun', function() return cachedUnits.interruptTargetStun or Bastion.UnitManager:Get('none') end)
 local BusterTargetWithTFT = Bastion.UnitManager:CreateCustomUnit('bustertargetwithtft', function() return cachedUnits.busterTargetWithTFT or Bastion.UnitManager:Get('none') end)
@@ -939,23 +961,23 @@ end
 
 InterruptAPL:AddSpell(
     LegSweep:CastableIf(function(self)
-        return self:IsKnownAndUsable() and InterruptTargetMelee:IsValid() and Player:IsFacing(InterruptTargetMelee) and
+        return self:IsKnownAndUsable() and interruptTargetMeleeSweep:IsValid() and Player:IsFacing(interruptTargetMeleeSweep) and
             Player:GetEnemies(10) >= 3
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-    end):SetTarget(InterruptTargetMelee):OnCast(function()
+    end):SetTarget(interruptTargetMeleeSweep):OnCast(function()
         hasUsedOffGCDInterrupt = true
     end)
 )
 
 InterruptAPL:AddSpell(
     RingOfPeace:CastableIf(function(self)
-        return self:IsKnownAndUsable() and InterruptTargetMelee:IsValid() and Player:IsFacing(InterruptTargetMelee) and
+        return self:IsKnownAndUsable() and interruptTargetMeleeRing:IsValid() and Player:IsFacing(interruptTargetMeleeRing) and
             Player:GetEnemies(10) >= 3 and not LegSweep:IsKnownAndUsable()
             --and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
-    end):SetTarget(InterruptTargetMelee):OnCast(function(self)
+    end):SetTarget(interruptTargetMeleeRing):OnCast(function(self)
         hasUsedOffGCDInterrupt = true
         if IsSpellPending() == 64 then
-            local x, y, z = ObjectPosition(InterruptTargetMelee:GetOMToken())
+            local x, y, z = ObjectPosition(interruptTargetMeleeRing:GetOMToken())
             if x and y and z then
                 self:Click(x, y, z)
             end
@@ -965,21 +987,21 @@ InterruptAPL:AddSpell(
 
 InterruptAPL:AddSpell(
     SpearHandStrike:CastableIf(function(self)
-        return self:IsKnownAndUsable() and InterruptTargetMelee:IsValid() and Player:IsFacing(InterruptTargetMelee)
+        return self:IsKnownAndUsable() and interruptTargetMeleeSpear:IsValid() and Player:IsFacing(interruptTargetMeleeSpear)
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and not hasUsedOffGCDInterrupt
-    end):SetTarget(InterruptTargetMelee):OnCast(function()
+    end):SetTarget(interruptTargetMeleeSpear):OnCast(function()
         hasUsedOffGCDInterrupt = true
     end)
 )
 
 InterruptAPL:AddSpell(
     Paralysis:CastableIf(function(self)
-        return self:IsKnownAndUsable() and InterruptTargetMelee:IsValid() and not SpearHandStrike:IsKnownAndUsable() and
-            Player:IsFacing(InterruptTargetMelee)
+        return self:IsKnownAndUsable() and interruptTargetMeleeParalysis:IsValid() and not SpearHandStrike:IsKnownAndUsable() and
+            Player:IsFacing(interruptTargetMeleeParalysis)
             --and (not Player:IsCastingOrChanneling()  or spinningCrane() or checkManaTea())
             and not hasUsedOffGCDInterrupt
-    end):SetTarget(InterruptTargetMelee):OnCast(function()
+    end):SetTarget(interruptTargetMeleeParalysis):OnCast(function()
         hasUsedOffGCDInterrupt = true
     end)
 )
@@ -1111,7 +1133,8 @@ TrinketAPL:AddItem(
     Signet:UsableIf(function(self)
         return self:IsUsable() and not self:IsOnCooldown() and self:IsEquipped()
             and not Player:IsCastingOrChanneling()
-            and (Player:GetPartyHPAround(40, 80) >= 2 or nearTarget:IsBoss())
+            and (Player:GetPartyHPAround(40, 80) >= 2)
+            and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
             and not hasUsedOffGCDDefensive
         -- and Player:GetRealizedHP() < 50
     end):SetTarget(Player):OnUse(function()
@@ -1238,7 +1261,7 @@ DefensiveAPL:AddItem(
             and Player:GetHP() < 30
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             and not hasUsedOffGCDDefensive
-        --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
+            and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
     end):SetTarget(Player):OnUse(function(self)
         hasUsedOffGCDDefensive = true
     end)
