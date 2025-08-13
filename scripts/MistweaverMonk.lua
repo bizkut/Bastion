@@ -1291,7 +1291,7 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         return EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetRealizedHP() < 80)
-            and Player:GetAuras():FindMy(InvokeChiJi):IsUp()
+            and InvokeChiJi:GetTimeSinceLastCastAttempt() < 12
             and (not Player:IsCastingOrChanneling() or CracklingJade() or spinningCrane() or checkManaTea())
             and waitingGCD()
     end):SetTarget(EnvelopeLowest)
