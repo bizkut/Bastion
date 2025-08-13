@@ -1419,7 +1419,7 @@ StompAPL:AddSpell(
             --and not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2) and Player:InMelee(nearTarget)
             and nearTarget:IsValid()
             --and Player:IsWithinCone(TankTarget,90,40)
-            and waitingGCDcast(self)
+            and waitingGCD()
             and not hasUsedOffGCDDps
     end):SetTarget(Player):OnCast(function()
         hasUsedOffGCDDps = true
@@ -1459,7 +1459,7 @@ DpsAPL:AddSpell(
             --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(nearTarget,90,40) or Player:IsWithinCone(TankTarget,90,40))
             and not Player:IsMoving()
             and not stopCasting()
-            and waitingGCDcast(self)
+            and waitingGCD()
             and mostEnemies():IsValid()
             and not hasUsedOffGCDDps
     end):SetTarget(Player):OnCast(function()
