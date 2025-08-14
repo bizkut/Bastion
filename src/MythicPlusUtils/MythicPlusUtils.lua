@@ -782,11 +782,9 @@ function MythicPlusUtils:New()
             }
         },
         -- TWW Season 3
-        [1214468] = { [222222] = { true, false, false } },
         [471352] = { [222222] = { true, false, false } },
         [443430] = { [222222] = { true, false, false } },
         [325876] = { [222222] = { true, false, false } },
-        [326450] = { [222222] = { true, false, false } },
         [267354] = { [222222] = { true, false, false } },
         [426283] = { [222222] = { true, false, false } },
         [448787] = { [222222] = { true, false, false } },
@@ -813,7 +811,6 @@ function MythicPlusUtils:New()
         [431333] = { [222222] = { true, false, false } },
         [451288] = { [222222] = { true, false, false } },
         [424322] = { [222222] = { true, false, false } },
-        [325701] = { [222222] = { true, false, false } },
         [322450] = { [222222] = { true, false, false } },
         [293827] = { [222222] = { true, false, false } },
         [446700] = { [222222] = { true, false, false } },
@@ -821,7 +818,6 @@ function MythicPlusUtils:New()
         [357260] = { [222222] = { true, false, false } },
         [460153] = { [222222] = { true, false, false } },
         [465827] = { [222222] = { true, false, false } },
-        [423051] = { [222222] = { true, false, false } },
         [451102] = { [222222] = { true, false, false } },
         [341771] = { [222222] = { true, false, false } },
         [427260] = { [222222] = { true, false, false } },
@@ -839,21 +835,15 @@ function MythicPlusUtils:New()
         [341969] = { [222222] = { true, false, false } },
         [431349] = { [222222] = { true, false, false } },
         [449455] = { [222222] = { true, false, false } },
-        [434793] = { [222222] = { true, false, false } },
         [330562] = { [222222] = { true, false, false } },
         [342675] = { [222222] = { true, false, false } },
         [320300] = { [222222] = { true, false, false } },
         [256957] = { [222222] = { true, false, false } },
-        [448248] = { [222222] = { true, false, false } },
         [269302] = { [222222] = { true, false, false } },
-        [433841] = { [222222] = { true, false, false } },
         [355429] = { [222222] = { true, false, false } },
-        [444743] = { [222222] = { true, false, false } },
         [451119] = { [222222] = { true, false, false } },
         [469799] = { [222222] = { true, false, false } },
         [427342] = { [222222] = { false, true, false } },
-        [355642] = { [222222] = { true, false, false } },
-        [434802] = { [222222] = { true, false, false } },
         [446086] = { [222222] = { true, false, false } },
         [427621] = { [222222] = { true, false, false } },
         [427609] = { [222222] = { true, false, false } },
@@ -869,7 +859,6 @@ function MythicPlusUtils:New()
         [432868] = { [222222] = { true, false, false } },
         [455588] = { [222222] = { true, false, false } },
         [441627] = { [222222] = { true, false, false } },
-        [356324] = { [222222] = { true, false, false } },
         [432967] = { [222222] = { true, false, false } },
         [431364] = { [222222] = { true, false, false } },
         [338353] = { [222222] = { true, false, false } },
@@ -880,13 +869,10 @@ function MythicPlusUtils:New()
         [450854] = { [222222] = { true, false, false } },
         [355057] = { [222222] = { true, false, false } },
         [324776] = { [222222] = { true, false, false } },
-        [1229474] = { [222222] = { true, false, false } },
         [1231497] = { [222222] = { true, false, false } },
-        [1229510] = { [222222] = { true, false, false } },
         [1235326] = { [222222] = { true, false, false } },
         [1221532] = { [222222] = { true, false, false } },
         [1237220] = { [222222] = { true, false, false } },
-        [424419] = { [222222] = { true, false, false } },
         [428563] = { [222222] = { true, false, false } },
         [328667] = { [222222] = { true, false, false } },
         [1231252] = { [222222] = { true, false, false } },
@@ -894,7 +880,6 @@ function MythicPlusUtils:New()
         [326409] = { [222222] = { true, false, false } },
         [1236614] = { [222222] = { true, false, false } },
         [474337] = { [222222] = { true, false, false } },
-        [424421] = { [222222] = { true, false, false } },
         [347721] = { [222222] = { true, false, false } },
         [324589] = { [222222] = { true, false, false } },
         [423479] = { [222222] = { true, false, false } },
@@ -902,7 +887,6 @@ function MythicPlusUtils:New()
         [355640] = { [222222] = { true, false, false } },
         [355479] = { [222222] = { true, false, false } },
         [323057] = { [222222] = { true, false, false } },
-        [427356] = { [222222] = { true, false, false } },
         [430097] = { [222222] = { true, false, false } },
         [272571] = { [222222] = { true, false, false } },
         [426145] = { [222222] = { true, false, false } },
@@ -923,15 +907,10 @@ function MythicPlusUtils:New()
         [1215412] = { [222222] = { true, false, false } },
         [324914] = { [222222] = { true, false, false } },
         [322938] = { [222222] = { true, false, false } },
-        [356407] = { [222222] = { true, false, false } },
-        [463061] = { [222222] = { true, false, false } },
-        [462771] = { [222222] = { true, false, false } },
         [76711] = { [222222] = { true, false, false } },
         [422541] = { [222222] = { true, false, false } },
         [275826] = { [222222] = { true, false, false } },
         [471736] = { [222222] = { true, false, false } },
-        [423665] = { [222222] = { true, false, false } },
-        [468631] = { [222222] = { true, false, false } },
         [471733] = { [222222] = { true, false, false } },
         [440687] = { [222222] = { true, false, false } },
         [442536] = { [222222] = { true, false, false } },
@@ -939,7 +918,52 @@ function MythicPlusUtils:New()
         [1242994] = { [222222] = { false, true, false } },
         [433656] = { [222222] = { false, true, false } },
         [451107] = { [222222] = { false, true, false } },
-        [428086] = { [222222] = { true, false, false } }
+        [428086] = { [222222] = { true, false, false } },
+        [355225] = { [222222] = { true, false, false } }, -- Waterbolt
+        [356843] = { [222222] = { true, false, false } }, -- Brackish Bolt
+        [352347] = { [222222] = { true, false, false } }, -- Valorous Bolt
+        [351119] = { [222222] = { true, false, false } }, -- Shuriken Blitz
+        [355934] = { [222222] = { true, false, false } }, -- Hard Light Barrier
+        [356324] = { [222222] = { true, false, false } }, -- Empowered Glyph of Restraint
+        [354297] = { [222222] = { true, false, false } }, -- Hyperlight Bolt
+        [347775] = { [222222] = { true, false, false } }, -- Spam Filter
+        [355641] = { [222222] = { true, false, false } }, -- Scintillate
+        [355642] = { [222222] = { true, false, false } }, -- Hyperlight Salvo
+        [356407] = { [222222] = { true, false, false } }, -- Ancient Dread
+        [350922] = { [222222] = { true, false, false } }, -- Menacing Shout
+        [353836] = { [222222] = { true, false, false } }, -- Hyperlight Bolt
+        [1241032] = { [222222] = { true, false, false } }, -- Final Warning
+        [357188] = { [222222] = { true, false, false } }, -- Double Technique
+        [338003] = { [222222] = { true, false, false } }, -- Wicked Bolt
+        [326450] = { [222222] = { true, false, false } }, -- Loyal Beasts
+        [325701] = { [222222] = { true, false, false } }, -- Siphon Life
+        [326829] = { [222222] = { true, false, false } }, -- Wicked Bolt
+        [328322] = { [222222] = { true, false, false } }, -- Villainous Bolt
+        [323538] = { [222222] = { true, false, false } }, -- Anima Bolt
+        [1229474] = { [222222] = { true, false, false } }, -- Gorge
+        [1229510] = { [222222] = { true, false, false } }, -- Arcing Zap
+        [1222815] = { [222222] = { true, false, false } }, -- Arcane Bolt
+        [1214468] = { [222222] = { true, false, false } }, -- Trick Shot
+        [462771] = { [222222] = { true, false, false } }, -- Surveying Beam
+        [463061] = { [222222] = { true, false, false } }, -- Bloodthirsty Cackle
+        [468631] = { [222222] = { true, false, false } }, -- Harpoon
+        [423536] = { [222222] = { true, false, false } }, -- Holy Smite
+        [427356] = { [222222] = { true, false, false } }, -- Greater Heal
+        [427469] = { [222222] = { true, false, false } }, -- Fireball
+        [424421] = { [222222] = { true, false, false } }, -- Flash of Light
+        [444743] = { [222222] = { true, false, false } }, -- Fireball Volley
+        [424419] = { [222222] = { true, false, false } }, -- Battle Cry
+        [423051] = { [222222] = { true, false, false } }, -- Burning Light
+        [423665] = { [222222] = { true, false, false } }, -- Embrace the Light
+        [434786] = { [222222] = { true, false, false } }, -- Web Bolt
+        [434793] = { [222222] = { true, false, false } }, -- Resonant Barrage
+        [434802] = { [222222] = { true, false, false } }, -- Horrifying Shrill
+        [436322] = { [222222] = { true, false, false } }, -- Poison Bolt
+        [448248] = { [222222] = { true, false, false } }, -- Revolting Volley
+        [433841] = { [222222] = { true, false, false } }, -- Venom Volley
+        [442210] = { [222222] = { true, false, false } }, -- Silken Restraints
+        [432031] = { [222222] = { true, false, false } }, -- Grasping Blood
+
     }
 
     Bastion.Globals.EventManager:RegisterWoWEvent('UNIT_AURA', function(unit, auras)
