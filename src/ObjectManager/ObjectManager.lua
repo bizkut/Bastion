@@ -101,6 +101,10 @@ function ObjectManager:Refresh()
                 self.friends:push(unit)
             elseif unit:GetID() == 214390 then -- Shuja
                 self.friends:push(unit)
+            elseif unit:GetID() == 210318 then -- Speaker Kuldas
+                self.friends:push(unit)
+            elseif unit:GetID() == 229296 then -- Orb of Ascendance
+                self.enemies:push(unit)
             elseif unit:IsEnemy() then
                 self.enemies:push(unit)
 

@@ -122,81 +122,82 @@ function MythicPlusUtils:New()
         [1217954] = true,
         [1223085] = true,
         -- TWW S3
-        [436322] = true, -- Poison Bolt
-        [433002] = true, -- Extraction Strike
+        [436322] = true,  -- Poison Bolt
+        [433002] = true,  -- Extraction Strike
         [1241785] = true, -- Tainted Blood
-        [438471] = true, -- Voracious Bite
+        [438471] = true,  -- Voracious Bite
         [1242072] = true, -- Intensifying Aggression
-        [431491] = true, -- Tainted Slash
-        [451113] = true, -- Web Bolt
-        [451112] = true, -- Tactician's Rage
+        [431491] = true,  -- Tainted Slash
+        [451113] = true,  -- Web Bolt
+        [451112] = true,  -- Tactician's Rage
         [1242678] = true, -- Shadow Blades
-        [451117] = true, -- Terrifying Slam
-        [452502] = true, -- Dark Fervor
-        [428086] = true, -- shadow-bolt
-        [453212] = true, -- Obsidian Beam
-        [427001] = true, -- Terrifying Slam
-        [427629] = true, -- Shoot
-        [427950] = true, --seal-of-flame
-        [448515] = true, -- divine-judgment
-        [427596] = true, -- seal-of-lights-fury
-        [444728] = true, -- templars-wrath
-        [435165] = true, -- blazing-strike
-        [424414] = true, -- pierce-armor
-        [422969] = true, -- vindictive-wrath
-        [462735] = true, -- blood-infused-strikes
-        [469766] = true, -- pack-tactics
-        [468672] = true, -- pinch
-        [465820] = true, -- vicious-chomp
-        [455588] = true, -- blood-bolt
-        [470005] = true, -- vicious-bite
-        [465666] = true, -- sparkslam
-        [473351] = true, -- electrocrush
-        [459799] = true, -- wallop
-        [469478] = true, -- sludge-claws
-        [466190] = true, -- thunder-punch
+        [451117] = true,  -- Terrifying Slam
+        [452502] = true,  -- Dark Fervor
+        [428086] = true,  -- shadow-bolt
+        [453212] = true,  -- Obsidian Beam
+        [427001] = true,  -- Terrifying Slam
+        [427629] = true,  -- Shoot
+        [427950] = true,  --seal-of-flame
+        [448515] = true,  -- divine-judgment
+        [427596] = true,  -- seal-of-lights-fury
+        [444728] = true,  -- templars-wrath
+        [435165] = true,  -- blazing-strike
+        [424414] = true,  -- pierce-armor
+        [422969] = true,  -- vindictive-wrath
+        [462735] = true,  -- blood-infused-strikes
+        [469766] = true,  -- pack-tactics
+        [468672] = true,  -- pinch
+        [465820] = true,  -- vicious-chomp
+        [455588] = true,  -- blood-bolt
+        [470005] = true,  -- vicious-bite
+        [465666] = true,  -- sparkslam
+        [473351] = true,  -- electrocrush
+        [459799] = true,  -- wallop
+        [469478] = true,  -- sludge-claws
+        [466190] = true,  -- thunder-punch
         [1221133] = true, -- hungering-rage
         [1235368] = true, -- arcane-slash
         [1231608] = true, -- alacrity
         [1222341] = true, -- Gloom Bite
         [1219535] = true, -- Rift Claws
         [1235060] = true, -- Anima Tainted Armor
-        [326450] = true, -- Loyal Beasts
+        [326450] = true,  -- Loyal Beasts
         [1237602] = true, -- Gushing Wound
         [1237071] = true, -- Stone Fist
         [1235766] = true, -- Mortal Strike
-        [326829] = true, -- Wicked Bolt
-        [322936] = true, -- Crumbling Slam
-        [328322] = true, -- Villainous Bolt
-        [323538] = true, -- Anima Bolt
-        [323437] = true, -- Stigma of Pride
-        [352796] = true, -- Proxy Strike
-        [355888] = true, -- Hard Light Baton
-        [354297] = true, -- Hyperlight Bolt
-        [355830] = true, -- Quickblade
-        [356967] = true, -- Hyperlight Backhand
-        [357229] = true, -- Chronolight Enhancer
+        [326829] = true,  -- Wicked Bolt
+        [322936] = true,  -- Crumbling Slam
+        [328322] = true,  -- Villainous Bolt
+        [323538] = true,  -- Anima Bolt
+        [323437] = true,  -- Stigma of Pride
+        [352796] = true,  -- Proxy Strike
+        [355888] = true,  -- Hard Light Baton
+        [354297] = true,  -- Hyperlight Bolt
+        [355830] = true,  -- Quickblade
+        [356967] = true,  -- Hyperlight Backhand
+        [357229] = true,  -- Chronolight Enhancer
         [1240912] = true, -- Pierce
         [1242960] = true, -- Gang Up
-        [358919] = true, -- Static Mace
-        [347716] = true, -- Letter Opener
-        [355477] = true, -- Power Kick
-        [356943] = true, -- Lockdown
-        [348128] = true, -- Fully Armed
-        [350916] = true, -- Security Slam
-        [349934] = true, -- Flagellation Protocol
-        [355048] = true, -- Shellcracker
-        [355057] = true, -- Cry of Mrrggllrrgg
-        [356133] = true, -- Super Saison
-        [356843] = true, -- Brackish Bolt
-        [346116] = true, -- Shearing Swings
-        [448787] = true, -- Purification
-        [431494] = true, -- Black Edge
-        [451119] = true, -- Abyssal Blast
+        [358919] = true,  -- Static Mace
+        [347716] = true,  -- Letter Opener
+        [355477] = true,  -- Power Kick
+        [356943] = true,  -- Lockdown
+        [348128] = true,  -- Fully Armed
+        [350916] = true,  -- Security Slam
+        [349934] = true,  -- Flagellation Protocol
+        [355048] = true,  -- Shellcracker
+        [355057] = true,  -- Cry of Mrrggllrrgg
+        [356133] = true,  -- Super Saison
+        [356843] = true,  -- Brackish Bolt
+        [346116] = true,  -- Shearing Swings
+        [448787] = true,  -- Purification
+        [431494] = true,  -- Black Edge
+        [451119] = true,  -- Abyssal Blast
 
     }
 
     self.kickList = {
+        --[[
 		-- Test 111111
         [111111] = {     -- Snipe
             [111111] = { -- Mechadrone Sniper
@@ -240,7 +241,7 @@ function MythicPlusUtils:New()
                 false, false, false -- Kick, Stun, Disorient
             }
         },
-        -- Darkflame Cleft 
+        -- Darkflame Cleft
         [428019] = {     -- Flashpoint
             [210812] = { -- Royal Wicklighter
                 true, false, false -- Kick, Stun, Disorient
@@ -963,7 +964,89 @@ function MythicPlusUtils:New()
         [433841] = { [222222] = { true, false, false } }, -- Venom Volley
         [442210] = { [222222] = { true, false, false } }, -- Silken Restraints
         [432031] = { [222222] = { true, false, false } }, -- Grasping Blood
+]]
+        -- Ara'kara Spells
+        [434786] = { [222222] = { true, false, false } }, -- Web Bolt
+        [434793] = { [222222] = { true, false, false } }, -- Resonant Barrage
+        [434802] = { [222222] = { true, false, false } }, -- Horrifying Shrill
+        [436322] = { [222222] = { true, false, false } }, -- Poison Bolt
+        [448248] = { [222222] = { true, false, false } }, -- Revolting Volley
+        [433841] = { [222222] = { true, false, false } }, -- Venom Volley
+        [442210] = { [222222] = { true, false, false } }, -- Silken Restraints
 
+        -- Dawnbreaker Spells
+        [431303] = { [222222] = { true, false, false } }, -- Night Bolt
+        [451113] = { [222222] = { true, false, false } }, -- Web Bolt
+        [431333] = { [222222] = { true, false, false } }, -- Tormenting Beam
+        [432520] = { [222222] = { true, false, false } }, -- Umbral Barrier
+        [451097] = { [222222] = { true, false, false } }, -- Silken Shell
+        [428086] = { [222222] = { true, false, false } }, -- Shadow Bolt
+        [452127] = { [222222] = { true, false, false } }, -- Animate Shadows
+        [452806] = { [222222] = { true, false, false } }, -- Acidic Eruption
+
+        -- Priory of the Sacred Flame Spells
+        [427357] = { [222222] = { true, false, false } }, -- Holy Smite
+        [427356] = { [222222] = { true, false, false } }, -- Greater Heal
+        [424421] = { [222222] = { true, false, false } }, -- Fireball
+        [424420] = { [222222] = { true, false, false } }, -- Cinderblast
+        [427469] = { [222222] = { true, false, false } }, -- Fireball
+        [444743] = { [222222] = { true, false, false } }, -- Fireball Volley
+        [424419] = { [222222] = { true, false, false } }, -- Battle Cry
+        [423051] = { [222222] = { true, false, false } }, -- Burning Light
+        [423536] = { [222222] = { true, false, false } }, -- Holy Smite
+        [423665] = { [222222] = { true, false, false } }, -- Embrace the Light
+
+        -- Operation: Floodgate Spells
+        [462771] = { [222222] = { true, false, false } },  -- Surveying Beam
+        [463061] = { [222222] = { true, false, false } },  -- Bloodthirsty Cackle
+        [468631] = { [222222] = { true, false, false } },  -- Harpoon
+        [465813] = { [222222] = { true, false, false } },  -- Lethargic Venom
+        [455588] = { [222222] = { true, false, false } },  -- Blood Bolt
+        [471733] = { [222222] = { true, false, false } },  -- Restorative Algae
+        [465595] = { [222222] = { true, false, false } },  -- Lightning Bolt
+        [1214468] = { [222222] = { true, false, false } }, -- Trickshot
+        [1214780] = { [222222] = { true, false, false } }, -- Maximum Distortion
+
+        -- Al'dani Spells
+        [1229474] = { [222222] = { true, false, false } }, -- Gorge
+        [1229510] = { [222222] = { true, false, false } }, -- Arcing Zap
+        [1222815] = { [222222] = { true, false, false } }, -- Arcane Bolt
+
+        -- Halls of Atonement Spells
+        [338003] = { [222222] = { true, false, false } }, -- Wicked Bolt
+        [326450] = { [222222] = { true, false, false } }, -- Loyal Beasts
+        [325701] = { [222222] = { true, false, false } }, -- Siphon Life
+        [326829] = { [222222] = { true, false, false } }, -- Wicked Bolt
+        [328322] = { [222222] = { true, false, false } }, -- Villainous Bolt
+        [323538] = { [222222] = { true, false, false } }, -- Anima Bolt
+
+        -- Taza'vesh Gambit Spells
+        [355057] = { [222222] = { true, false, false } }, -- Cry of Mrrggllrrgg
+        [356843] = { [222222] = { true, false, false } }, -- Brackish Bolt
+        [354297] = { [222222] = { true, false, false } }, -- Hyperlight Bolt
+        [357260] = { [222222] = { true, false, false } }, -- Unstable Rift
+        [352347] = { [222222] = { true, false, false } }, -- Valorous Bolt
+        [351119] = { [222222] = { true, false, false } }, -- Shuriken Blitz
+
+        -- Taza'vesh Streets Spells
+        [355934] = { [222222] = { true, false, false } },  -- Hard Light Barrier
+        [356324] = { [222222] = { true, false, false } },  -- Emp. Glyph of Restraint
+        [347775] = { [222222] = { true, false, false } },  -- Spam Filter
+        [355641] = { [222222] = { true, false, false } },  -- Scintillate
+        [355642] = { [222222] = { true, false, false } },  -- Hyperlight Salvo
+        [356407] = { [222222] = { true, false, false } },  -- Ancient Dread
+        [350922] = { [222222] = { true, false, false } },  -- Menacing Shout
+        [353836] = { [222222] = { true, false, false } },  -- Hyperlight Bolt
+        [1241032] = { [222222] = { true, false, false } }, -- Final Warning
+        [357188] = { [222222] = { true, false, false } },  -- Double Technique
+        -- Stun
+        [435156] = { [222222] = { false, true, false } },
+        [427342] = { [222222] = { false, true, false } },
+        [1242994] = { [222222] = { false, true, false } },
+        [433656] = { [222222] = { false, true, false } },
+        [451107] = { [222222] = { false, true, false } },
+        -- Xal’atath affixes
+        [461904] = { [222222] = { false, true, false } },
     }
 
     Bastion.Globals.EventManager:RegisterWoWEvent('UNIT_AURA', function(unit, auras)
@@ -1149,5 +1232,3 @@ function MythicPlusUtils:IsAOEBoss(unit)
 end
 
 return MythicPlusUtils
-
-
