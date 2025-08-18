@@ -764,13 +764,9 @@ local cachedUnits = {}
 local function scanFriends()
     -- Reset cached friend data
     cachedUnits.lowest = nil
-    cachedUnits.lowestHP = nil
     cachedUnits.hpLowest = nil
-    cachedUnits.hpLowestHP = nil
     cachedUnits.renewLowest = nil
-    cachedUnits.renewLowestHP = nil
     cachedUnits.envelopeLowest = nil
-    cachedUnits.envelopeLowestHP = nil
     cachedUnits.envelopCount = 0
     cachedUnits.dispelTarget = nil
     cachedUnits.debuffTargetWithTFT = nil
@@ -808,13 +804,11 @@ local function scanFriends()
         if realizedHP < lowestHP then
             cachedUnits.lowest = unit
             lowestHP = realizedHP
-            cachedUnits.lowestHP = realizedHP
         end
 
         if hp < hpLowestHP then
             cachedUnits.hpLowest = unit
             hpLowestHP = hp
-            cachedUnits.hpLowestHP = hp
         end
 
         -- Cocoon logic
@@ -1535,7 +1529,7 @@ DpsAPL:AddSpell(
 
 DpsAPL:AddSpell(
     RisingSunKick:CastableIf(function(self)
-        return not self:IsKnownAndUsable()
+        return self:OnCooldown()
         and not Player:IsCastingOrChanneling()
             and ThunderFocusTea:GetCharges() >= 2
             and RisingSunKick:IsInRange(nearTarget)
@@ -1641,12 +1635,13 @@ RestoMonkModule:Sync(function()
 
     if UnitInVehicle("player") or Player:IsMounted() or Player:GetAuras():FindMy(Drinking):IsUp() or Player:GetAuras():FindMy(Eating):IsUp()
         or Player:GetAuras():FindMy(EatingDelves):IsUp() or Player:GetAuras():FindMy(EatingBeledar):IsUp() or IsAltKeyDown() or IsSpellPending() == 64 then
-        print("Resto Monk Module: Skipping APL due to player state.")
+        --print("Resto Monk Module: Skipping APL due to player state.")
         return
     end
 
     if IsControlKeyDown() then
         VivifyAPL:Execute()
+        --print("Resto Monk Module: Executing VivifyAPL due to Control key down.")
     end
 
     if Player:IsCastingOrChanneling() and stopCasting() then
