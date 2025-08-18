@@ -113,7 +113,7 @@ local function waitingGCD()
     return Player:GetGCD() * 1000 < (select(4, GetNetStats()) and select(3, GetNetStats()))
 end
 local function waitingGCDcast(spell)
-    return spell:GetTimeSinceLastCastAttempt() > Player:GetGCD()
+    return spell:GetTimeSinceLastCastAttempt() > gcdDuration() -- Player:GetGCD()
 end
 
 local function GetRandomInterruptDelay()
@@ -764,9 +764,13 @@ local cachedUnits = {}
 local function scanFriends()
     -- Reset cached friend data
     cachedUnits.lowest = nil
+    cachedUnits.lowestHP = nil
     cachedUnits.hpLowest = nil
+    cachedUnits.hpLowestHP = nil
     cachedUnits.renewLowest = nil
+    cachedUnits.renewLowestHP = nil
     cachedUnits.envelopeLowest = nil
+    cachedUnits.envelopeLowestHP = nil
     cachedUnits.envelopCount = 0
     cachedUnits.dispelTarget = nil
     cachedUnits.debuffTargetWithTFT = nil
@@ -804,11 +808,13 @@ local function scanFriends()
         if realizedHP < lowestHP then
             cachedUnits.lowest = unit
             lowestHP = realizedHP
+            cachedUnits.lowestHP = realizedHP
         end
 
         if hp < hpLowestHP then
             cachedUnits.hpLowest = unit
             hpLowestHP = hp
+            cachedUnits.hpLowestHP = hp
         end
 
         -- Cocoon logic
@@ -1185,7 +1191,7 @@ local InterruptAPL = Bastion.APL:New('interrupt')
 local StompAPL = Bastion.APL:New('stomp')
 local TrinketAPL = Bastion.APL:New('trinket')
 local manaAPL = Bastion.APL:New('mana')
-
+local VivifyAPL = Bastion.APL:New('vivify')
 -- Add a variable to track Mana Tea stacks
 local manaTeaSt = SpellBook:GetSpell(115867)
 local manaTeaStacks = 0
@@ -1259,6 +1265,15 @@ InterruptAPL:AddSpell(
 )
 
 -- Default APLs
+-- Manual Vivify
+VivifyAPL:AddSpell(
+    Vivify:CastableIf(function(self)
+        return Lowest:IsValid() and self:IsKnownAndUsable() -- and Lowest:GetHP() < 80
+            and not Player:IsCastingOrChanneling()
+            and (not Player:IsMoving() or Player:GetAuras():FindMy(Vivacious):IsUp())
+            and not stopCasting()
+    end):SetTarget(Lowest)
+)
 -- Vivify OOC
 DefaultAPL:AddSpell(
     Vivify:CastableIf(function(self)
@@ -1299,7 +1314,7 @@ CooldownAPL:AddSpell(
 CooldownAPL:AddSpell(
     CracklingJadeLightning:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            and not Player:IsCastingOrChanneling()
+            --and not Player:IsCastingOrChanneling()
             and ShouldUseCrackling(rangeTarget)
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and Player:GetPartyHPAround(40, 90) >= 2
@@ -1458,6 +1473,8 @@ DefensiveAPL:AddSpell(
             and ThunderFocusTea:GetCharges() > 0
     end):SetTarget(EnvelopeLowest):PreCast(function()
         ThunderFocusTea:Cast(Player)
+        print("Thunder Focus Tea cast Enveloping Mist on envelopeLowestHP " ..
+            EnvelopeLowest:GetHP() .. " " .. EnvelopeLowest:GetHP() .. " Name: " .. EnvelopeLowest:GetName())
     end)
 )
 
@@ -1517,18 +1534,18 @@ DpsAPL:AddSpell(
 )
 
 DpsAPL:AddSpell(
-    ThunderFocusTea:CastableIf(function(self)
-        return Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and not Player:IsCastingOrChanneling()
+    RisingSunKick:CastableIf(function(self)
+        return not self:IsKnownAndUsable()
+        and not Player:IsCastingOrChanneling()
             and ThunderFocusTea:GetCharges() >= 2
             and RisingSunKick:IsInRange(nearTarget)
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and Player:IsFacing(nearTarget)
-            and RisingSunKick:GetCooldownRemaining() > 7
+            and RisingSunKick:GetCooldownRemaining() > 6
             and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 3
-    end):SetTarget(nearTarget):OnCast(function()
-        if RisingSunKick:IsKnownAndUsable() then
-            RisingSunKick:Cast(Player)
+    end):SetTarget(nearTarget):PreCast(function()
+        if ThunderFocusTea:GetCharges() >= 2 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and not RisingSunKick:IsKnownAndUsable() then
+            ThunderFocusTea:Cast(Player)
             --print("Thunder Focus Tea cast Rising Sun Kick..hopefully")
         end
     end)
@@ -1550,24 +1567,24 @@ DpsAPL:AddSpell(
 DpsAPL:AddSpell(
     TigerPalm:CastableIf(function(self)
         return nearTarget:IsValid() and self:IsKnownAndUsable()
-        and not Player:IsCastingOrChanneling()
+            and not Player:IsCastingOrChanneling()
             --and InMelee(nearTarget)
             and Player:IsFacing(nearTarget)
             and Player:GetAuras():FindMy(PotentialEnergy):IsUp()
     end):SetTarget(nearTarget)
 )
 
-DpsAPL:AddSpell(
-    CracklingJadeLightning:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and not Player:IsCastingOrChanneling()
-            and ShouldUseCrackling(rangeTarget)
-            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-        -- and not isCastingCrackling
-        --and Player:GetAuras():FindMy(AspectDraining):IsUp()
-        --and GetEnemiesInRange(40) >= 3
-    end):SetTarget(rangeTarget)
-)
+-- DpsAPL:AddSpell(
+--     CracklingJadeLightning:CastableIf(function(self)
+--         return self:IsKnownAndUsable()
+--             and not Player:IsCastingOrChanneling()
+--             and ShouldUseCrackling(rangeTarget)
+--             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+--         -- and not isCastingCrackling
+--         --and Player:GetAuras():FindMy(AspectDraining):IsUp()
+--         --and GetEnemiesInRange(40) >= 3
+--     end):SetTarget(rangeTarget)
+-- )
 
 DpsAPL:AddSpell(
     SpinningCraneKick:CastableIf(function(self)
@@ -1620,11 +1637,16 @@ RestoMonkModule:Sync(function()
     scanFriends()
     scanEnemies()
 
-    print("GCD: " .. gcdDuration())
+    --print("GCD duration: " .. TigerPalm:GetTimeSinceLastCastAttempt() .." GCD: "..gcdDuration())
 
-    if Player:IsMounted() or Player:GetAuras():FindMy(Drinking):IsUp() or Player:GetAuras():FindMy(Eating):IsUp()
+    if UnitInVehicle("player") or Player:IsMounted() or Player:GetAuras():FindMy(Drinking):IsUp() or Player:GetAuras():FindMy(Eating):IsUp()
         or Player:GetAuras():FindMy(EatingDelves):IsUp() or Player:GetAuras():FindMy(EatingBeledar):IsUp() or IsAltKeyDown() or IsSpellPending() == 64 then
+        print("Resto Monk Module: Skipping APL due to player state.")
         return
+    end
+
+    if IsControlKeyDown() then
+        VivifyAPL:Execute()
     end
 
     if Player:IsCastingOrChanneling() and stopCasting() then
