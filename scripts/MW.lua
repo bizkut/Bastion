@@ -1410,7 +1410,7 @@ DpsAPL:AddSpell(
     end):SetTarget(nearTarget)
 )
 
-StompAPL:AddSpell(
+DpsAPL:AddSpell(
     JadefireStomp:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
             and not Player:IsMoving()
