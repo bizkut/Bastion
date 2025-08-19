@@ -573,7 +573,8 @@ function Unit:GetPartyHPAround(distance, percent)
 
     Bastion.UnitManager:EnumFriends(function(unit)
         if not self:IsUnit(unit) and unit:GetDistance(self) <= distance and unit:IsAlive() and self:CanSee(unit) and
-            unit:GetHP() <= percent then
+            --unit:GetHP() <= percent then
+            unit:GetRealizedHP() <= percent then
             count = count + 1
         end
     end)

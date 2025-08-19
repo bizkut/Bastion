@@ -827,9 +827,9 @@ local function scanFriends()
         -- EnvelopeLowest and envelopCount logic
         local envelopeAura = unit:GetAuras():FindMy(EnvelopingMist)
         if envelopeAura:IsDown() then
-            if hp < envelopeLowestHP then
+            if realizedHP < envelopeLowestHP then
                 cachedUnits.envelopeLowest = unit
-                envelopeLowestHP = hp
+                envelopeLowestHP = realizedHP
             end
         else
             cachedUnits.envelopCount = cachedUnits.envelopCount + 1
@@ -997,25 +997,25 @@ local function scanEnemies()
 
         -- Soothe Target Logic
         local hasSootheAura = false
-        if not cachedUnits.sootheTarget then
-            for _, auras in pairs(unit:GetAuras():GetUnitAuras()) do
-                for _, aura in pairs(auras) do
-                    if sootheList[aura:GetSpell():GetID()] then
-                        --cachedUnits.sootheTarget = unit
-                        --return -- break inner loops
-                        hasSootheAura = true
-                        break
-                    end
-                end
-            end
-
-            if hasSootheAura then --and not sootheThresholds[unit:GetGUID()] then
-                if unitHealth > unitHighest then
-                    cachedUnits.sootheTarget = unit
-                    unitHighest = unitHealth
+        --if not cachedUnits.sootheTarget then
+        for _, auras in pairs(unit:GetAuras():GetUnitAuras()) do
+            for _, aura in pairs(auras) do
+                if sootheList[aura:GetSpell():GetID()] then
+                    --cachedUnits.sootheTarget = unit
+                    --return -- break inner loops
+                    hasSootheAura = true
+                    break
                 end
             end
         end
+
+        if hasSootheAura then --and not sootheThresholds[unit:GetGUID()] then
+            if unitHealth > unitHighest then
+                cachedUnits.sootheTarget = unit
+                unitHighest = unitHealth
+            end
+        end
+        --end
     end)
 
     -- if not cachedUnits.nearTarget then
@@ -1272,7 +1272,7 @@ InterruptAPL:AddSpell(
 -- Manual Vivify
 VivifyAPL:AddSpell(
     Vivify:CastableIf(function(self)
-        return Lowest:IsValid() and self:IsKnownAndUsable() -- and Lowest:GetHP() < 80
+        return Lowest:IsValid() and self:IsKnownAndUsable()
             and not Player:IsCastingOrChanneling()
             and (not Player:IsMoving() or Player:GetAuras():FindMy(Vivacious):IsUp())
             and not stopCasting()
@@ -1301,7 +1301,7 @@ CooldownAPL:AddSpell(
     Revival:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Player:GetPartyHPAround(40, 60) >= 3
-            --and not recentAoE()
+        --and not recentAoE()
     end):SetTarget(Player)
 )
 -- Vivify Vivacious, instant cast
@@ -1312,7 +1312,7 @@ CooldownAPL:AddSpell(
             and self:IsKnownAndUsable()
             and not Player:IsCastingOrChanneling()
             and Player:GetAuras():FindMy(Vivacious):IsUp()
-            --and not recentAoE()
+        --and not recentAoE()
     end):SetTarget(Lowest):PreCast(function()
         -- UpdateManaTeaStacks()
         if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 and Lowest:GetAuras():FindMy(EnvelopingMist):IsDown() then
@@ -1324,11 +1324,12 @@ CooldownAPL:AddSpell(
 CooldownAPL:AddSpell(
     SheilunsGift:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 80) >= 2 and (SheilunsGift:GetCount() >= 10) ) or Lowest:GetHP() < 50)
+            and
+            ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 80) >= 2 and (SheilunsGift:GetCount() >= 10)) or Lowest:GetRealizedHP() < 50)
             and (SheilunsGift:GetCount() >= 7)
             and not Player:IsMoving()
             and not stopCasting()
-            --and not recentAoE()
+        --and not recentAoE()
     end):SetTarget(Player)
 )
 
@@ -1339,7 +1340,7 @@ CooldownAPL:AddSpell(
             and ShouldUseCrackling(rangeTarget)
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 85) >= 3)
-            --and not recentAoE()
+        --and not recentAoE()
     end):SetTarget(rangeTarget)
 )
 -- Enveloping Mist on envelopeLowestHP
@@ -1347,9 +1348,10 @@ CooldownAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and (not Player:IsCastingOrChanneling() or spinningCrane())
-            and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetHP() < 60 or (TankTarget:GetHP() < 70 and TankTarget:IsUnit(EnvelopeLowest)))
+            and ShouldUseEnvelopingMist(EnvelopeLowest) and
+            (EnvelopeLowest:GetHP() < 60 or (TankTarget:GetHP() < 70 and TankTarget:IsUnit(EnvelopeLowest)))
             and ThunderFocusTea:GetCharges() > 0
-            --and not recentAoE()
+        --and not recentAoE()
     end):SetTarget(EnvelopeLowest):PreCast(function()
         if Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and ThunderFocusTea:GetCharges() > 0 then
             ThunderFocusTea:Cast(Player)
@@ -1362,7 +1364,7 @@ CooldownAPL:AddSpell(
     InvokeChiJi:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
             and (Player:GetPartyHPAround(40, 70) >= 2 or Player:GetPartyHPAround(40, 75) >= 3)
-            --and not recentAoE()
+        --and not recentAoE()
     end):SetTarget(Player)
 )
 CooldownAPL:AddSpell(
