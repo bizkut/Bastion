@@ -1180,7 +1180,7 @@ local function hasNoAggroTarget()
 end
 
 local function NeedsUrgentHealing()
-    return Lowest:GetRealizedHP() < 70 or Player:GetPartyHPAround(40, 90) >= 2
+    return Lowest:GetRealizedHP() < 80 or Player:GetPartyHPAround(40, 90) >= 2
 end
 -- APLs
 local DispelAPL = Bastion.APL:New('dispel')
@@ -1296,46 +1296,83 @@ DefaultAPL:AddSpell(
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
     end):SetTarget(nearTarget)
 )
--- AOE
+
 CooldownAPL:AddSpell(
     Revival:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            and (Player:GetPartyHPAround(40, 60) >= 3)
-            and not recentAoE()
-        --and (Revival:GetCount() >= 5)
+            and Player:GetPartyHPAround(40, 60) >= 3
+            --and not recentAoE()
     end):SetTarget(Player)
 )
-
+-- Vivify Vivacious, instant cast
+CooldownAPL:AddSpell(
+    Vivify:CastableIf(function(self)
+        return Lowest:IsValid()
+            and (Lowest:GetRealizedHP() < 70 or Player:GetPartyHPAround(40, 85) >= 2)
+            and self:IsKnownAndUsable()
+            and not Player:IsCastingOrChanneling()
+            and Player:GetAuras():FindMy(Vivacious):IsUp()
+            --and not recentAoE()
+    end):SetTarget(Lowest):PreCast(function()
+        -- UpdateManaTeaStacks()
+        if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 and Lowest:GetAuras():FindMy(EnvelopingMist):IsDown() then
+            manaAPL:Execute()
+        end
+    end)
+)
+-- AOE
 CooldownAPL:AddSpell(
     SheilunsGift:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and ((Player:GetPartyHPAround(40, 80) >= 2) or Lowest:GetHP() < 50)
+            and ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 80) >= 2 and (SheilunsGift:GetCount() >= 10) ) or Lowest:GetHP() < 50)
             and (SheilunsGift:GetCount() >= 7)
             and not Player:IsMoving()
             and not stopCasting()
-            and not recentAoE()
+            --and not recentAoE()
     end):SetTarget(Player)
 )
 
 CooldownAPL:AddSpell(
     CracklingJadeLightning:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            --and not Player:IsCastingOrChanneling()
+            and not Player:IsCastingOrChanneling()
             and ShouldUseCrackling(rangeTarget)
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            and Player:GetPartyHPAround(40, 85) >= 2
-            and not recentAoE()
+            and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 85) >= 3)
+            --and not recentAoE()
     end):SetTarget(rangeTarget)
 )
-
+-- Enveloping Mist on envelopeLowestHP
+CooldownAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetHP() < 60 or (TankTarget:GetHP() < 70 and TankTarget:IsUnit(EnvelopeLowest)))
+            and ThunderFocusTea:GetCharges() > 0
+            --and not recentAoE()
+    end):SetTarget(EnvelopeLowest):PreCast(function()
+        if Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and ThunderFocusTea:GetCharges() > 0 then
+            ThunderFocusTea:Cast(Player)
+        end
+        --print("Thunder Focus Tea cast Enveloping Mist on envelopeLowestHP " ..
+        --    EnvelopeLowest:GetHP() .. " " .. EnvelopeLowest:GetHP() .. " Name: " .. EnvelopeLowest:GetName())
+    end)
+)
 CooldownAPL:AddSpell(
     InvokeChiJi:CastableIf(function(self)
-        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and Player:GetPartyHPAround(40, 75) >= 3
-            and not recentAoE()
+        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and (Player:GetPartyHPAround(40, 70) >= 2 or Player:GetPartyHPAround(40, 75) >= 3)
+            --and not recentAoE()
     end):SetTarget(Player)
 )
-
+CooldownAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and ShouldUseEnvelopingMist(EnvelopeLowest) and EnvelopeLowest:GetHP() < 80
+            and InvokeChiJi:GetTimeSinceLastUseAttempt() < 12
+    end):SetTarget(EnvelopeLowest)
+)
 -- Trinkets
 TrinketAPL:AddItem(
     Signet:UsableIf(function(self)
@@ -1448,21 +1485,6 @@ DefensiveAPL:AddSpell(
     end)
 )
 
--- Vivify Vivacious, instant cast
-DefensiveAPL:AddSpell(
-    Vivify:CastableIf(function(self)
-        return Lowest:IsValid() and Lowest:GetRealizedHP() < 70
-            and self:IsKnownAndUsable()
-            and not Player:IsCastingOrChanneling()
-            and Player:GetAuras():FindMy(Vivacious):IsUp()
-    end):SetTarget(Lowest):PreCast(function()
-        -- UpdateManaTeaStacks()
-        if (Player:GetPP() < 50 or (manaTeaStacks >= 18 and Player:GetPP() < 80)) and ManaTea:GetTimeSinceLastCastAttempt() > 5 and Lowest:GetAuras():FindMy(EnvelopingMist):IsDown() then
-            manaAPL:Execute()
-        end
-    end)
-)
-
 -- Enveloping Mist on debuff targets
 DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
@@ -1470,20 +1492,6 @@ DefensiveAPL:AddSpell(
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and not Player:IsMoving() and not stopCasting()
     end):SetTarget(DebuffTargetWithoutTFT)
-)
-
--- Enveloping Mist on envelopeLowestHP
-DefensiveAPL:AddSpell(
-    EnvelopingMist:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and (not Player:IsCastingOrChanneling() or checkManaTea())
-            and ShouldUseEnvelopingMist(EnvelopeLowest) and (EnvelopeLowest:GetHP() < 60)
-            and ThunderFocusTea:GetCharges() > 0
-    end):SetTarget(EnvelopeLowest):PreCast(function()
-        ThunderFocusTea:Cast(Player)
-        --print("Thunder Focus Tea cast Enveloping Mist on envelopeLowestHP " ..
-        --    EnvelopeLowest:GetHP() .. " " .. EnvelopeLowest:GetHP() .. " Name: " .. EnvelopeLowest:GetName())
-    end)
 )
 
 DefensiveAPL:AddSpell(
@@ -1576,9 +1584,9 @@ DpsAPL:AddSpell(
     TigerPalm:CastableIf(function(self)
         return nearTarget:IsValid() and self:IsKnownAndUsable()
             and not Player:IsCastingOrChanneling()
-            --and InMelee(nearTarget)
             and Player:IsFacing(nearTarget)
             and Player:GetAuras():FindMy(PotentialEnergy):IsUp()
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
     end):SetTarget(nearTarget)
 )
 
@@ -1610,9 +1618,8 @@ DpsAPL:AddSpell(
 DpsAPL:AddSpell(
     TigerPalm:CastableIf(function(self)
         return Target:IsValid() and self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
-            --and InMelee(nearTarget)
             and Player:IsFacing(nearTarget)
-        --and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4
+            --and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
     end):SetTarget(nearTarget)
 )
@@ -1708,9 +1715,8 @@ RestoMonkModule:Sync(function()
         if NeedsUrgentHealing() then
             CooldownAPL:Execute()
             DefaultAPL:Execute()
-        else
-            DpsAPL:Execute()
         end
+        DpsAPL:Execute()
     else
         if not Player:IsMounted() and Lowest:GetRealizedHP() < 90 then
             DefaultAPL:Execute()
