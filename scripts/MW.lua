@@ -1100,10 +1100,11 @@ CooldownAPL:AddSpell(
     SheilunsGift:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and
-            ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 80) >= 2 and (SheilunsGift:GetCount() >= 10)) or Lowest:GetRealizedHP() < 50)
+            ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 90) >= 1 and (SheilunsGift:GetCount() >= 10)) or Lowest:GetRealizedHP() < 50)
             and (SheilunsGift:GetCount() >= 7)
             and not Player:IsMoving()
             and not stopCasting()
+            and waitingGCDcast(self)
         --and not recentAoE()
     end):SetTarget(Player)
 )
@@ -1114,7 +1115,7 @@ CooldownAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and ShouldUseCrackling(rangeTarget)
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 85) >= 3)
+            and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 85) >= 3 or Lowest:GetRealizedHP() < 50)
         --and not recentAoE()
     end):SetTarget(rangeTarget)
 )
@@ -1378,7 +1379,22 @@ DpsAPL:AddSpell(
 --         --and GetEnemiesInRange(40) >= 3
 --     end):SetTarget(rangeTarget)
 -- )
-
+DpsAPL:AddSpell(
+    JadefireStomp:CastableIf(function(self)
+        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and not Player:IsMoving()
+            and nearTarget:IsValid()
+            and Player:GetPP() > 80
+            and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
+            and waitingGCDcast(self)
+            and Player:GetEnemies(30) >= 3
+    end):SetTarget(Player):PreCast(function()
+        --hasUsedOffGCDDps = true
+        if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
+            FaceObject(nearTarget:GetOMToken())
+        end
+    end)
+)
 DpsAPL:AddSpell(
     SpinningCraneKick:CastableIf(function(self)
         return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
@@ -1408,22 +1424,6 @@ DpsAPL:AddSpell(
             and waitingGCDcast(self)
             --and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
     end):SetTarget(nearTarget)
-)
-
-DpsAPL:AddSpell(
-    JadefireStomp:CastableIf(function(self)
-        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
-            and not Player:IsMoving()
-            and nearTarget:IsValid()
-            and Player:GetPP() > 80
-            and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
-            and waitingGCDcast(self)
-    end):SetTarget(Player):PreCast(function()
-        --hasUsedOffGCDDps = true
-        if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
-            FaceObject(nearTarget:GetOMToken())
-        end
-    end)
 )
 
 ToDAPL:AddSpell(
