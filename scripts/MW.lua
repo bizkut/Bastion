@@ -1405,7 +1405,7 @@ DpsAPL:AddSpell(
         return nearTarget:IsValid() and self:IsKnownAndUsable()
             and not Player:IsCastingOrChanneling()
             and Player:IsFacing(nearTarget)
-            and waitingGCDcast
+            and waitingGCDcast(self)
             --and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
     end):SetTarget(nearTarget)
 )
@@ -1415,7 +1415,7 @@ DpsAPL:AddSpell(
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
             and not Player:IsMoving()
             and nearTarget:IsValid()
-            and Player:GetPP() < 80
+            and Player:GetPP() > 80
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
             and waitingGCDcast(self)
     end):SetTarget(Player):PreCast(function()
