@@ -1113,16 +1113,6 @@ CooldownAPL:AddSpell(
     end):SetTarget(Player)
 )
 
-CooldownAPL:AddSpell(
-    CracklingJadeLightning:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and not Player:IsCastingOrChanneling()
-            and ShouldUseCrackling(rangeTarget)
-            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 85) >= 3 or Lowest:GetRealizedHP() < 50)
-        --and not recentAoE()
-    end):SetTarget(rangeTarget)
-)
 -- Enveloping Mist on envelopeLowestHP
 CooldownAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
@@ -1285,6 +1275,17 @@ DefensiveAPL:AddSpell(
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
         --and EnvelopingMist:GetTimeSinceLastCastAttempt() > 2
     end):SetTarget(BusterTargetWithoutTFT)
+)
+
+DefensiveAPL:AddSpell(
+    CracklingJadeLightning:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and not Player:IsCastingOrChanneling()
+            and ShouldUseCrackling(rangeTarget)
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or Player:GetAuras():FindMy(AspectDraining):IsUp())
+        --and not recentAoE()
+    end):SetTarget(rangeTarget)
 )
 
 -- DPS APL
