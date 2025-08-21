@@ -106,8 +106,12 @@ local hasUsedOffGCDDps = false
 -- Add this helper function near the top of the file, after the SpellBook initialization
 local function gcdDuration()
     local info = C_Spell.GetSpellCooldown(61304) -- 61304 is the spell ID for "Spell Haste"
+    if info and (info.startTime or info.duration) == 0 then
+        return 1.25
+    end
     return info.duration
 end
+
 local function waitingGCD()
     return Player:GetGCD() * 1000 < (select(4, GetNetStats()) and select(3, GetNetStats()))
 end
@@ -1354,7 +1358,7 @@ DpsAPL:AddSpell(
             and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and RisingSunKick:GetCooldownRemaining() > 3
-            and waitingGCDcast(BlackoutKick)
+            and waitingGCDcast(self)
     end):SetTarget(nearTarget)
 )
 -- Fishing for Harmonic Surge
@@ -1387,7 +1391,7 @@ DpsAPL:AddSpell(
             and Player:GetPP() > 80
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
             and waitingGCDcast(self)
-            and Player:GetEnemies(30) >= 3
+            --and Player:GetEnemies(30) >= 3
     end):SetTarget(Player):PreCast(function()
         --hasUsedOffGCDDps = true
         if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
