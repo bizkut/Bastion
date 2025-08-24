@@ -549,8 +549,11 @@ local function mostFriends()
     return unit
 end
 
-local function InMelee(unit)
-    return TigerPalm:IsInRange(unit)
+local function IsMelee(unit)
+    if Player:IsWithinCombatDistance(unit,TigerPalm:GetRange()) then
+        return true
+    end
+    return false
 end
 
 local Flags = { NONE = 0x00000000, FORWARD = 0x00000001, BACKWARD = 0x00000002, STRAFELEFT = 0x00000004, STRAFERIGHT = 0x00000008, TURNLEFT = 0x00000010, TURNRIGHT = 0x00000020, PITCHUP = 0x00000040, PITCHDOWN = 0x00000080, WALKMODE = 0x00000100, ONTRANSPORT = 0x00000200, LEVITATING = 0x00000400, ROOT = 0x00000800, FALLING = 0x00001000, FALLINGFAR = 0x00002000, PENDINGSTOP = 0x00004000, PENDINGSTRAFESTOP = 0x00008000, PENDINGFORWARD = 0x00010000, PENDINGBACKWARD = 0x00020000, PENDINGSTRAFELEFT = 0x00040000, PENDINGSTRAFERIGHT = 0x00080000, PENDINGROOT = 0x00100000, SWIMMING = 0x00200000, ASCENDING = 0x00400000, DESCENDING = 0x00800000, CAN_FLY = 0x01000000, FLYING = 0x02000000, SPLINEELEVATION = 0x04000000, SPLINEENABLED = 0x08000000, WATERWALKING = 0x10000000, SAFEFALL = 0x20000000, HOVER = 0x40000000 }
@@ -729,7 +732,7 @@ local function scanEnemies()
             --     nearTargetDistance = distance
             -- end
 
-            if (health > nearTargetHealth) and InMelee(unit) then
+            if (health > nearTargetHealth) and IsMelee(unit) then
                 cachedUnits.nearTarget = unit
                 nearTargetHealth = health
             end
@@ -839,7 +842,7 @@ local function scanEnemies()
 
     -- Auto-targeting logic from nearTarget
     --if cachedUnits.nearTarget and (cachedUnits.nearTarget:GetGUID() ~= autoTarget["Target"] or 
-    if not Target:IsValid() or not InMelee(Target) or not canDamage(Target) then
+    if not Target:IsValid() or not IsMelee(Target) or not canDamage(Target) then
         --if cachedUnits.nearTarget:GetGUID() ~= autoTarget["Target"] then
         if cachedUnits.nearTarget then
             autoTarget["Target"] = cachedUnits.nearTarget:GetGUID()
@@ -855,7 +858,7 @@ local function scanEnemies()
     end
 
     -- Finalize default units
-    if not cachedUnits.nearTarget then cachedUnits.nearTarget = Bastion.UnitManager:Get('none') end
+    if not cachedUnits.nearTarget then cachedUnits.nearTarget = cachedUnits.rangeTarget or Bastion.UnitManager:Get('none') end
     if not cachedUnits.rangeTarget then cachedUnits.rangeTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.touchOfDeathTarget then cachedUnits.touchOfDeathTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetMeleeSpear then
@@ -1359,8 +1362,8 @@ StompAPL:AddSpell(
             --and not Player:IsMoving()
             and nearTarget:IsValid()
             and
-            -- ((not (Player:GetAuras():FindMy(JadefireStomp):GetRemainingTime() > 2) and InMelee(nearTarget))
-            --     or (not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2) and InMelee(nearTarget)))
+            -- ((not (Player:GetAuras():FindMy(JadefireStomp):GetRemainingTime() > 2) and IsMelee(nearTarget))
+            --     or (not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2) and IsMelee(nearTarget)))
             ((not (Player:GetAuras():FindMy(JadefireStomp):GetRemainingTime() > 2))
                 or (not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2)))
             --and waitingGCDcast(self)
