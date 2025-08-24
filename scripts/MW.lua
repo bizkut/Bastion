@@ -745,7 +745,7 @@ local function scanEnemies()
         end
 
         -- Touch of Death logic
-        if TouchOfDeath:IsInRange(unit) and canDamage(unit) then
+        if IsMelee(unit) and canDamage(unit) then
             if (ImprovedToD:IsKnown() and unit:GetHP() < 15 and unit:GetHealth() >= Player:GetMaxHealth() * 0.35) or
                 (unit:GetHealth() <= Player:GetMaxHealth() * 0.15 or Player:GetHealth() > unit:GetMaxHealth()) then
                 if not cachedUnits.touchOfDeathTarget then -- Get first valid
@@ -1476,7 +1476,7 @@ ToDAPL:AddSpell(
             and TouchOfDeathTargetOld:IsValid()
             --and waitingGCDcast(TouchOfDeath)
             --and Player:IsFacing(TouchOfDeathTargetOld)
-            and TouchOfDeath:IsInRange(TouchOfDeathTargetOld)
+            and IsMelee(TouchOfDeathTargetOld)
     end):SetTarget(TouchOfDeathTargetOld)
 )
 
