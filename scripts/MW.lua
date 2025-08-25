@@ -865,6 +865,7 @@ local function scanEnemies()
         else
         cachedUnits.nearTarget = cachedUnits.rangeTarget or Bastion.UnitManager:Get('none')
         end
+    end
     if not cachedUnits.rangeTarget then cachedUnits.rangeTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.touchOfDeathTarget then cachedUnits.touchOfDeathTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetMeleeSpear then
