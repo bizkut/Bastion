@@ -550,7 +550,8 @@ local function mostFriends()
 end
 
 local function IsMelee(unit)
-    if Player:IsWithinCombatDistance(unit,TigerPalm:GetRange()) then
+    --if Player:IsWithinCombatDistance(unit,TigerPalm:GetRange()) then
+    if melee('player',unit:GetOMToken()) then
         return true
     end
     return false
@@ -852,13 +853,18 @@ local function scanEnemies()
         end
     else
         -- Handle case where player's manual target is valid
-        if Target:IsTarget() and Target:IsAlive() and Target:IsValid() and Target:IsEnemy() and canDamage(Target) and Player:CanSee(Target) and Player:IsWithinCombatDistance(Target, 40) and Player:IsFacing(Target) then
+        if Target:IsAlive() and Target:IsValid() and Target:IsEnemy() and canDamage(Target) and Player:CanSee(Target) and Player:IsWithinCombatDistance(Target, 40) then
             cachedUnits.nearTarget = Target
         end
     end
 
     -- Finalize default units
-    if not cachedUnits.nearTarget then cachedUnits.nearTarget = cachedUnits.rangeTarget or Bastion.UnitManager:Get('none') end
+    if not cachedUnits.nearTarget then
+        if Target:IsValid() and Target:IsAlive() and Target:IsEnemy() and canDamage(Target) then
+            cachedUnits.nearTarget = Target
+        else
+        cachedUnits.nearTarget = cachedUnits.rangeTarget or Bastion.UnitManager:Get('none')
+        end
     if not cachedUnits.rangeTarget then cachedUnits.rangeTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.touchOfDeathTarget then cachedUnits.touchOfDeathTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetMeleeSpear then
