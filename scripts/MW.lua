@@ -1089,6 +1089,7 @@ VivifyAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and not Player:IsMoving()
             and not stopCasting()
+            and EnvelopeLowest:GetHP() < 70
     end):SetTarget(EnvelopeLowest)
 )
 VivifyAPL:AddSpell(
@@ -1450,6 +1451,7 @@ DpsAPL:AddSpell(
             --and not RisingSunKick:IsKnownAndUsable()
             and Player:GetAuras():FindMy(AncientConcordance):IsDown() -- Blackout Kick buff
             --and Player:GetAuras():FindMy(PotentialEnergy):IsDown()
+            and Player:GetAuras():FindMy(PotentialEnergy):GetCount() <= 2
     end):SetTarget(Player)
 )
 
