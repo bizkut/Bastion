@@ -550,8 +550,7 @@ local function mostFriends()
 end
 
 local function IsMelee(unit)
-    --if Player:IsWithinCombatDistance(unit,TigerPalm:GetRange()) then
-    if melee('player',unit:GetOMToken()) then
+    if TigerPalm:IsInRange(unit) then
         return true
     end
     return false
@@ -859,13 +858,7 @@ local function scanEnemies()
     end
 
     -- Finalize default units
-    if not cachedUnits.nearTarget then
-        if Target:IsValid() and Target:IsAlive() and Target:IsEnemy() and canDamage(Target) then
-            cachedUnits.nearTarget = Target
-        else
-        cachedUnits.nearTarget = cachedUnits.rangeTarget or Bastion.UnitManager:Get('none')
-        end
-    end
+    if not cachedUnits.nearTarget then cachedUnits.nearTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.rangeTarget then cachedUnits.rangeTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.touchOfDeathTarget then cachedUnits.touchOfDeathTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.interruptTargetMeleeSpear then
@@ -1157,13 +1150,7 @@ CooldownAPL:AddSpell(
         end
     end)
 )
-CooldownAPL:AddSpell(
-    InvokeChiJi:CastableIf(function(self)
-        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
-            and (Player:GetPartyHPAround(40, 70) >= 2 or Player:GetPartyHPAround(40, 75) >= 3)
-        --and not recentAoE()
-    end):SetTarget(Player)
-)
+
 -- Trinkets
 TrinketAPL:AddItem(
     Signet:UsableIf(function(self)
@@ -1287,6 +1274,14 @@ DefensiveAPL:AddSpell(
             sootheThresholds[k] = nil
         end
     end)
+)
+
+DefensiveAPL:AddSpell(
+    InvokeChiJi:CastableIf(function(self)
+        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and (Player:GetPartyHPAround(40, 70) >= 2 or Player:GetPartyHPAround(40, 75) >= 3)
+        --and not recentAoE()
+    end):SetTarget(Player)
 )
 
 DefensiveAPL:AddSpell(
@@ -1451,10 +1446,10 @@ DpsAPL:AddSpell(
             and Player:GetEnemies(8) >= 4
             and Player:GetAuras():FindMy(AwakenedJadefire):IsUp()
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4
+            --and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4
             --and not RisingSunKick:IsKnownAndUsable()
             and Player:GetAuras():FindMy(AncientConcordance):IsDown() -- Blackout Kick buff
-            and Player:GetAuras():FindMy(PotentialEnergy):IsDown()
+            --and Player:GetAuras():FindMy(PotentialEnergy):IsDown()
     end):SetTarget(Player)
 )
 
