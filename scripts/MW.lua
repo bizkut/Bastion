@@ -856,7 +856,9 @@ local function scanEnemies()
             cachedUnits.nearTarget = Target
         end
     end
-
+    if cachedUnits.nearTarget and not IsMelee(cachedUnits.nearTarget) then
+        cachedUnits.nearTarget = nil
+    end
     -- Finalize default units
     if not cachedUnits.nearTarget then cachedUnits.nearTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.rangeTarget then cachedUnits.rangeTarget = Bastion.UnitManager:Get('none') end
@@ -1144,6 +1146,7 @@ CooldownAPL:AddSpell(
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
             --and waitingGCDcast(self)
             and (Player:GetPartyHPAround(40, 90) >= 3 or Player:GetEnemies(30) >= 3)
+            and Player:GetDistance(nearTarget) <= 20
     end):SetTarget(Player)
     -- :PreCast(function()
     --     --hasUsedOffGCDDps = true
@@ -1372,6 +1375,7 @@ StompAPL:AddSpell(
                 or (not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2)))
             --and waitingGCDcast(self)
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
+            and Player:GetDistance(nearTarget) <= 20
     end):SetTarget(Player)
     -- :PreCast(function()
     --     --hasUsedOffGCDDps = true
