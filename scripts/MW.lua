@@ -1381,12 +1381,12 @@ StompAPL:AddSpell(
 
 StompAPL:AddSpell(
     RisingSunKick:CastableIf(function(self)
-        return nearTarget:IsValid() and self:IsKnownAndUsable() --self:IsInRange(nearTarget) and
+        return Target:IsValid() and self:IsKnownAndUsable() --self:IsInRange(Target) and
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-    end):SetTarget(nearTarget):PreCast(function()
-        if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
-            FaceObject(nearTarget:GetOMToken())
+    end):SetTarget(Target):PreCast(function()
+        if not Player:IsFacing(Target) and not Player:IsMoving() then
+            FaceObject(Target:GetOMToken())
         end
     end)
 )
@@ -1410,23 +1410,23 @@ DpsAPL:AddSpell(
     BlackoutKick:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and (not Player:IsCastingOrChanneling() or spinningCrane())
-            --and self:IsInRange(nearTarget)
-            --and Player:IsFacing(nearTarget)
+            --and self:IsInRange(Target)
+            --and Player:IsFacing(Target)
             and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and RisingSunKick:GetCooldownRemaining() > 3
             --and waitingGCDcast(self)
-    end):SetTarget(nearTarget)
+    end):SetTarget(Target)
 )
 -- Fishing for Harmonic Surge
 -- DpsAPL:AddSpell(
 --     TigerPalm:CastableIf(function(self)
---         return nearTarget:IsValid() and self:IsKnownAndUsable()
+--         return Target:IsValid() and self:IsKnownAndUsable()
 --             and not Player:IsCastingOrChanneling()
---             and Player:IsFacing(nearTarget)
+--             and Player:IsFacing(Target)
 --             and Player:GetAuras():FindMy(PotentialEnergy):IsUp()
 --             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
---     end):SetTarget(nearTarget)
+--     end):SetTarget(Target)
 -- )
 
 -- DpsAPL:AddSpell(
@@ -1458,19 +1458,19 @@ DpsAPL:AddSpell(
 -- DpsAPL:AddSpell(
 --     TigerPalm:CastableIf(function(self)
 --         return Target:IsValid() and self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
---             and Player:IsFacing(nearTarget)
+--             and Player:IsFacing(Target)
 --             and (Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4 or Player:GetAuras():FindMy(PotentialEnergy):IsUp())
 --             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
---     end):SetTarget(nearTarget)
+--     end):SetTarget(Target)
 -- )
 DpsAPL:AddSpell(
     TigerPalm:CastableIf(function(self)
-        return nearTarget:IsValid() and self:IsKnownAndUsable()
+        return Target:IsValid() and self:IsKnownAndUsable()
             and not Player:IsCastingOrChanneling()
-            --and Player:IsFacing(nearTarget)
+            --and Player:IsFacing(Target)
             --and waitingGCDcast(self)
             --and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-    end):SetTarget(nearTarget)
+    end):SetTarget(Target)
 )
 
 ToDAPL:AddSpell(
