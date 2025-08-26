@@ -969,7 +969,7 @@ local function recentTrinket()
 end
 
 local function recentAoE()
-    if (Revival:GetTimeSinceLastCastAttempt() < 2) or (SheilunsGift:GetTimeSinceLastCastAttempt() < 2) or (InvokeChiJi:GetTimeSinceLastCastAttempt() < 2) or (CracklingJadeLightning:GetTimeSinceLastCastAttempt() < 2)
+    if (Revival:GetTimeSinceLastCastAttempt() < 2) or (SheilunsGift:GetTimeSinceLastCastAttempt() < 2) or (InvokeChiJi:GetTimeSinceLastCastAttempt() < 2)
     then
         --print("Yes")
         return true
@@ -1116,7 +1116,7 @@ CooldownAPL:AddSpell(
     Revival:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Player:GetPartyHPAround(40, 60) >= 3
-        --and not recentAoE()
+            and not recentAoE()
     end):SetTarget(Player)
 )
 -- Vivify Vivacious, instant cast
@@ -1282,7 +1282,7 @@ DefensiveAPL:AddSpell(
 )
 DefensiveAPL:AddSpell(
     SheilunsGift:CastableIf(function(self)
-        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
             and
             ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 90) >= 2 and (SheilunsGift:GetCount() >= 10)) or Lowest:GetRealizedHP() < 50)
             and (SheilunsGift:GetCount() >= 7)
@@ -1290,7 +1290,7 @@ DefensiveAPL:AddSpell(
             and not stopCasting()
             and SheilunsGift:GetTimeSinceLastCastAttempt() > 3
             --and waitingGCDcast(self)
-        --and not recentAoE()
+            and not recentAoE()
     end):SetTarget(Player)
 )
 
@@ -1298,7 +1298,7 @@ DefensiveAPL:AddSpell(
     InvokeChiJi:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
             and (Player:GetPartyHPAround(40, 70) >= 2 or Player:GetPartyHPAround(40, 75) >= 3)
-        --and not recentAoE()
+            and not recentAoE()
     end):SetTarget(Player)
 )
 
