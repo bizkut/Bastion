@@ -1144,12 +1144,13 @@ CooldownAPL:AddSpell(
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
             --and waitingGCDcast(self)
             and (Player:GetPartyHPAround(40, 90) >= 3 or Player:GetEnemies(30) >= 3)
-    end):SetTarget(Player):PreCast(function()
-        --hasUsedOffGCDDps = true
-        if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
-            FaceObject(nearTarget:GetOMToken())
-        end
-    end)
+    end):SetTarget(Player)
+    -- :PreCast(function()
+    --     --hasUsedOffGCDDps = true
+    --     if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
+    --         FaceObject(nearTarget:GetOMToken())
+    --     end
+    -- end)
 )
 
 -- Trinkets
@@ -1371,12 +1372,13 @@ StompAPL:AddSpell(
                 or (not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2)))
             --and waitingGCDcast(self)
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
-    end):SetTarget(Player):PreCast(function()
-        --hasUsedOffGCDDps = true
-        if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
-            FaceObject(nearTarget:GetOMToken())
-        end
-    end)
+    end):SetTarget(Player)
+    -- :PreCast(function()
+    --     --hasUsedOffGCDDps = true
+    --     if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
+    --         FaceObject(nearTarget:GetOMToken())
+    --     end
+    -- end)
 )
 
 StompAPL:AddSpell(
