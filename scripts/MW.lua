@@ -1402,7 +1402,8 @@ DpsAPL:AddSpell(
         return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
             --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(Target,90,40) or Player:IsWithinCone(TankTarget,90,40))
             and not Player:IsMoving()
-            and waitingGCDcast(self)
+            --and waitingGCDcast(self)
+            and ChiBurst:GetTimeSinceLastCastAttempt() > 1
             and nearTarget:IsValid()
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
     end):SetTarget(Player):PreCast(function()
