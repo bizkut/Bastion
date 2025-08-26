@@ -842,7 +842,7 @@ local function scanEnemies()
 
     -- Auto-targeting logic from nearTarget
     --if cachedUnits.nearTarget and (cachedUnits.nearTarget:GetGUID() ~= autoTarget["Target"] or 
-    if not Target:IsValid() or not IsMelee(Target) or not canDamage(Target) then
+    if not Target:IsValid() or Target:IsDead() or not IsMelee(Target) or not canDamage(Target) then
         --if cachedUnits.nearTarget:GetGUID() ~= autoTarget["Target"] then
         if cachedUnits.nearTarget then
             autoTarget["Target"] = cachedUnits.nearTarget:GetGUID()
@@ -1091,7 +1091,7 @@ VivifyAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and not Player:IsMoving()
             and not stopCasting()
-            and EnvelopeLowest:GetHP() < 70
+            and EnvelopeLowest:GetHP() < 60
     end):SetTarget(EnvelopeLowest)
 )
 VivifyAPL:AddSpell(
@@ -1280,6 +1280,19 @@ DefensiveAPL:AddSpell(
         end
     end)
 )
+DefensiveAPL:AddSpell(
+    SheilunsGift:CastableIf(function(self)
+        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and
+            ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 90) >= 2 and (SheilunsGift:GetCount() >= 10)) or Lowest:GetRealizedHP() < 50)
+            and (SheilunsGift:GetCount() >= 7)
+            and not Player:IsMoving()
+            and not stopCasting()
+            and SheilunsGift:GetTimeSinceLastCastAttempt() > 3
+            --and waitingGCDcast(self)
+        --and not recentAoE()
+    end):SetTarget(Player)
+)
 
 DefensiveAPL:AddSpell(
     InvokeChiJi:CastableIf(function(self)
@@ -1348,19 +1361,6 @@ DefensiveAPL:AddSpell(
     end):SetTarget(EnvelopeLowest)
 )
 
-DefensiveAPL:AddSpell(
-    SheilunsGift:CastableIf(function(self)
-        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and
-            ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 90) >= 2 and (SheilunsGift:GetCount() >= 10)) or Lowest:GetRealizedHP() < 50)
-            and (SheilunsGift:GetCount() >= 7)
-            and not Player:IsMoving()
-            and not stopCasting()
-            --and waitingGCDcast(self)
-        --and not recentAoE()
-    end):SetTarget(Player)
-)
-
 -- DPS APL
 
 StompAPL:AddSpell(
@@ -1403,7 +1403,7 @@ DpsAPL:AddSpell(
             --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(Target,90,40) or Player:IsWithinCone(TankTarget,90,40))
             and not Player:IsMoving()
             --and waitingGCDcast(self)
-            and ChiBurst:GetTimeSinceLastCastAttempt() > 1
+            and ChiBurst:GetTimeSinceLastCastAttempt() > 2
             and nearTarget:IsValid()
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
     end):SetTarget(Player):PreCast(function()
