@@ -52,7 +52,6 @@ local JadefireTeachingsBuff = SpellBook:GetSpell(388026)
 local RingOfPeace = SpellBook:GetSpell(116844)
 local ImprovedToD = SpellBook:GetSpell(322113)
 local PressurePoints = SpellBook:GetSpell(450432) -- Paralysis soothe
-local Revival = SpellBook:GetSpell(115310)
 -- Add Rising Mist spell
 local RisingMist = SpellBook:GetSpell(274909)
 
@@ -942,10 +941,8 @@ local sootheTarget = Bastion.UnitManager:CreateCustomUnit('soothe',
 
 local function recentInterrupt()
     if (LegSweep:GetTimeSinceLastCastAttempt() < 2) or (SpearHandStrike:GetTimeSinceLastCastAttempt() < 2) or (Paralysis:GetTimeSinceLastCastAttempt() < 2) then
-        --print("Yes")
         return true
     end
-    --print("No way")
     return false
 end
 
@@ -953,10 +950,8 @@ local function recentDefensive()
     if (ExpelHarm:GetTimeSinceLastCastAttempt() < 2) or (FortifyingBrew:GetTimeSinceLastCastAttempt() < 2) or (DiffuseMagic:GetTimeSinceLastCastAttempt() < 2)
         or AlgariHealingPotion:GetTimeSinceLastUseAttempt() < 2 or Healthstone:GetTimeSinceLastUseAttempt() < 2
     then
-        --print("Yes")
         return true
     end
-    --print("No way")
     return false
 end
 
@@ -969,12 +964,10 @@ local function recentTrinket()
 end
 
 local function recentAoE()
-    if (Revival:GetTimeSinceLastCastAttempt() < 2) or (SheilunsGift:GetTimeSinceLastCastAttempt() < 2) or (InvokeChiJi:GetTimeSinceLastCastAttempt() < 2)
+    if (Revival:GetTimeSinceLastCastAttempt() <2) or (SheilunsGift:GetTimeSinceLastCastAttempt() < 3) or (InvokeChiJi:GetTimeSinceLastCastAttempt() < 2)
     then
-        --print("Yes")
         return true
     end
-    --print("No way")
     return false
 end
 
