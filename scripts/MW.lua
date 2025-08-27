@@ -648,8 +648,10 @@ local function scanFriends()
                         not (spellID == 473713) then -- Kinetic Explosive Gel
                         hasDispelable = true
                     end
-                    if spellID == 473713 and not debuffThresholds[unit:GetGUID()] then
-                        debuffThresholds[unit:GetGUID()] = GetTime() + 3 + GetRandomDispelDelay()
+                    if spellID == 473713 then
+                        if not debuffThresholds[unit:GetGUID()] then
+                            debuffThresholds[unit:GetGUID()] = GetTime() + 3 + GetRandomDispelDelay()
+                        end
                         cachedUnits.dispelTarget = unit
                     end
                 end
