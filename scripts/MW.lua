@@ -1525,7 +1525,7 @@ RestoMonkModule:Sync(function()
     -- if Player:GetCastingOrChannelingSpell() == EnvelopingMist and EnvelopeLowest:GetHP() > 80 then
     --     _G.SpellStopCasting()
     -- end
-    if Player:GetCastingOrChannelingSpell() == ManaTea and ((Lowest:GetRealizedHP() < 60) or (Player:GetPP() > 95)) then
+    if Player:GetCastingOrChannelingSpell() == ManaTea and ((Lowest:GetRealizedHP() < 70) or (Player:GetPP() > 98)) then
         _G.SpellStopCasting()
     end
     if Player:GetCastingOrChannelingSpell() == CracklingJadeLightning and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() then
@@ -1537,11 +1537,10 @@ RestoMonkModule:Sync(function()
     end
     -- OOC manatea
     UpdateManaTeaStacks()
-    if (manaTeaStacks >= 10) and (Player:GetPP() < 90) and (Lowest:GetRealizedHP() > 80) and (ManaTea:GetTimeSinceLastCastAttempt() > 5) and not Player:IsAffectingCombat() then
-        manaAPL:Execute()
-    end
-    if (manaTeaStacks >= 19) and (Player:GetPP() < 90) and (Lowest:GetRealizedHP() > 70) and (ManaTea:GetTimeSinceLastCastAttempt() > 5) and Player:IsAffectingCombat() then
-        manaAPL:Execute()
+    if (Player:GetPP() < 90) and (Lowest:GetRealizedHP() > 80) and (ManaTea:GetTimeSinceLastCastAttempt() > 5) then
+        if ((manaTeaStacks >= 10) and not Player:IsAffectingCombat()) or ((manaTeaStacks >= 19) and Player:IsAffectingCombat()) then
+            manaAPL:Execute()
+        end
     end
     if not Player:IsAffectingCombat() then
         if next(sootheThresholds) ~= nil then
@@ -1573,7 +1572,7 @@ RestoMonkModule:Sync(function()
         StompAPL:Execute()
         --AspectAPL:Execute()
         --if NeedsUrgentHealing() then
-            CooldownAPL:Execute()
+        CooldownAPL:Execute()
             --DefaultAPL:Execute()
         --end
         DpsAPL:Execute()
