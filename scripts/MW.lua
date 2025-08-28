@@ -183,9 +183,9 @@ local dispelList = {
     [473713] = true,  -- Kinetic Explosive Gel
     [1213803] = true, -- Nailed
     [1214780] = true, -- Maximum Distortion
-    [465595] = true, -- Lightning Bolt
-    [455588] = true, -- Blood Bolt
-    [462771] = true, -- Surveying Beam
+    [465595] = true,  -- Lightning Bolt
+    [455588] = true,  -- Blood Bolt
+    [462771] = true,  -- Surveying Beam
     [1214468] = true, -- Trickshot
     ----------------------------
     --- Priory of the Sacred Flame
@@ -650,7 +650,7 @@ local function scanFriends()
                     end
                     if spellID == 473713 then
                         if not debuffThresholds[unit:GetGUID()] then
-                            debuffThresholds[unit:GetGUID()] = GetTime() + 3 + GetRandomDispelDelay()
+                            debuffThresholds[unit:GetGUID()] = GetTime() + 1 + GetRandomDispelDelay()
                         end
                         cachedUnits.dispelTarget = unit
                     end
@@ -762,11 +762,11 @@ local function scanEnemies()
                     if not cachedUnits.interruptTargetMeleeSweep then
                         cachedUnits.interruptTargetMeleeSweep = unit
                     end
-                elseif SpearHandStrike:IsKnownAndUsable() then -- and SpearHandStrike:IsInRange(unit) then
+                elseif SpearHandStrike:IsKnownAndUsable() and SpearHandStrike:IsInRange(unit) then -- and SpearHandStrike:IsInRange(unit) then
                     if not cachedUnits.interruptTargetMeleeSpear then
                         cachedUnits.interruptTargetMeleeSpear = unit
                     end
-                elseif Paralysis:IsKnownAndUsable() then -- and Paralysis:IsInRange(unit) then
+                elseif Paralysis:IsKnownAndUsable() and Paralysis:IsInRange(unit) then -- and Paralysis:IsInRange(unit) then
                     if not cachedUnits.interruptTargetMeleeParalysis then
                         cachedUnits.interruptTargetMeleeParalysis = unit
                     end
@@ -842,7 +842,7 @@ local function scanEnemies()
     -- end
 
     -- Auto-targeting logic from nearTarget
-    --if cachedUnits.nearTarget and (cachedUnits.nearTarget:GetGUID() ~= autoTarget["Target"] or 
+    --if cachedUnits.nearTarget and (cachedUnits.nearTarget:GetGUID() ~= autoTarget["Target"] or
     if not Target:IsValid() or Target:IsDead() or not IsMelee(Target) or not canDamage(Target) then
         --if cachedUnits.nearTarget:GetGUID() ~= autoTarget["Target"] then
         if cachedUnits.nearTarget then
@@ -966,7 +966,7 @@ local function recentTrinket()
 end
 
 local function recentAoE()
-    if (Revival:GetTimeSinceLastCastAttempt() <2) or (SheilunsGift:GetTimeSinceLastCastAttempt() < 3) or (InvokeChiJi:GetTimeSinceLastCastAttempt() < 2)
+    if (Revival:GetTimeSinceLastCastAttempt() < 2) or (SheilunsGift:GetTimeSinceLastCastAttempt() < 2) or (InvokeChiJi:GetTimeSinceLastCastAttempt() < 2) or (CracklingJadeLightning:GetTimeSinceLastCastAttempt() < 3)
     then
         return true
     end
@@ -1020,10 +1020,14 @@ end
 InterruptAPL:AddSpell(
     LegSweep:CastableIf(function(self)
         return self:IsKnownAndUsable() and interruptTargetMeleeSweep:IsValid() and
-            Player:IsFacing(interruptTargetMeleeSweep) and
+            -- Player:IsFacing(interruptTargetMeleeSweep) and
             Player:GetEnemies(10) >= 3
             and not recentInterrupt()
-    end):SetTarget(interruptTargetMeleeSweep)
+    end):SetTarget(interruptTargetMeleeSweep):PreCast(function()
+        if not Player:IsFacing(interruptTargetMeleeSweep) and not Player:IsMoving() then
+            FaceObject(interruptTargetMeleeSweep:GetOMToken())
+        end
+    end)
 )
 
 InterruptAPL:AddSpell(
@@ -1045,9 +1049,13 @@ InterruptAPL:AddSpell(
 InterruptAPL:AddSpell(
     SpearHandStrike:CastableIf(function(self)
         return self:IsKnownAndUsable() and interruptTargetMeleeSpear:IsValid()
-            and Player:IsFacing(interruptTargetMeleeSpear)
+            -- and Player:IsFacing(interruptTargetMeleeSpear)
             and not recentInterrupt()
-    end):SetTarget(interruptTargetMeleeSpear)
+    end):SetTarget(interruptTargetMeleeSpear):PreCast(function()
+        if not Player:IsFacing(interruptTargetMeleeSpear) and not Player:IsMoving() then
+            FaceObject(interruptTargetMeleeSpear:GetOMToken())
+        end
+    end)
 )
 
 InterruptAPL:AddSpell(
@@ -1061,12 +1069,16 @@ InterruptAPL:AddSpell(
 InterruptAPL:AddSpell(
     LegSweep:CastableIf(function(self)
         return self:IsKnownAndUsable() and InterruptTargetStun:IsValid()
-            and Player:IsFacing(InterruptTargetStun)
+            -- and Player:IsFacing(InterruptTargetStun)
             and Player:GetEnemies(10) >= 3
             and LegSweep:IsInRange(InterruptTargetStun)
             and not recentInterrupt()
         --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-    end):SetTarget(InterruptTargetStun)
+    end):SetTarget(InterruptTargetStun):PreCast(function()
+        if not Player:IsFacing(InterruptTargetStun) and not Player:IsMoving() then
+            FaceObject(InterruptTargetStun:GetOMToken())
+        end
+    end)
 )
 
 InterruptAPL:AddSpell(
@@ -1143,12 +1155,12 @@ CooldownAPL:AddSpell(
             and (Player:GetPartyHPAround(40, 90) >= 3 or Player:GetEnemies(30) >= 3)
             and Player:GetDistance(nearTarget) <= 20
     end):SetTarget(Player)
-    -- :PreCast(function()
-    --     --hasUsedOffGCDDps = true
-    --     if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
-    --         FaceObject(nearTarget:GetOMToken())
-    --     end
-    -- end)
+-- :PreCast(function()
+--     --hasUsedOffGCDDps = true
+--     if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
+--         FaceObject(nearTarget:GetOMToken())
+--     end
+-- end)
 )
 
 -- Trinkets
@@ -1304,8 +1316,9 @@ DefensiveAPL:AddSpell(
             and ShouldUseCrackling(rangeTarget)
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and CracklingJadeLightning:GetTimeSinceLastCastAttempt() > 3
-            and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 70) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
-        --and not recentAoE()
+            and
+            (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 70) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
+            and not recentAoE()
     end):SetTarget(rangeTarget)
 )
 
@@ -1372,12 +1385,12 @@ StompAPL:AddSpell(
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
             and Player:GetDistance(nearTarget) <= 20
     end):SetTarget(Player)
-    -- :PreCast(function()
-    --     --hasUsedOffGCDDps = true
-    --     if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
-    --         FaceObject(nearTarget:GetOMToken())
-    --     end
-    -- end)
+-- :PreCast(function()
+--     --hasUsedOffGCDDps = true
+--     if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
+--         FaceObject(nearTarget:GetOMToken())
+--     end
+-- end)
 )
 
 StompAPL:AddSpell(
@@ -1385,6 +1398,7 @@ StompAPL:AddSpell(
         return Target:IsValid() and self:IsKnownAndUsable() --self:IsInRange(Target) and
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and waitingGCDcast(self)
     end):SetTarget(Target):PreCast(function()
         if not Player:IsFacing(Target) and not Player:IsMoving() then
             FaceObject(Target:GetOMToken())
@@ -1410,14 +1424,14 @@ DpsAPL:AddSpell(
 
 DpsAPL:AddSpell(
     BlackoutKick:CastableIf(function(self)
-        return self:IsKnownAndUsable()
+        return Target:IsValid() and self:IsKnownAndUsable()
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             --and self:IsInRange(Target)
             --and Player:IsFacing(Target)
             and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            and RisingSunKick:GetCooldownRemaining() > 3
-            --and waitingGCDcast(self)
+            --and RisingSunKick:GetCooldownRemaining() > 3
+            and waitingGCDcast(self)
     end):SetTarget(Target)
 )
 -- Fishing for Harmonic Surge
@@ -1469,9 +1483,10 @@ DpsAPL:AddSpell(
     TigerPalm:CastableIf(function(self)
         return Target:IsValid() and self:IsKnownAndUsable()
             and not Player:IsCastingOrChanneling()
-            --and Player:IsFacing(Target)
-            --and waitingGCDcast(self)
-            --and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and not RisingSunKick:IsKnownAndUsable()
+        --and Player:IsFacing(Target)
+        --and waitingGCDcast(self)
+        --and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
     end):SetTarget(Target)
 )
 
@@ -1573,13 +1588,13 @@ RestoMonkModule:Sync(function()
         --AspectAPL:Execute()
         --if NeedsUrgentHealing() then
         CooldownAPL:Execute()
-            --DefaultAPL:Execute()
+        --DefaultAPL:Execute()
         --end
         DpsAPL:Execute()
-    -- else
-    --     if not Player:IsMounted() and Lowest:GetRealizedHP() < 90 then
-    --         DefaultAPL:Execute()
-    --     end
+        -- else
+        --     if not Player:IsMounted() and Lowest:GetRealizedHP() < 90 then
+        --         DefaultAPL:Execute()
+        --     end
     end
 end)
 
