@@ -1153,7 +1153,7 @@ CooldownAPL:AddSpell(
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
             --and waitingGCDcast(self)
             and (Player:GetPartyHPAround(40, 90) >= 3 or Player:GetEnemies(30) >= 3)
-            and Player:GetDistance(nearTarget) <= 20
+            and Paralysis:IsInRange(rangeTarget)
     end):SetTarget(Player)
 -- :PreCast(function()
 --     --hasUsedOffGCDDps = true
@@ -1317,27 +1317,27 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and CracklingJadeLightning:GetTimeSinceLastCastAttempt() > 3
             and
-            (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 70) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
+            (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
             and not recentAoE()
     end):SetTarget(rangeTarget)
 )
 
-DefensiveAPL:AddSpell(
-    ThunderFocusTea:CastableIf(function(self)
-        return not Player:IsCastingOrChanneling()
-            and ThunderFocusTea:GetCharges() >= 1
-            and EnvelopeLowest:IsValid()
-            and ShouldUseEnvelopingMist(EnvelopeLowest) and EnvelopeLowest:GetHP() < 70
-    end):SetTarget(Player)
-)
+-- DefensiveAPL:AddSpell(
+--     ThunderFocusTea:CastableIf(function(self)
+--         return not Player:IsCastingOrChanneling()
+--             and ThunderFocusTea:GetCharges() >= 1
+--             and EnvelopeLowest:IsValid()
+--             and ShouldUseEnvelopingMist(EnvelopeLowest) and EnvelopeLowest:GetHP() < 70
+--     end):SetTarget(Player)
+-- )
 
-DefensiveAPL:AddSpell(
-    ThunderFocusTea:CastableIf(function(self)
-        return not Player:IsCastingOrChanneling()
-            and ThunderFocusTea:GetCharges() >= 2
-            and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()
-    end):SetTarget(Player)
-)
+-- DefensiveAPL:AddSpell(
+--     ThunderFocusTea:CastableIf(function(self)
+--         return not Player:IsCastingOrChanneling()
+--             and ThunderFocusTea:GetCharges() >= 2
+--             and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()
+--     end):SetTarget(Player)
+-- )
 
 -- Enveloping Mist on debuff targets
 DefensiveAPL:AddSpell(
@@ -1366,7 +1366,11 @@ DefensiveAPL:AddSpell(
             and EnvelopeLowest:IsValid()
             and ShouldUseEnvelopingMist(EnvelopeLowest) and EnvelopeLowest:GetHP() < 70
             and (InvokeChiJi:GetTimeSinceLastCastAttempt() < 12 or Player:GetAuras():FindMy(ThunderFocusTea):IsUp())
-    end):SetTarget(EnvelopeLowest)
+    end):SetTarget(EnvelopeLowest):PreCast(function()
+        if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
+            ThunderFocusTea:Cast(Player)
+        end
+    end)
 )
 
 -- DPS APL
@@ -1383,7 +1387,7 @@ StompAPL:AddSpell(
                 or (not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2)))
             --and waitingGCDcast(self)
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
-            and Player:GetDistance(nearTarget) <= 20
+            and Paralysis:IsInRange(rangeTarget)
     end):SetTarget(Player)
 -- :PreCast(function()
 --     --hasUsedOffGCDDps = true
@@ -1402,6 +1406,9 @@ StompAPL:AddSpell(
     end):SetTarget(Target):PreCast(function()
         if not Player:IsFacing(Target) and not Player:IsMoving() then
             FaceObject(Target:GetOMToken())
+        end
+        if ThunderFocusTea:GetCharges() >= 2 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() then
+            ThunderFocusTea:Cast(Player)
         end
     end)
 )
