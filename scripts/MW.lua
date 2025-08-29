@@ -128,11 +128,11 @@ local function GetRandomStunDelay()
 end
 
 local function GetRandomDispelDelay()
-    return math.random(500, 900) / 1000
+    return math.random(400, 600) / 1000
 end
 
 local function GetRandomCocoonDelay()
-    return math.random(500, 900) / 1000
+    return math.random(400, 600) / 1000
 end
 
 local dispelList = {
@@ -1153,7 +1153,7 @@ CooldownAPL:AddSpell(
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
             --and waitingGCDcast(self)
             and (Player:GetPartyHPAround(40, 90) >= 3 or Player:GetEnemies(30) >= 3)
-            and Paralysis:IsInRange(rangeTarget)
+            and IsMelee(nearTarget)
     end):SetTarget(Player)
 -- :PreCast(function()
 --     --hasUsedOffGCDDps = true
@@ -1291,7 +1291,7 @@ DefensiveAPL:AddSpell(
     SheilunsGift:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
             and
-            ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 90) >= 2 and (SheilunsGift:GetCount() >= 10)) or Lowest:GetRealizedHP() < 50)
+            ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 80) >= 1 and (SheilunsGift:GetCount() >= 10)) or Lowest:GetRealizedHP() < 50)
             and (SheilunsGift:GetCount() >= 7)
             and not Player:IsMoving()
             and not stopCasting()
@@ -1317,7 +1317,8 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and CracklingJadeLightning:GetTimeSinceLastCastAttempt() > 3
             and
-            (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
+            --(Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
+            (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (ThunderFocusTea:GetCharges() >= 2))
             and not recentAoE()
     end):SetTarget(rangeTarget)
 )
@@ -1385,9 +1386,9 @@ StompAPL:AddSpell(
             --     or (not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2) and IsMelee(nearTarget)))
             ((not (Player:GetAuras():FindMy(JadefireStomp):GetRemainingTime() > 2))
                 or (not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2)))
-            --and waitingGCDcast(self)
-            and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
-            and Paralysis:IsInRange(rangeTarget)
+            and waitingGCDcast(self)
+            -- and JadefireStomp:GetTimeSinceLastCastAttempt() > 2
+            and IsMelee(nearTarget)
     end):SetTarget(Player)
 -- :PreCast(function()
 --     --hasUsedOffGCDDps = true
@@ -1525,7 +1526,7 @@ RestoMonkModule:Sync(function()
     scanEnemies()
 
     --print("GCD duration: " .. TigerPalm:GetTimeSinceLastCastAttempt() .." GCD: "..gcdDuration())
-    -- local flag = ObjectMovementFlag('player')
+    --local flag = ObjectMovementFlag('player')
     -- if flag == Flags.FORWARD then
     --     print("YAY WALKING FORWARD")
     -- end
@@ -1547,7 +1548,7 @@ RestoMonkModule:Sync(function()
     -- if Player:GetCastingOrChannelingSpell() == EnvelopingMist and EnvelopeLowest:GetHP() > 80 then
     --     _G.SpellStopCasting()
     -- end
-    if Player:GetCastingOrChannelingSpell() == ManaTea and ((Lowest:GetRealizedHP() < 70) or (Player:GetPP() > 98)) then
+    if Player:GetCastingOrChannelingSpell() == ManaTea and ((Lowest:GetRealizedHP() < 70) or (Player:GetPP() > 98) or (Player:IsMoving() and Player:IsAffectingCombat())) then
         _G.SpellStopCasting()
     end
     if Player:GetCastingOrChannelingSpell() == CracklingJadeLightning and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() then
@@ -1559,8 +1560,8 @@ RestoMonkModule:Sync(function()
     end
     -- OOC manatea
     UpdateManaTeaStacks()
-    if (Player:GetPP() < 90) and (Lowest:GetRealizedHP() > 80) and (ManaTea:GetTimeSinceLastCastAttempt() > 5) then
-        if ((manaTeaStacks >= 10) and not Player:IsAffectingCombat()) or ((manaTeaStacks >= 19) and Player:IsAffectingCombat()) then
+    if (Lowest:GetRealizedHP() > 80) and (ManaTea:GetTimeSinceLastCastAttempt() > 5) then
+        if ((Player:GetPP() < 90) and (manaTeaStacks >= 10) and not Player:IsAffectingCombat()) or ((Player:GetPP() < 80) and (manaTeaStacks >= 19) and Player:IsAffectingCombat()) then
             manaAPL:Execute()
         end
     end
