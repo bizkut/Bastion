@@ -172,7 +172,7 @@ function MythicPlusUtils:New()
         [323437] = true,  -- Stigma of Pride
         [352796] = true,  -- Proxy Strike
         [355888] = true,  -- Hard Light Baton
-        [354297] = true,  -- Hyperlight Bolt
+        --[354297] = true,  -- Hyperlight Bolt
         [355830] = true,  -- Quickblade
         [356967] = true,  -- Hyperlight Backhand
         [357229] = true,  -- Chronolight Enhancer

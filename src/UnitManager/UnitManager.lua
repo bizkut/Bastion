@@ -236,10 +236,10 @@ function UnitManager:GetEnemiesWithMostEnemies(radius)
     local count = 0
     local enemies = {}
     self:EnumEnemies(function(u)
-        if u:IsAlive() then
+        if u:IsAlive() and u:IsAffectingCombat() then
             local c = 0
             self:EnumEnemies(function(other)
-                if other:IsAlive() and u:GetDistance(other) <= radius then
+                if other:IsAlive() and other:IsAffectingCombat() and u:GetDistance(other) <= radius then
                     c = c + 1
                 end
                 return false
