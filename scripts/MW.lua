@@ -74,6 +74,7 @@ local AspectofHarmony = SpellBook:GetSpell(450769)
 local ClarityofPurpose = SpellBook:GetSpell(451181)
 local AncientConcordance = SpellBook:GetSpell(388740)
 local PotentialEnergy = SpellBook:GetSpell(1239483)
+local InvokeChiJiBuff = SpellBook:GetSpell(406220)
 -- CC
 local Polymorph = SpellBook:GetSpell(118)
 
@@ -565,8 +566,8 @@ local function scanFriends()
     cachedUnits.hpLowest = nil
     cachedUnits.renewLowest = nil
     cachedUnits.envelopeLowest = nil
-    cachedUnits.renewCount = 0
     cachedUnits.envelopCount = 0
+    cachedUnits.renewCount = 0
     cachedUnits.dispelTarget = nil
     cachedUnits.debuffTargetWithTFT = nil
     cachedUnits.debuffTargetWithoutTFT = nil
@@ -621,7 +622,8 @@ local function scanFriends()
                 cachedUnits.renewLowest = unit
                 renewLowestHP = realizedHP
             end
-        else
+        end
+        if unit:GetAuras():FindMy(RenewingMistBuff):IsUp() then
             cachedUnits.renewCount = cachedUnits.renewCount + 1
         end
 
@@ -900,8 +902,7 @@ local EnvelopeLowest = Bastion.UnitManager:CreateCustomUnit('envelopelowest',
     function() return cachedUnits.envelopeLowest or Bastion.UnitManager:Get('none') end)
 local envelopCount = Bastion.UnitManager:CreateCustomUnit('envelopcount',
     function() return cachedUnits.envelopCount or 0 end)
-local renewCount = Bastion.UnitManager:CreateCustomUnit('renewcount',
-    function() return cachedUnits.renewCount or 0 end)
+local renewCount = cachedUnits.renewCount or 0
 local DispelTarget = Bastion.UnitManager:CreateCustomUnit('dispel', function()
     if cachedUnits.dispelTarget and cachedUnits.dispelTarget:IsValid() and not debuffThresholds[cachedUnits.dispelTarget:GetGUID()] then
         debuffThresholds[cachedUnits.dispelTarget:GetGUID()] = GetTime() + GetRandomDispelDelay()
@@ -1147,17 +1148,19 @@ CooldownAPL:AddSpell(
             and Player:GetAuras():FindMy(ZenPulse):IsUp()
             and renewCount >= 4
             and (not Player:IsMoving() or Player:GetAuras():FindMy(Vivacious):IsUp())
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Lowest)
 )
 -- Vivify Vivacious, instant cast
 CooldownAPL:AddSpell(
     Vivify:CastableIf(function(self)
         return Lowest:IsValid()
-        and Player:GetAuras():FindMy(Vivacious):IsUp()
+            and Player:GetAuras():FindMy(Vivacious):IsUp()
             and self:IsKnownAndUsable()
             and not Player:IsCastingOrChanneling()
             and (Lowest:GetRealizedHP() < 80 or Player:GetPartyHPAround(40, 85) >= 2)
             and renewCount >= 3
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
         --and not recentAoE()
     end):SetTarget(Lowest):PreCast(function()
         -- UpdateManaTeaStacks()
@@ -1234,6 +1237,16 @@ RenewAPL:AddSpell(
 -- Defensive APL
 
 DefensiveAPL:AddSpell(
+    ThunderFocusTea:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and ThunderFocusTea:GetCharges() >= 1
+            and ((ShouldUseEnvelopingMist(TankTarget) and ThunderFocusTea:GetCharges() >= 2 and TankTarget:GetHP() < 100) or (ShouldUseEnvelopingMist(EnvelopeLowest) and EnvelopeLowest:GetHP() < 70))
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(Player)
+)
+
+DefensiveAPL:AddSpell(
     ExpelHarm:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Player:GetHP() < 80
@@ -1255,7 +1268,6 @@ DefensiveAPL:AddItem(
     end):SetTarget(Player)
 )
 
-
 DefensiveAPL:AddItem(
     AlgariHealingPotion:UsableIf(function(self)
         return self:IsUsable()
@@ -1264,6 +1276,27 @@ DefensiveAPL:AddItem(
             and not recentDefensive()
         --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
     end):SetTarget(Player)
+)
+
+DefensiveAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and EnvelopeLowest:IsValid()
+            and ShouldUseEnvelopingMist(EnvelopeLowest) and EnvelopeLowest:GetHP() < 70
+            and
+            (Player:GetAuras():FindMy(InvokeChiJiBuff):IsUp() or Player:GetAuras():FindMy(ThunderFocusTea):IsUp())
+    end):SetTarget(EnvelopeLowest)
+)
+-- Enveloping Mist on tank
+DefensiveAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and TankTarget:IsValid() and ShouldUseEnvelopingMist(TankTarget)
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            --and TankTarget:GetHP() < 100
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
+    end):SetTarget(TankTarget)
 )
 
 DefensiveAPL:AddSpell(
@@ -1371,27 +1404,13 @@ DefensiveAPL:AddSpell(
 --             and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()
 --     end):SetTarget(Player)
 -- )
--- Enveloping Mist on tank
-DefensiveAPL:AddSpell(
-    EnvelopingMist:CastableIf(function(self)
-        return TankTarget:IsValid() and ShouldUseEnvelopingMist(TankTarget)
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and ThunderFocusTea:GetCharges() >= 2
-            and TankTarget:GetRealizedHP() < 100
-            --and Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
-    end):SetTarget(TankTarget):PreCast(function()
-        if ThunderFocusTea:GetCharges() >= 2 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2  then
-            ThunderFocusTea:Cast(Player)
-        end
-    end)
-)
 -- Enveloping Mist on debuff targets
 DefensiveAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         return DebuffTargetWithoutTFT:IsValid() and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and not Player:IsMoving() and not stopCasting()
-            --and Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
+        --and Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
     end):SetTarget(DebuffTargetWithoutTFT)
 )
 
@@ -1404,19 +1423,6 @@ DefensiveAPL:AddSpell(
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
         --and EnvelopingMist:GetTimeSinceLastCastAttempt() > 2
     end):SetTarget(BusterTargetWithoutTFT)
-)
-DefensiveAPL:AddSpell(
-    EnvelopingMist:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and EnvelopeLowest:IsValid()
-            and ShouldUseEnvelopingMist(EnvelopeLowest) and EnvelopeLowest:GetHP() < 70
-            and (InvokeChiJi:GetTimeSinceLastCastAttempt() < 12 or ThunderFocusTea:GetCharges() >= 1)
-    end):SetTarget(EnvelopeLowest):PreCast(function()
-        if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
-            ThunderFocusTea:Cast(Player)
-        end
-    end)
 )
 
 -- DPS APL
@@ -1449,6 +1455,7 @@ StompAPL:AddSpell(
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and waitingGCDcast(self)
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Target):PreCast(function()
         if not Player:IsFacing(Target) and not Player:IsMoving() then
             FaceObject(Target:GetOMToken())
@@ -1470,11 +1477,11 @@ DpsAPL:AddSpell(
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and not hasNoAggroTarget()
     end):SetTarget(Player)
-    -- :PreCast(function()
-    --     if not Player:IsFacing(mostEnemies()) and not Player:IsMoving() then
-    --         FaceObject(mostEnemies():GetOMToken())
-    --     end
-    -- end)
+-- :PreCast(function()
+--     if not Player:IsFacing(mostEnemies()) and not Player:IsMoving() then
+--         FaceObject(mostEnemies():GetOMToken())
+--     end
+-- end)
 )
 
 DpsAPL:AddSpell(
@@ -1578,6 +1585,9 @@ RestoMonkModule:Sync(function()
     --     print("YAY WALKING FORWARD")
     -- end
 
+    if renewCount > 0 then
+        print("Renew count: " .. renewCount)
+    end
     if UnitInVehicle("player") or Player:IsMounted() or Player:GetAuras():FindMy(Drinking):IsUp() or Player:GetAuras():FindMy(Eating):IsUp()
         or Player:GetAuras():FindMy(EatingDelves):IsUp() or Player:GetAuras():FindMy(EatingBeledar):IsUp() or IsAltKeyDown() or IsSpellPending() == 64 then
         --print("Resto Monk Module: Skipping APL due to player state.")
