@@ -379,6 +379,7 @@ Bastion.dispelAll = false
 Bastion.interrAll = false
 _G.SLASH_DISPELALL1 = '/dispel'
 _G.SLASH_INTERRALL1 = '/interr'
+_G.SLASH_STUNNALL1 = '/stunn'
 _G.SlashCmdList['DISPELALL'] = function(msg)
     Bastion.dispelAll = not Bastion.dispelAll
     if Bastion.dispelAll then
@@ -393,6 +394,14 @@ _G.SlashCmdList['INTERRALL'] = function(msg)
         Bastion:Print("Interrupt all Enabled")
     else
         Bastion:Print("Interrupt all Disabled")
+    end
+end
+_G.SlashCmdList['STUNNALL'] = function(msg)
+    Bastion.stunnAll = not Bastion.stunnAll
+    if Bastion.stunnAll then
+        Bastion:Print("Stun all Enabled")
+    else
+        Bastion:Print("Stun all Disabled")
     end
 end
 -- Stopcasting
@@ -799,7 +808,7 @@ local function scanEnemies()
                     end
                 end
             end
-            if MythicPlusUtils:CastingCriticalStun(unit, GetRandomStunDelay()) or (Bastion.interrAll and unit:IsInterruptibleAt(GetRandomStunDelay(), true) and not unit:IsBoss() and unit:GetID() ~= 229537) then -- Void Emissary affix npc
+            if MythicPlusUtils:CastingCriticalStun(unit, GetRandomStunDelay()) or (Bastion.stunnAll and unit:IsInterruptibleAt(GetRandomStunDelay(), true) and not unit:IsBoss() and unit:GetID() ~= 229537) then -- Void Emissary affix npc
                 if not cachedUnits.interruptTargetStun then
                     cachedUnits.interruptTargetStun = unit
                 end
