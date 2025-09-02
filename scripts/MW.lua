@@ -577,6 +577,40 @@ local function IsMelee(unit)
 end
 
 local Flags = { NONE = 0x00000000, FORWARD = 0x00000001, BACKWARD = 0x00000002, STRAFELEFT = 0x00000004, STRAFERIGHT = 0x00000008, TURNLEFT = 0x00000010, TURNRIGHT = 0x00000020, PITCHUP = 0x00000040, PITCHDOWN = 0x00000080, WALKMODE = 0x00000100, ONTRANSPORT = 0x00000200, LEVITATING = 0x00000400, ROOT = 0x00000800, FALLING = 0x00001000, FALLINGFAR = 0x00002000, PENDINGSTOP = 0x00004000, PENDINGSTRAFESTOP = 0x00008000, PENDINGFORWARD = 0x00010000, PENDINGBACKWARD = 0x00020000, PENDINGSTRAFELEFT = 0x00040000, PENDINGSTRAFERIGHT = 0x00080000, PENDINGROOT = 0x00100000, SWIMMING = 0x00200000, ASCENDING = 0x00400000, DESCENDING = 0x00800000, CAN_FLY = 0x01000000, FLYING = 0x02000000, SPLINEELEVATION = 0x04000000, SPLINEENABLED = 0x08000000, WATERWALKING = 0x10000000, SAFEFALL = 0x20000000, HOVER = 0x40000000 }
+-- one-time hidden tooltip
+local HarmonyTip = CreateFrame("GameTooltip", "HarmonyTip", UIParent, "GameTooltipTemplate")
+HarmonyTip:SetOwner(UIParent, "ANCHOR_NONE")
+
+local function ReadHarmonyBySpellID(spellID)
+    local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellID)
+    if not aura then return nil end
+
+    -- Aspect of Harmony is a buff, so use SetUnitBuffByAuraInstanceID
+    HarmonyTip:ClearLines()
+    HarmonyTip:SetUnitBuffByAuraInstanceID("player", aura.auraInstanceID)
+
+    for i = 1, HarmonyTip:NumLines() do
+        local text = _G["HarmonyTipTextLeft"..i]:GetText()
+        if text then
+            -- grab first number (handles 1,234,567 or 1234.5)
+            local num = text:match("([%d%.,]+)")
+            if num then
+                num = tonumber((num:gsub(",", "")))
+                if num then return num end
+            end
+        end
+    end
+    return nil
+end
+
+local function HarmonyMax()
+    local val = ReadHarmonyBySpellID(450526) or ReadHarmonyBySpellID(450521) or ReadHarmonyBySpellID(450531)
+    if not val then return false end
+    if val >= Player:GetMaxHealth() then
+        return true
+    end
+    return false
+end
 
 -- Unit caching and scanning
 local cachedUnits = {}
@@ -816,7 +850,7 @@ local function scanEnemies()
         end
 
         -- Buster Target Logic
-        if unit:IsCastingOrChanneling() and not unit:IsInterruptible() and MythicPlusUtils:CastingCriticalBusters(unit) then
+        if unit:IsCastingOrChanneling() and not unit:IsInterruptible() and MythicPlusUtils:CastingCriticalBusters(unit) and ThunderFocusTea:GetCharges() >= 2 then
             if not cachedUnits.busterTargetWithTFT and not cachedUnits.busterTargetWithoutTFT then -- Only find one
                 local busterTargetUnit = Bastion.UnitManager:Get(ObjectCastingTarget(unit:GetOMToken()))
                 if busterTargetUnit and Player:GetDistance(busterTargetUnit) <= 40 and Player:CanSee(busterTargetUnit) and busterTargetUnit:IsAlive() then
@@ -1315,23 +1349,23 @@ DefensiveAPL:AddSpell(
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             --and ThunderFocusTea:GetCharges() >= 1
             and
-            ((ShouldUseEnvelopingMist(TankTarget) and ThunderFocusTea:GetCharges() >= 2 and TankTarget:GetRealizedHP() < 70 and not TankTarget:GetAuras():FindAny(LifeCocoon):IsUp()) or (ShouldUseEnvelopingMist(EnvelopeLowest) and not EnvelopeLowest:GetAuras():FindAny(LifeCocoon):IsUp()) or (ShouldUseEnvelopingMist(BusterTargetWithoutTFT) and not BusterTargetWithoutTFT:GetAuras():FindAny(LifeCocoon):IsUp()) or (ShouldUseEnvelopingMist(DebuffTargetWithoutTFT) and not DebuffTargetWithoutTFT:GetAuras():FindAny(LifeCocoon):IsUp())) -- or (ThunderFocusTea:GetCharges() >= 2 and cachedUnits["CondCrackling"] and Player:GetAuras():FindMy(JadeEmpowerment):IsDown())) -- cast Thunder Focus Tea when need lightning
+            ((ThunderFocusTea:GetCharges() >= 2 and HarmonyMax()) or (ShouldUseEnvelopingMist(TankTarget) and ThunderFocusTea:GetCharges() >= 2 and (TankTarget:GetRealizedHP() < 70 or TankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown())) or (ShouldUseEnvelopingMist(EnvelopeLowest)) or (ShouldUseEnvelopingMist(BusterTargetWithoutTFT)) or (ShouldUseEnvelopingMist(DebuffTargetWithoutTFT))) -- or (ThunderFocusTea:GetCharges() >= 2 and cachedUnits["CondCrackling"] and Player:GetAuras():FindMy(JadeEmpowerment):IsDown())) -- cast Thunder Focus Tea when need lightning
             --and ((ShouldUseEnvelopingMist(TankTarget) and ThunderFocusTea:GetCharges() >= 2) or ShouldUseEnvelopingMist(EnvelopeLowest) or ShouldUseEnvelopingMist(BusterTargetWithoutTFT))
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
         --cachedUnits["HasFocusTea"] = 1
         if ShouldUseEnvelopingMist(EnvelopeLowest) then
-            print("Casting Enveloping Mist on EnvelopeLowest")
             EnvelopingMist:Cast(EnvelopeLowest)
+            print("Casting Enveloping Mist on EnvelopeLowest")
         elseif ShouldUseEnvelopingMist(DebuffTargetWithoutTFT) then
-            print("Casting Enveloping Mist on DebuffTargetWithoutTFT")
             EnvelopingMist:Cast(DebuffTargetWithoutTFT)
+            print("Casting Enveloping Mist on DebuffTargetWithoutTFT")
         elseif ShouldUseEnvelopingMist(BusterTargetWithoutTFT) then
-            print("Casting Enveloping Mist on BusterTargetWithoutTFT")
             EnvelopingMist:Cast(BusterTargetWithoutTFT)
+            print("Casting Enveloping Mist on BusterTargetWithoutTFT")
         elseif ShouldUseEnvelopingMist(TankTarget) then
-            print("Casting Enveloping Mist on TankTarget")
             EnvelopingMist:Cast(TankTarget)
+            print("Casting Enveloping Mist on TankTarget")
         end
     end)
 )
@@ -1489,7 +1523,7 @@ DefensiveAPL:AddSpell(
             --and waitingGCDcast(self)
             and
             --(Player:GetAuras():FindMy(SecretInfusion):IsUp() or CondCrackling() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
-            (CondCrackling() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
+            (CondCrackling() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(SecretInfusion):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
             --and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (ThunderFocusTea:GetCharges() >= 2))
             and not recentAoE()
     end):SetTarget(rangeTarget):PreCast(function()
