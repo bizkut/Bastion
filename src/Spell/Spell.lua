@@ -212,6 +212,15 @@ function Spell:Cast(unit, condition)
         return false
     end
 
+    -- Check if we can queue the spell
+    local _, _, _, _, cast_end_time, _, _, _, spell_id = UnitCastingInfo("player")
+    if spell_id and cast_end_time and cast_end_time > 0 then
+        local cast_time_left = (cast_end_time / 1000) - GetTime()
+        if cast_time_left > (self:GetSpellQueueWindow() / 1000) then
+            return false
+        end
+    end
+
     -- Call pre cast function
     if self:GetPreCastFunction() then
         self:GetPreCastFunction()(self)
@@ -228,7 +237,6 @@ function Spell:Cast(unit, condition)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
-    SpellCancelQueuedSpell()
 
     Bastion:Debug("Casting", self)
 
@@ -264,7 +272,6 @@ function Spell:ForceCast(unit)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
-    SpellCancelQueuedSpell()
 
     Bastion:Debug("Casting", self)
 
@@ -481,6 +488,13 @@ function Spell:GetCastLength()
         return info and info.castTime or nil
     end
     return select(4, GetSpellInfo(self:GetID()))
+end
+
+function Spell:GetSpellQueueWindow()
+    local _, _, _, world_lag = GetNetStats()
+    local _, queue_window_end = GetSpellQueueWindow()
+
+    return (queue_window_end or 400) - world_lag
 end
 
 -- Get the spells charges
