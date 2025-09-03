@@ -21,23 +21,23 @@ local ThunderFocusTea = SpellBook:GetSpell(116680):SetOffGCD(true)
 local TigerPalm = SpellBook:GetSpell(100780)
 local BlackoutKick = SpellBook:GetSpell(100784)
 local SpinningCraneKick = SpellBook:GetSpell(101546)
-local Revival = SpellBook:GetSpell(115310)
-local Restoral = SpellBook:GetSpell(388615)
+local Revival = SpellBook:GetSpell(115310):SetInterruptsCast(true)
+local Restoral = SpellBook:GetSpell(388615):SetInterruptsCast(true)
 local InvokeYulon = SpellBook:GetSpell(322118)
 local InvokeChiJi = SpellBook:GetSpell(325197)
 local SoothingMist = SpellBook:GetSpell(115175)
 local ManaTea = SpellBook:GetSpell(115294)
 local CelestialConduit = SpellBook:GetSpell(443028)
 local UnityWithin = SpellBook:GetSpell(443591)
-local FortifyingBrew = SpellBook:GetSpell(115203):SetOffGCD(true)
-local DiffuseMagic = SpellBook:GetSpell(122783)
-local LifeCocoon = SpellBook:GetSpell(116849)
+local FortifyingBrew = SpellBook:GetSpell(115203):SetInterruptsCast(true):SetOffGCD(true)
+local DiffuseMagic = SpellBook:GetSpell(122783):SetOffGCD(true)
+local LifeCocoon = SpellBook:GetSpell(116849):SetOffGCD(true)
 local JadefireStomp = SpellBook:GetSpell(388193)
 local SheilunsGift = SpellBook:GetSpell(399491)
 local TouchOfDeath = SpellBook:GetSpell(322109)
 local SpearHandStrike = SpellBook:GetSpell(116705):SetInterruptsCast(true):SetOffGCD(true)
-local LegSweep = SpellBook:GetSpell(119381):SetInterruptsCast(true):SetOffGCD(true)
-local Paralysis = SpellBook:GetSpell(115078):SetInterruptsCast(true):SetOffGCD(true)
+local LegSweep = SpellBook:GetSpell(119381):SetInterruptsCast(true)
+local Paralysis = SpellBook:GetSpell(115078):SetInterruptsCast(true)
 local CracklingJadeLightning = SpellBook:GetSpell(117952)
 local ExpelHarm = SpellBook:GetSpell(322101)
 local Detox = SpellBook:GetSpell(115450)
@@ -75,15 +75,15 @@ local AspectDraining = SpellBook:GetSpell(450711)
 local AspectofHarmony = SpellBook:GetSpell(450769)
 local ClarityofPurpose = SpellBook:GetSpell(451181)
 local AncientConcordance = SpellBook:GetSpell(388740)
-local PotentialEnergy = SpellBook:GetSpell(1239483)
+local PotentialEnergy = SpellBook:GetSpell(1239483) -- 2-4 set S3
 local InvokeChiJiBuff = SpellBook:GetSpell(406220)
 local SecretInfusion = SpellBook:GetSpell(388498)
 -- CC
 local Polymorph = SpellBook:GetSpell(118)
 
 -- Items
-local Healthstone = ItemBook:GetItem(5512):SetOffGCD(true)
-local AlgariHealingPotion = ItemBook:GetItem(211880):SetOffGCD(true)
+local Healthstone = ItemBook:GetItem(5512):SetOffGCD(true):SetInterruptsCast(true)
+local AlgariHealingPotion = ItemBook:GetItem(211880):SetOffGCD(true):SetInterruptsCast(true)
 local Noggen = ItemBook:GetItem(232486)
 local KoD = ItemBook:GetItem(215174)    -- Kiss of Death
 local Signet = ItemBook:GetItem(219308) -- Signet of Priory
@@ -741,9 +741,6 @@ local function scanFriends()
             end
         end
     end)
-    if cachedUnits.envelopeLowest:IsUnit(cachedUnits.lowest) and ShouldUseEnvelopingMist(cachedUnits.lowest) then
-        cachedUnits.envelopCount = Player:GetPartyHPAround(40, 70)
-    end
     if cachedUnits.envelopeLowest and cachedUnits.debuffTargetWithoutTFT and cachedUnits.envelopeLowest:IsUnit(cachedUnits.debuffTargetWithoutTFT) then
         cachedUnits.debuffTargetWithoutTFT = nil
     end
@@ -1326,10 +1323,20 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddItem(
     Healthstone:UsableIf(function(self)
         return self:IsUsable()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and Player:GetHP() < 50
+            --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and Player:GetHP() < 30
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
+            and not recentDefensive()
+    end):SetTarget(Player)
+)
+
+DefensiveAPL:AddSpell(
+    FortifyingBrew:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and Player:GetHP() < 40
+            and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             and not recentDefensive()
     end):SetTarget(Player)
 )
@@ -1341,16 +1348,6 @@ DefensiveAPL:AddItem(
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             and not recentDefensive()
         --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
-    end):SetTarget(Player)
-)
-
-DefensiveAPL:AddSpell(
-    FortifyingBrew:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and Player:GetHP() < 40
-            and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
-            and not recentDefensive()
     end):SetTarget(Player)
 )
 -- local envelopingTarget = nil
