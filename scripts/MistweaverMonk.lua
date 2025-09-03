@@ -106,6 +106,13 @@ local hasUsedOffGCDDps = false
 
 -- Add this helper function near the top of the file, after the SpellBook initialization
 
+local function waitingGCD()
+    return Player:GetGCD() * 1000 < (select(4, GetNetStats()) and select(3, GetNetStats()))
+end
+local function waitingGCDcast(spell)
+    return spell:GetTimeSinceLastCastAttempt() > Player:GetGCD()
+end
+
 local function GetRandomInterruptDelay()
     return math.random(40, 60)
 end
@@ -659,6 +666,7 @@ end
 local function ShouldUseCrackling(unit)
     return CracklingJadeLightning:IsKnownAndUsable() and unit:IsValid() and canDamage(unit) and not Player:IsMoving()
         --and CracklingJadeLightning:GetTimeSinceLastCastAttempt() > 2
+        and waitingGCDcast(CracklingJadeLightning)
         and Player:GetAuras():FindMy(JadeEmpowerment):IsUp()
         and not Player:IsCastingOrChanneling()
         and not stopCasting()
@@ -1375,6 +1383,7 @@ CooldownAPL:AddSpell(
             and not stopCasting()
             and ThunderFocusTea:GetCharges() < 1
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and waitingGCD()
     end):SetTarget(EnvelopeLowest)
     -- :PreCast(function()
     --     --UpdateManaTeaStacks()
@@ -1641,6 +1650,7 @@ StompAPL:AddSpell(
             --and not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2) and InMelee(nearTarget)
             and Target:IsValid()
             --and Player:IsWithinCone(TankTarget,90,40)
+            and waitingGCD()
             and not hasUsedOffGCDDps
     end):SetTarget(Player):OnCast(function()
         hasUsedOffGCDDps = true
@@ -1712,6 +1722,7 @@ DpsAPL:AddSpell(
             --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(Target,90,40) or Player:IsWithinCone(TankTarget,90,40))
             and not Player:IsMoving()
             and not stopCasting()
+            and waitingGCD()
             and mostEnemies():IsValid()
             and not hasUsedOffGCDDps
     end):SetTarget(Player):OnCast(function()

@@ -212,13 +212,8 @@ function Spell:Cast(unit, condition)
         return false
     end
 
-    -- Check if we can queue the spell
-    local _, _, _, _, cast_end_time, _, _, _, spell_id = UnitCastingInfo("player")
-    if spell_id and cast_end_time and cast_end_time > 0 then
-        local cast_time_left = (cast_end_time / 1000) - GetTime()
-        if cast_time_left > (self:GetSpellQueueWindow() / 1000) then
-            return false
-        end
+    if self:PlayerIsBusy() then
+        return false
     end
 
     -- Call pre cast function
@@ -237,6 +232,7 @@ function Spell:Cast(unit, condition)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
+    SpellCancelQueuedSpell()
 
     Bastion:Debug("Casting", self)
 
@@ -272,6 +268,7 @@ function Spell:ForceCast(unit)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
+    SpellCancelQueuedSpell()
 
     Bastion:Debug("Casting", self)
 
@@ -494,7 +491,37 @@ function Spell:GetSpellQueueWindow()
     local _, _, _, world_lag = GetNetStats()
     local _, queue_window_end = GetSpellQueueWindow()
 
-    return (queue_window_end or 400) - world_lag
+    -- Add a small random delay to simulate a very good human player
+    local random_delay = math.random(10, 50) -- A random delay between 10 and 50ms
+
+    return (queue_window_end or 400) - world_lag - random_delay
+end
+
+function Spell:PlayerIsBusy()
+    -- Check for spell cast
+    local _, _, _, _, cast_end_time, _, _, _, spell_id = UnitCastingInfo("player")
+    if spell_id and cast_end_time and cast_end_time > 0 then
+        local cast_time_left = (cast_end_time / 1000) - GetTime()
+        if cast_time_left > (self:GetSpellQueueWindow() / 1000) then
+            return true -- Busy, and not in queue window
+        else
+            return false -- In queue window, not busy
+        end
+    end
+
+    -- Check for GCD
+    local gcd_start_time, gcd_duration = GetGcdInfo()
+    if gcd_start_time and gcd_start_time > 0 then
+        local gcd_end_time = gcd_start_time + gcd_duration
+        local gcd_time_left = gcd_end_time - GetTime()
+        if gcd_time_left > (self:GetSpellQueueWindow() / 1000) then
+            return true -- Busy, and not in queue window
+        else
+            return false -- In queue window, not busy
+        end
+    end
+
+    return false -- Not busy
 end
 
 -- Get the spells charges
