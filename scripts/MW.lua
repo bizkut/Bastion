@@ -53,6 +53,7 @@ local JadefireTeachingsBuff = SpellBook:GetSpell(388026)
 local RingOfPeace = SpellBook:GetSpell(116844)
 local ImprovedToD = SpellBook:GetSpell(322113)
 local PressurePoints = SpellBook:GetSpell(450432) -- Paralysis soothe
+local GCD = SpellBook:GetSpell(61304)             -- 61304 is the spell ID for "Spell Haste"
 -- Add Rising Mist spell
 local RisingMist = SpellBook:GetSpell(274909)
 
@@ -108,7 +109,7 @@ local hasUsedOffGCDDps = false
 
 -- Add this helper function near the top of the file, after the SpellBook initialization
 local function gcdDuration()
-    local info = C_Spell.GetSpellCooldown(61304) -- 61304 is the spell ID for "Spell Haste"
+    local info = C_Spell.GetSpellCooldown(GCD:GetID()) -- 61304 is the spell ID for "Spell Haste"
     if info and (info.startTime or info.duration) == 0 then
         return 1.25
     end
@@ -590,7 +591,7 @@ local function ReadHarmonyBySpellID(spellID)
     HarmonyTip:SetUnitBuffByAuraInstanceID("player", aura.auraInstanceID)
 
     for i = 1, HarmonyTip:NumLines() do
-        local text = _G["HarmonyTipTextLeft"..i]:GetText()
+        local text = _G["HarmonyTipTextLeft" .. i]:GetText()
         if text then
             -- grab first number (handles 1,234,567 or 1234.5)
             local num = text:match("([%d%.,]+)")
@@ -737,7 +738,9 @@ local function scanFriends()
             end
         end
     end)
-
+    if cachedUnits.envelopeLowest:IsUnit(cachedUnits.lowest) and ShouldUseEnvelopingMist(cachedUnits.lowest) then
+        cachedUnits.envelopCount = Player:GetPartyHPAround(40, 70)
+    end
     if cachedUnits.envelopeLowest and cachedUnits.debuffTargetWithoutTFT and cachedUnits.envelopeLowest:IsUnit(cachedUnits.debuffTargetWithoutTFT) then
         cachedUnits.debuffTargetWithoutTFT = nil
     end
@@ -1174,8 +1177,8 @@ VivifyAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and not Player:IsMoving()
             and not stopCasting()
-            and waitingGCDcast(self)
-            -- and EnvelopeLowest:GetHP() < 60
+        --and waitingGCDcast(self)
+        -- and EnvelopeLowest:GetHP() < 60
     end):SetTarget(EnvelopeLowest)
 )
 VivifyAPL:AddSpell(
@@ -1184,7 +1187,7 @@ VivifyAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and (not Player:IsMoving() or Player:GetAuras():FindMy(Vivacious):IsUp())
             and not stopCasting()
-            and waitingGCDcast(self)
+        --and waitingGCDcast(self)
     end):SetTarget(Lowest)
 )
 -- Vivify OOC
@@ -1230,8 +1233,9 @@ CooldownAPL:AddSpell(
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             --and ((Lowest:GetRealizedHP() < 80 and cachedUnits["renewCount"] >= 3)
             --and ((Lowest:GetRealizedHP() < 80) or (waitingGCDcast(BlackoutKick) and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4) or (Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
-            and ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
-            --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and
+            ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
+        --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
         --and not recentAoE()
     end):SetTarget(Lowest)
 )
@@ -1299,7 +1303,7 @@ RenewAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             --and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 90)
             and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 100)
-            --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+        --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(RenewLowest)
 )
 
@@ -1376,7 +1380,7 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable()
-        and EnvelopeLowest
+            and EnvelopeLowest
             and ShouldUseEnvelopingMist(EnvelopeLowest)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             --and waitingGCDcast(self)
@@ -1384,16 +1388,16 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
         print("Casting Enveloping Mist on EnvelopeLowest", EnvelopeLowest:GetName())
-        --EnvelopingMist:Cast(EnvelopeLowest)
-        CastSpellByName("Enveloping Mist", EnvelopeLowest:GetOMToken())
-        SpellCancelQueuedSpell()
+        _G.SpellStopCasting()
+        EnvelopingMist:Cast(EnvelopeLowest)
+        -- CastSpellByName("Enveloping Mist", EnvelopeLowest:GetOMToken())
     end)
 )
 
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable()
-        and DebuffTargetWithoutTFT
+            and DebuffTargetWithoutTFT
             and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             --and waitingGCDcast(self)
@@ -1401,16 +1405,16 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
         print("Casting Enveloping Mist on DebuffTargetWithoutTFT", DebuffTargetWithoutTFT:GetName())
-        --EnvelopingMist:Cast(DebuffTargetWithoutTFT)
-        CastSpellByName("Enveloping Mist", DebuffTargetWithoutTFT:GetOMToken())
-        SpellCancelQueuedSpell()
+        _G.SpellStopCasting()
+        EnvelopingMist:Cast(DebuffTargetWithoutTFT)
+        -- CastSpellByName("Enveloping Mist", DebuffTargetWithoutTFT:GetOMToken())
     end)
 )
 
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable()
-        and BusterTargetWithoutTFT
+            and BusterTargetWithoutTFT
             and ShouldUseEnvelopingMist(BusterTargetWithoutTFT)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             --and waitingGCDcast(self)
@@ -1418,30 +1422,50 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
         print("Casting Enveloping Mist on BusterTargetWithoutTFT", BusterTargetWithoutTFT:GetName())
-        --EnvelopingMist:Cast(BusterTargetWithoutTFT)
-        CastSpellByName("Enveloping Mist", BusterTargetWithoutTFT:GetOMToken())
-        SpellCancelQueuedSpell()
+        _G.SpellStopCasting()
+        EnvelopingMist:Cast(BusterTargetWithoutTFT)
+        -- CastSpellByName("Enveloping Mist", BusterTargetWithoutTFT:GetOMToken())
     end)
 )
 
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable()
-        and TankTarget
-        and (TankTarget:GetRealizedHP() < 70 or TankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown())
+            and TankTarget
+            and
+            (TankTarget:GetRealizedHP() < 70 or TankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown())
             and ShouldUseEnvelopingMist(TankTarget)
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and (not Player:IsCastingOrChanneling() or spinningCrane())
             --and waitingGCDcast(self)
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
         print("Casting Enveloping Mist on TankTarget", TankTarget:GetName())
-        --EnvelopingMist:Cast(TankTarget)
-        CastSpellByName("Enveloping Mist", TankTarget:GetOMToken())
-        SpellCancelQueuedSpell()
+        _G.SpellStopCasting()
+        EnvelopingMist:Cast(TankTarget)
+        -- CastSpellByName("Enveloping Mist", TankTarget:GetOMToken())
     end)
 )
-
+DefensiveAPL:AddSpell(
+    ThunderFocusTea:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and HarmonyMax()
+            and Target:IsValid()
+            and RisingSunKick:IsKnownAndUsable()
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and (not Player:IsCastingOrChanneling() or spinningCrane())
+            --and waitingGCDcast(self)
+            and ThunderFocusTea:GetCharges() >= 2
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(Player):OnCast(function()
+        print("Casting Enveloping Mist on RisingSunKick", Target:GetName())
+        _G.SpellStopCasting()
+        if not Player:IsFacing(Target) and not Player:IsMoving() then
+            FaceObject(Target:GetOMToken())
+        end
+        RisingSunKick:Cast(Target)
+    end)
+)
 -- DefensiveAPL:AddSpell(
 --     EnvelopingMist:CastableIf(function(self)
 --         return self:IsKnownAndUsable()
@@ -1627,8 +1651,8 @@ StompAPL:AddSpell(
         return Target:IsValid() and self:IsKnownAndUsable() --self:IsInRange(Target) and
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            --and waitingGCDcast(self)
-            --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+        --and waitingGCDcast(self)
+        --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Target):PreCast(function()
         if not Player:IsFacing(Target) and not Player:IsMoving() then
             FaceObject(Target:GetOMToken())
@@ -1644,7 +1668,7 @@ DpsAPL:AddSpell(
         return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
             --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(Target,90,40) or Player:IsWithinCone(TankTarget,90,40))
             and not Player:IsMoving()
-            and waitingGCDcast(self)
+            --and waitingGCDcast(self)
             --and self:GetTimeSinceLastCastAttempt() > 2
             --and nearTarget:IsValid()
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
