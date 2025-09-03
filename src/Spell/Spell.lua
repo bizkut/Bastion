@@ -12,7 +12,8 @@ local Spell = {
     lastCastAt = false,
     conditions = {},
     target = false,
-    release_at = false
+    release_at = false,
+    isOffGCD = false
 }
 
 local usableExcludes = {
@@ -212,7 +213,7 @@ function Spell:Cast(unit, condition)
         return false
     end
 
-    if self:PlayerIsBusy() then
+    if not self:IsOffGCD() and self:PlayerIsBusy() then
         return false
     end
 
@@ -502,26 +503,12 @@ function Spell:PlayerIsBusy()
     local _, _, _, _, cast_end_time, _, _, _, spell_id = UnitCastingInfo("player")
     if spell_id and cast_end_time and cast_end_time > 0 then
         local cast_time_left = (cast_end_time / 1000) - GetTime()
-        if cast_time_left > (self:GetSpellQueueWindow() / 1000) then
-            return true -- Busy, and not in queue window
-        else
-            return false -- In queue window, not busy
-        end
+        return cast_time_left > (self:GetSpellQueueWindow() / 1000)
     end
 
     -- Check for GCD
-    local gcd_start_time, gcd_duration = GetGcdInfo()
-    if gcd_start_time and gcd_start_time > 0 then
-        local gcd_end_time = gcd_start_time + gcd_duration
-        local gcd_time_left = gcd_end_time - GetTime()
-        if gcd_time_left > (self:GetSpellQueueWindow() / 1000) then
-            return true -- Busy, and not in queue window
-        else
-            return false -- In queue window, not busy
-        end
-    end
-
-    return false -- Not busy
+    local gcd_time_left = Bastion.UnitManager:Get('player'):GetGCD()
+    return gcd_time_left > (self:GetSpellQueueWindow() / 1000)
 end
 
 -- Get the spells charges
@@ -633,6 +620,15 @@ end
 ---@return Unit
 function Spell:GetTarget()
     return self.target
+end
+
+function Spell:SetOffGCD(is_off_gcd)
+    self.isOffGCD = is_off_gcd
+    return self
+end
+
+function Spell:IsOffGCD()
+    return self.isOffGCD
 end
 
 -- IsMagicDispel
