@@ -1463,14 +1463,14 @@ DefensiveAPL:AddSpell(
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        print("Casting Enveloping Mist on RisingSunKick", Target:GetName())
-        -- _G.SpellStopCasting()
-        if not Player:IsFacing(Target) and not Player:IsMoving() then
-            FaceObject(Target:GetOMToken())
-        end
-        RisingSunKick:Cast(Target)
-        -- _G.SpellStopCasting()
-        -- CastSpellByName("Rising Sun Kick", Target:GetOMToken())
+        local latency = select(4, GetNetStats()) or 100
+        local delay = (latency / 1000) + 0.05
+        C_Timer.After(delay, function()
+            if not Player:IsFacing(Target) and not Player:IsMoving() then
+                FaceObject(Target:GetOMToken())
+            end
+            RisingSunKick:Cast(Target)
+        end)
     end)
 )
 -- DefensiveAPL:AddSpell(
