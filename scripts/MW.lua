@@ -35,9 +35,9 @@ local LifeCocoon = SpellBook:GetSpell(116849)
 local JadefireStomp = SpellBook:GetSpell(388193)
 local SheilunsGift = SpellBook:GetSpell(399491)
 local TouchOfDeath = SpellBook:GetSpell(322109)
-local SpearHandStrike = SpellBook:GetSpell(116705):SetInterruptsCast(true)
-local LegSweep = SpellBook:GetSpell(119381):SetInterruptsCast(true)
-local Paralysis = SpellBook:GetSpell(115078):SetInterruptsCast(true)
+local SpearHandStrike = SpellBook:GetSpell(116705):SetInterruptsCast(true):SetOffGCD(true)
+local LegSweep = SpellBook:GetSpell(119381):SetInterruptsCast(true):SetOffGCD(true)
+local Paralysis = SpellBook:GetSpell(115078):SetInterruptsCast(true):SetOffGCD(true)
 local CracklingJadeLightning = SpellBook:GetSpell(117952)
 local ExpelHarm = SpellBook:GetSpell(322101)
 local Detox = SpellBook:GetSpell(115450)
@@ -407,17 +407,20 @@ _G.SlashCmdList['STUNNALL'] = function(msg)
 end
 -- Stopcasting
 local function stopCasting()
+    local shouldStop = false
     Bastion.UnitManager:EnumEnemies(function(unit)
+        if shouldStop then return end
+
         if unit:IsDead() or not Player:IsWithinDistance(unit, 40) or not Player:CanSee(unit) or not unit:IsCastingOrChanneling() then
-            return false
+            return
         end
-        if stopcastList[unit:GetCastingOrChannelingSpell():GetID()] then
-            --if unit:GetCastingOrChannelingEndTime() - GetTime() < 2 then
-            return true
-            --end
+
+        local spell = unit:GetCastingOrChannelingSpell()
+        if spell and stopcastList[spell:GetID()] then
+            shouldStop = true
         end
     end)
-    return false
+    return shouldStop
 end
 -- Helper Functions
 local function ShouldUseRenewingMist(unit)
