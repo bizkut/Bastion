@@ -1388,7 +1388,9 @@ DefensiveAPL:AddSpell(
             --and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        C_Timer.After(0.1, function()
+        local latency = select(4, GetNetStats()) or 100
+        local delay = (latency / 1000) + 0.05
+        C_Timer.After(delay, function()
             EnvelopingMist:Cast(EnvelopeLowest)
         end)
     end)
@@ -1404,7 +1406,9 @@ DefensiveAPL:AddSpell(
             --and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        C_Timer.After(0.1, function()
+        local latency = select(4, GetNetStats()) or 100
+        local delay = (latency / 1000) + 0.05
+        C_Timer.After(delay, function()
             EnvelopingMist:Cast(DebuffTargetWithoutTFT)
         end)
     end)
@@ -1420,7 +1424,9 @@ DefensiveAPL:AddSpell(
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        C_Timer.After(0.1, function()
+        local latency = select(4, GetNetStats()) or 100
+        local delay = (latency / 1000) + 0.05
+        C_Timer.After(delay, function()
             EnvelopingMist:Cast(BusterTargetWithoutTFT)
         end)
     end)
@@ -1438,7 +1444,9 @@ DefensiveAPL:AddSpell(
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        C_Timer.After(0.1, function()
+        local latency = select(4, GetNetStats()) or 100
+        local delay = (latency / 1000) + 0.05
+        C_Timer.After(delay, function()
             EnvelopingMist:Cast(TankTarget)
         end)
     end)
