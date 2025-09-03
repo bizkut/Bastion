@@ -79,8 +79,8 @@ local PotentialEnergy = SpellBook:GetSpell(1239483)
 local Polymorph = SpellBook:GetSpell(118)
 
 -- Items
-local Healthstone = ItemBook:GetItem(5512):SetOffGCD(true)
-local AlgariHealingPotion = ItemBook:GetItem(211880):SetOffGCD(true)
+local Healthstone = ItemBook:GetItem(5512):SetOffGCD(true):SetInterruptsCast(true)
+local AlgariHealingPotion = ItemBook:GetItem(211880):SetOffGCD(true):SetInterruptsCast(true)
 local Noggen = ItemBook:GetItem(232486)
 local KoD = ItemBook:GetItem(215174)    -- Kiss of Death
 local Signet = ItemBook:GetItem(219308) -- Signet of Priory
