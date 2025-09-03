@@ -15,7 +15,8 @@ local Spell = {
     conditions = {},
     target = false,
     release_at = false,
-    isOffGCD = false
+    isOffGCD = false,
+    interruptsCast = false
 }
 
 local usableExcludes = {
@@ -217,6 +218,10 @@ function Spell:Cast(unit, condition)
 
     if not self:IsOffGCD() and Casting:PlayerIsBusy() then
         return false
+    end
+
+    if self:InterruptsCast() then
+        SpellStopCasting()
     end
 
     -- Call pre cast function
@@ -608,6 +613,15 @@ end
 
 function Spell:IsOffGCD()
     return self.isOffGCD
+end
+
+function Spell:SetInterruptsCast(interrupts_cast)
+    self.interruptsCast = interrupts_cast
+    return self
+end
+
+function Spell:InterruptsCast()
+    return self.interruptsCast
 end
 
 -- IsMagicDispel
