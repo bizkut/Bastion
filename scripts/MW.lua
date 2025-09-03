@@ -966,8 +966,8 @@ local EnvelopeLowest = Bastion.UnitManager:CreateCustomUnit('envelopelowest',
 local envelopCount = Bastion.UnitManager:CreateCustomUnit('envelopcount',
     function() return cachedUnits.envelopCount or 0 end)
 local DispelTarget = Bastion.UnitManager:CreateCustomUnit('dispel', function()
-    if cachedUnits.dispelTarget and cachedUnits.dispelTarget:IsValid() and not debuffThresholds[cachedUnits.dispelTarget] then
-        debuffThresholds[cachedUnits.dispelTarget] = GetTime() + GetRandomDispelDelay()
+    if cachedUnits.dispelTarget and cachedUnits.dispelTarget:IsValid() and not debuffThresholds[cachedUnits.dispelTarget:GetGUID()] then
+        debuffThresholds[cachedUnits.dispelTarget:GetGUID()] = GetTime() + GetRandomDispelDelay()
     end
     return cachedUnits.dispelTarget or Bastion.UnitManager:Get('none')
 end)
@@ -1287,10 +1287,10 @@ DispelAPL:AddSpell(
         return DispelTarget:IsValid() and self:IsKnownAndUsable()
             and (not Player:IsCastingOrChanneling() or spinningCrane() or (DispelTarget:GetRealizedHP() < 50))
             and
-            ((debuffThresholds[DispelTarget] and (GetTime() > debuffThresholds[DispelTarget])) or DispelTarget:IsMouseover())
+            ((debuffThresholds[DispelTarget:GetGUID()] and (GetTime() > debuffThresholds[DispelTarget:GetGUID()])) or DispelTarget:IsMouseover())
     end):SetTarget(DispelTarget):OnCast(function(self)
         -- Reset the interrupt threshold after successful dispel
-        debuffThresholds[DispelTarget] = nil
+        debuffThresholds[DispelTarget:GetGUID()] = nil
         -- for k in pairs(debuffThresholds) do
         --     debuffThresholds[k] = nil
         -- end
@@ -1323,7 +1323,7 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddItem(
     Healthstone:UsableIf(function(self)
         return self:IsUsable()
-            --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetHP() < 50
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
@@ -1344,6 +1344,7 @@ DefensiveAPL:AddItem(
 DefensiveAPL:AddSpell(
     FortifyingBrew:CastableIf(function(self)
         return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetHP() < 40
             and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
             and not recentDefensive()
