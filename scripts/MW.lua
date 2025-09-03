@@ -1391,6 +1391,7 @@ DefensiveAPL:AddSpell(
         local latency = select(4, GetNetStats()) or 100
         local delay = (latency / 1000) + 0.05
         C_Timer.After(delay, function()
+            print("Casting Enveloping Mist on", EnvelopeLowest:GetName())
             EnvelopingMist:Cast(EnvelopeLowest)
         end)
     end)
@@ -1409,6 +1410,7 @@ DefensiveAPL:AddSpell(
         local latency = select(4, GetNetStats()) or 100
         local delay = (latency / 1000) + 0.05
         C_Timer.After(delay, function()
+            print("Casting Enveloping Mist on", DebuffTargetWithoutTFT:GetName())
             EnvelopingMist:Cast(DebuffTargetWithoutTFT)
         end)
     end)
@@ -1427,6 +1429,7 @@ DefensiveAPL:AddSpell(
         local latency = select(4, GetNetStats()) or 100
         local delay = (latency / 1000) + 0.05
         C_Timer.After(delay, function()
+            print("Casting Enveloping Mist on", BusterTargetWithoutTFT:GetName())
             EnvelopingMist:Cast(BusterTargetWithoutTFT)
         end)
     end)
@@ -1447,6 +1450,7 @@ DefensiveAPL:AddSpell(
         local latency = select(4, GetNetStats()) or 100
         local delay = (latency / 1000) + 0.05
         C_Timer.After(delay, function()
+            print("Casting Enveloping Mist on", TankTarget:GetName())
             EnvelopingMist:Cast(TankTarget)
         end)
     end)
@@ -1466,6 +1470,7 @@ DefensiveAPL:AddSpell(
         local latency = select(4, GetNetStats()) or 100
         local delay = (latency / 1000) + 0.05
         C_Timer.After(delay, function()
+            print("Casting Rising Sun Kick on", Target:GetName())
             if not Player:IsFacing(Target) and not Player:IsMoving() then
                 FaceObject(Target:GetOMToken())
             end
