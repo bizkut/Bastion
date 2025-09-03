@@ -34,7 +34,7 @@ local DiffuseMagic = SpellBook:GetSpell(122783):SetOffGCD(true)
 local LifeCocoon = SpellBook:GetSpell(116849):SetOffGCD(true)
 local JadefireStomp = SpellBook:GetSpell(388193)
 local SheilunsGift = SpellBook:GetSpell(399491)
-local TouchOfDeath = SpellBook:GetSpell(322109)
+local TouchOfDeath = SpellBook:GetSpell(322109):SetInterruptsCast(true):SetOffGCD(true)
 local SpearHandStrike = SpellBook:GetSpell(116705):SetInterruptsCast(true):SetOffGCD(true)
 local LegSweep = SpellBook:GetSpell(119381):SetInterruptsCast(true)
 local Paralysis = SpellBook:GetSpell(115078):SetInterruptsCast(true)
@@ -689,7 +689,7 @@ local function scanFriends()
 
         -- EnvelopeLowest and envelopCount logic
         -- local envelopeAura = unit:GetAuras():FindMy(EnvelopingMist)
-        if ShouldUseEnvelopingMist(unit) and realizedHP < 60 then
+        if ShouldUseEnvelopingMist(unit) and realizedHP < 60 and ThunderFocusTea:GetCharges() >= 1 then
             if realizedHP < envelopeLowestHP then
                 cachedUnits.envelopeLowest = unit
                 --cachedUnits["envelopeLowestTFT"] = unit
@@ -721,7 +721,7 @@ local function scanFriends()
                         cachedUnits.dispelTarget = unit
                     end
                 end
-                if not hasBadDebuff and debuffList[spellID] and not dispelCheck(aura) and aura:GetRemainingTime() > 3 then
+                if not hasBadDebuff and debuffList[spellID] and not dispelCheck(aura) and aura:GetRemainingTime() > 3 and ThunderFocusTea:GetCharges() >= 1 then
                     hasBadDebuff = true
                 end
             end
@@ -1389,7 +1389,7 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
         print("Casting Enveloping Mist on EnvelopeLowest", EnvelopeLowest:GetName())
-        -- _G.SpellStopCasting()
+        --_G.SpellStopCasting()
         EnvelopingMist:Cast(EnvelopeLowest)
         -- CastSpellByName("Enveloping Mist", EnvelopeLowest:GetOMToken())
     end)
@@ -1406,7 +1406,7 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
         print("Casting Enveloping Mist on DebuffTargetWithoutTFT", DebuffTargetWithoutTFT:GetName())
-        -- _G.SpellStopCasting()
+        --_G.SpellStopCasting()
         EnvelopingMist:Cast(DebuffTargetWithoutTFT)
         -- CastSpellByName("Enveloping Mist", DebuffTargetWithoutTFT:GetOMToken())
     end)
@@ -1423,7 +1423,7 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
         print("Casting Enveloping Mist on BusterTargetWithoutTFT", BusterTargetWithoutTFT:GetName())
-        -- _G.SpellStopCasting()
+        --_G.SpellStopCasting()
         EnvelopingMist:Cast(BusterTargetWithoutTFT)
         -- CastSpellByName("Enveloping Mist", BusterTargetWithoutTFT:GetOMToken())
     end)
@@ -1465,6 +1465,8 @@ DefensiveAPL:AddSpell(
             FaceObject(Target:GetOMToken())
         end
         RisingSunKick:Cast(Target)
+        -- _G.SpellStopCasting()
+        -- CastSpellByName("Rising Sun Kick", Target:GetOMToken())
     end)
 )
 -- DefensiveAPL:AddSpell(
