@@ -99,6 +99,7 @@ local sootheThresholds = {}
 local loggedDebuffs = {}
 local cocoonThresholds = {}
 local autoTarget = {}
+local envelopingMistTargetAfterTFT = nil
 local isCastingEnveloping = false
 local isCastingCrackling = false
 local hasUsedOffGCDDefensive = {}
@@ -1187,6 +1188,7 @@ VivifyAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and (not Player:IsMoving() or Player:GetAuras():FindMy(Vivacious):IsUp())
             and not stopCasting()
+            and not envelopingMistTargetAfterTFT
         --and waitingGCDcast(self)
     end):SetTarget(Lowest)
 )
@@ -1235,6 +1237,7 @@ CooldownAPL:AddSpell(
             --and ((Lowest:GetRealizedHP() < 80) or (waitingGCDcast(BlackoutKick) and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4) or (Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
             and
             ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
+            and not envelopingMistTargetAfterTFT
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
         --and not recentAoE()
     end):SetTarget(Lowest)
@@ -1303,11 +1306,26 @@ RenewAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             --and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 90)
             and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 100)
+            and not envelopingMistTargetAfterTFT
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(RenewLowest)
 )
 
 -- Defensive APL
+
+DefensiveAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return envelopingMistTargetAfterTFT
+            and envelopingMistTargetAfterTFT:IsValid()
+            and self:IsKnownAndUsable()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsUp()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+    end):SetTarget(function()
+        local target = envelopingMistTargetAfterTFT
+        envelopingMistTargetAfterTFT = nil -- Consume the target
+        return target
+    end)
+)
 
 DefensiveAPL:AddSpell(
     ExpelHarm:CastableIf(function(self)
@@ -1317,6 +1335,7 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindAny(LifeCocoon):IsDown()
             and not recentDefensive()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and not envelopingMistTargetAfterTFT
     end):SetTarget(Player)
 )
 
@@ -1388,10 +1407,7 @@ DefensiveAPL:AddSpell(
             --and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        print("Casting Enveloping Mist on EnvelopeLowest", EnvelopeLowest:GetName())
-        --_G.SpellStopCasting()
-        EnvelopingMist:Cast(EnvelopeLowest)
-        -- CastSpellByName("Enveloping Mist", EnvelopeLowest:GetOMToken())
+        envelopingMistTargetAfterTFT = EnvelopeLowest
     end)
 )
 
@@ -1405,10 +1421,7 @@ DefensiveAPL:AddSpell(
             --and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        print("Casting Enveloping Mist on DebuffTargetWithoutTFT", DebuffTargetWithoutTFT:GetName())
-        --_G.SpellStopCasting()
-        EnvelopingMist:Cast(DebuffTargetWithoutTFT)
-        -- CastSpellByName("Enveloping Mist", DebuffTargetWithoutTFT:GetOMToken())
+        envelopingMistTargetAfterTFT = DebuffTargetWithoutTFT
     end)
 )
 
@@ -1422,10 +1435,7 @@ DefensiveAPL:AddSpell(
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        print("Casting Enveloping Mist on BusterTargetWithoutTFT", BusterTargetWithoutTFT:GetName())
-        --_G.SpellStopCasting()
-        EnvelopingMist:Cast(BusterTargetWithoutTFT)
-        -- CastSpellByName("Enveloping Mist", BusterTargetWithoutTFT:GetOMToken())
+        envelopingMistTargetAfterTFT = BusterTargetWithoutTFT
     end)
 )
 
@@ -1441,10 +1451,7 @@ DefensiveAPL:AddSpell(
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        print("Casting Enveloping Mist on TankTarget", TankTarget:GetName())
-        -- _G.SpellStopCasting()
-        EnvelopingMist:Cast(TankTarget)
-        -- CastSpellByName("Enveloping Mist", TankTarget:GetOMToken())
+        envelopingMistTargetAfterTFT = TankTarget
     end)
 )
 DefensiveAPL:AddSpell(
@@ -1654,6 +1661,7 @@ StompAPL:AddSpell(
         return Target:IsValid() and self:IsKnownAndUsable() --self:IsInRange(Target) and
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and not envelopingMistTargetAfterTFT
         --and waitingGCDcast(self)
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Target):PreCast(function()
