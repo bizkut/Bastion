@@ -1188,6 +1188,7 @@ VivifyAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and (not Player:IsMoving() or Player:GetAuras():FindMy(Vivacious):IsUp())
             and not stopCasting()
+            and not envelopingMistTargetAfterTFT
         --and waitingGCDcast(self)
     end):SetTarget(Lowest)
 )
@@ -1236,6 +1237,7 @@ CooldownAPL:AddSpell(
             --and ((Lowest:GetRealizedHP() < 80) or (waitingGCDcast(BlackoutKick) and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4) or (Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
             and
             ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
+            and not envelopingMistTargetAfterTFT
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
         --and not recentAoE()
     end):SetTarget(Lowest)
@@ -1304,6 +1306,7 @@ RenewAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             --and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 90)
             and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 100)
+            and not envelopingMistTargetAfterTFT
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(RenewLowest)
 )
@@ -1332,6 +1335,7 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindAny(LifeCocoon):IsDown()
             and not recentDefensive()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and not envelopingMistTargetAfterTFT
     end):SetTarget(Player)
 )
 
@@ -1657,6 +1661,7 @@ StompAPL:AddSpell(
         return Target:IsValid() and self:IsKnownAndUsable() --self:IsInRange(Target) and
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and not envelopingMistTargetAfterTFT
         --and waitingGCDcast(self)
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Target):PreCast(function()
