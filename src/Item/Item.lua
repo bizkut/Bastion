@@ -1,5 +1,7 @@
 local Tinkr, Bastion = ...
 
+local Casting = Bastion.require('Casting')
+
 -- Create a new Item class
 ---@class Item
 local Item = {
@@ -10,6 +12,7 @@ local Item = {
     lastUseAttempt = 0,
     conditions = {},
     target = false,
+    isOffGCD = false,
 }
 
 local usableExcludes = {
@@ -138,6 +141,10 @@ function Item:Use(unit, condition)
     end
 
     if not self:Usable() then
+        return false
+    end
+
+    if not self:IsOffGCD() and Casting:PlayerIsBusy() then
         return false
     end
 
@@ -425,6 +432,15 @@ end
 ---@return Unit | nil
 function Item:GetTarget()
     return self.target
+end
+
+function Item:SetOffGCD(is_off_gcd)
+    self.isOffGCD = is_off_gcd
+    return self
+end
+
+function Item:IsOffGCD()
+    return self.isOffGCD
 end
 
 -- IsMagicDispel

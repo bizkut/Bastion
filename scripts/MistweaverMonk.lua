@@ -18,29 +18,29 @@ local RenewingMist = SpellBook:GetSpell(115151)
 local EnvelopingMist = SpellBook:GetSpell(124682)
 local Vivify = SpellBook:GetSpell(116670)
 local RisingSunKick = SpellBook:GetSpell(107428)
-local ThunderFocusTea = SpellBook:GetSpell(116680)
+local ThunderFocusTea = SpellBook:GetSpell(116680):SetOffGCD(true)
 local TigerPalm = SpellBook:GetSpell(100780)
 local BlackoutKick = SpellBook:GetSpell(100784)
 local SpinningCraneKick = SpellBook:GetSpell(101546)
-local Revival = SpellBook:GetSpell(115310)
+local Revival = SpellBook:GetSpell(115310):SetOffGCD(true)
 local Restoral = SpellBook:GetSpell(388615)
 local InvokeYulon = SpellBook:GetSpell(322118)
 local InvokeChiJi = SpellBook:GetSpell(325197)
 local SoothingMist = SpellBook:GetSpell(115175)
-local ManaTea = SpellBook:GetSpell(115294)
+local ManaTea = SpellBook:GetSpell(115294):SetOffGCD(true)
 local CelestialConduit = SpellBook:GetSpell(443028)
-local UnityWithin = SpellBook:GetSpell(443591)
-local FortifyingBrew = SpellBook:GetSpell(115203)
-local DiffuseMagic = SpellBook:GetSpell(122783)
-local LifeCocoon = SpellBook:GetSpell(116849)
+local UnityWithin = SpellBook:GetSpell(443591):SetOffGCD(true)
+local FortifyingBrew = SpellBook:GetSpell(115203):SetOffGCD(true)
+local DiffuseMagic = SpellBook:GetSpell(122783):SetOffGCD(true)
+local LifeCocoon = SpellBook:GetSpell(116849):SetOffGCD(true)
 local JadefireStomp = SpellBook:GetSpell(388193)
 local SheilunsGift = SpellBook:GetSpell(399491)
-local TouchOfDeath = SpellBook:GetSpell(322109)
-local SpearHandStrike = SpellBook:GetSpell(116705)
-local LegSweep = SpellBook:GetSpell(119381)
-local Paralysis = SpellBook:GetSpell(115078)
+local TouchOfDeath = SpellBook:GetSpell(322109):SetOffGCD(true)
+local SpearHandStrike = SpellBook:GetSpell(116705):SetOffGCD(true)
+local LegSweep = SpellBook:GetSpell(119381):SetOffGCD(true)
+local Paralysis = SpellBook:GetSpell(115078):SetOffGCD(true)
 local CracklingJadeLightning = SpellBook:GetSpell(117952)
-local ExpelHarm = SpellBook:GetSpell(322101)
+local ExpelHarm = SpellBook:GetSpell(322101):SetOffGCD(true)
 local Detox = SpellBook:GetSpell(115450)
 local Drinking = SpellBook:GetSpell(452389) -- Rocky Road
 local Eating = SpellBook:GetSpell(396918)
@@ -50,10 +50,9 @@ local ImprovedDetox = SpellBook:GetSpell(388874)
 local ChiBurst = SpellBook:GetSpell(123986)
 local JadeEmpowerment = SpellBook:GetSpell(467317)
 local JadefireTeachingsBuff = SpellBook:GetSpell(388026)
-local RingOfPeace = SpellBook:GetSpell(116844)
+local RingOfPeace = SpellBook:GetSpell(116844):SetOffGCD(true)
 local ImprovedToD = SpellBook:GetSpell(322113)
 local PressurePoints = SpellBook:GetSpell(450432) -- Paralysis soothe
-local Revival = SpellBook:GetSpell(115310)
 -- Add Rising Mist spell
 local RisingMist = SpellBook:GetSpell(274909)
 
@@ -80,8 +79,8 @@ local PotentialEnergy = SpellBook:GetSpell(1239483)
 local Polymorph = SpellBook:GetSpell(118)
 
 -- Items
-local Healthstone = ItemBook:GetItem(5512)
-local AlgariHealingPotion = ItemBook:GetItem(211880)
+local Healthstone = ItemBook:GetItem(5512):SetOffGCD(true)
+local AlgariHealingPotion = ItemBook:GetItem(211880):SetOffGCD(true)
 local Noggen = ItemBook:GetItem(232486)
 local KoD = ItemBook:GetItem(215174)    -- Kiss of Death
 local Signet = ItemBook:GetItem(219308) -- Signet of Priory
@@ -105,6 +104,13 @@ local hasUsedOffGCDDps = false
 -- Add this helper function near the top of the file
 
 -- Add this helper function near the top of the file, after the SpellBook initialization
+
+local function waitingGCD()
+    return Player:GetGCD() * 1000 < (select(4, GetNetStats()) and select(3, GetNetStats()))
+end
+local function waitingGCDcast(spell)
+    return spell:GetTimeSinceLastCastAttempt() > Player:GetGCD()
+end
 
 local function GetRandomInterruptDelay()
     return math.random(40, 60)
@@ -659,6 +665,7 @@ end
 local function ShouldUseCrackling(unit)
     return CracklingJadeLightning:IsKnownAndUsable() and unit:IsValid() and canDamage(unit) and not Player:IsMoving()
         --and CracklingJadeLightning:GetTimeSinceLastCastAttempt() > 2
+        and waitingGCDcast(CracklingJadeLightning)
         and Player:GetAuras():FindMy(JadeEmpowerment):IsUp()
         and not Player:IsCastingOrChanneling()
         and not stopCasting()
@@ -1375,6 +1382,7 @@ CooldownAPL:AddSpell(
             and not stopCasting()
             and ThunderFocusTea:GetCharges() < 1
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and waitingGCD()
     end):SetTarget(EnvelopeLowest)
     -- :PreCast(function()
     --     --UpdateManaTeaStacks()
@@ -1641,6 +1649,7 @@ StompAPL:AddSpell(
             --and not (Player:GetAuras():FindMy(JadefireTeachingsBuff):GetRemainingTime() > 2) and InMelee(nearTarget)
             and Target:IsValid()
             --and Player:IsWithinCone(TankTarget,90,40)
+            and waitingGCD()
             and not hasUsedOffGCDDps
     end):SetTarget(Player):OnCast(function()
         hasUsedOffGCDDps = true
@@ -1712,6 +1721,7 @@ DpsAPL:AddSpell(
             --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(Target,90,40) or Player:IsWithinCone(TankTarget,90,40))
             and not Player:IsMoving()
             and not stopCasting()
+            and waitingGCD()
             and mostEnemies():IsValid()
             and not hasUsedOffGCDDps
     end):SetTarget(Player):OnCast(function()

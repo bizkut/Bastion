@@ -1,5 +1,7 @@
 local Tinkr, Bastion = ...
 
+local Casting = Bastion.require('Casting')
+
 -- Create a new Spell class
 ---@class Spell
 local Spell = {
@@ -12,7 +14,8 @@ local Spell = {
     lastCastAt = false,
     conditions = {},
     target = false,
-    release_at = false
+    release_at = false,
+    isOffGCD = false
 }
 
 local usableExcludes = {
@@ -212,13 +215,8 @@ function Spell:Cast(unit, condition)
         return false
     end
 
-    -- Check if we can queue the spell
-    local _, _, _, _, cast_end_time, _, _, _, spell_id = UnitCastingInfo("player")
-    if spell_id and cast_end_time and cast_end_time > 0 then
-        local cast_time_left = (cast_end_time / 1000) - GetTime()
-        if cast_time_left > (self:GetSpellQueueWindow() / 1000) then
-            return false
-        end
+    if not self:IsOffGCD() and Casting:PlayerIsBusy() then
+        return false
     end
 
     -- Call pre cast function
@@ -237,6 +235,7 @@ function Spell:Cast(unit, condition)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
+    SpellCancelQueuedSpell()
 
     Bastion:Debug("Casting", self)
 
@@ -272,6 +271,7 @@ function Spell:ForceCast(unit)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
+    SpellCancelQueuedSpell()
 
     Bastion:Debug("Casting", self)
 
@@ -490,13 +490,6 @@ function Spell:GetCastLength()
     return select(4, GetSpellInfo(self:GetID()))
 end
 
-function Spell:GetSpellQueueWindow()
-    local _, _, _, world_lag = GetNetStats()
-    local _, queue_window_end = GetSpellQueueWindow()
-
-    return (queue_window_end or 400) - world_lag
-end
-
 -- Get the spells charges
 ---@return number
 function Spell:GetChargesFractional()
@@ -606,6 +599,15 @@ end
 ---@return Unit
 function Spell:GetTarget()
     return self.target
+end
+
+function Spell:SetOffGCD(is_off_gcd)
+    self.isOffGCD = is_off_gcd
+    return self
+end
+
+function Spell:IsOffGCD()
+    return self.isOffGCD
 end
 
 -- IsMagicDispel
