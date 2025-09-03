@@ -104,6 +104,7 @@ local isCastingCrackling = false
 local hasUsedOffGCDDefensive = {}
 local hasUsedOffGCDInterrupt = false
 local hasUsedOffGCDDps = false
+local isWaitingForTFT = false
 
 -- Add this helper function near the top of the file
 
@@ -1187,6 +1188,7 @@ VivifyAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and (not Player:IsMoving() or Player:GetAuras():FindMy(Vivacious):IsUp())
             and not stopCasting()
+            and not isWaitingForTFT
         --and waitingGCDcast(self)
     end):SetTarget(Lowest)
 )
@@ -1235,6 +1237,7 @@ CooldownAPL:AddSpell(
             --and ((Lowest:GetRealizedHP() < 80) or (waitingGCDcast(BlackoutKick) and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4) or (Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
             and
             ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
+            and not isWaitingForTFT
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
         --and not recentAoE()
     end):SetTarget(Lowest)
@@ -1303,6 +1306,7 @@ RenewAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             --and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 90)
             and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 100)
+            and not isWaitingForTFT
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(RenewLowest)
 )
@@ -1317,6 +1321,7 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindAny(LifeCocoon):IsDown()
             and not recentDefensive()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and not isWaitingForTFT
     end):SetTarget(Player)
 )
 
@@ -1384,14 +1389,19 @@ DefensiveAPL:AddSpell(
             and EnvelopeLowest
             and ShouldUseEnvelopingMist(EnvelopeLowest)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            --and waitingGCDcast(self)
-            --and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        print("Casting Enveloping Mist on EnvelopeLowest", EnvelopeLowest:GetName())
-        --_G.SpellStopCasting()
-        EnvelopingMist:Cast(EnvelopeLowest)
-        -- CastSpellByName("Enveloping Mist", EnvelopeLowest:GetOMToken())
+        isWaitingForTFT = true
+        local target = EnvelopeLowest
+        local latency = select(4, GetNetStats()) or 100
+        local delay = (latency / 1000) + 0.05
+        C_Timer.After(delay, function()
+            if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
+                print("Casting Enveloping Mist on", target:GetName())
+                EnvelopingMist:CastWithoutQueueCancel(target)
+            end
+            isWaitingForTFT = false
+        end)
     end)
 )
 
@@ -1401,14 +1411,19 @@ DefensiveAPL:AddSpell(
             and DebuffTargetWithoutTFT
             and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            --and waitingGCDcast(self)
-            --and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        print("Casting Enveloping Mist on DebuffTargetWithoutTFT", DebuffTargetWithoutTFT:GetName())
-        --_G.SpellStopCasting()
-        EnvelopingMist:Cast(DebuffTargetWithoutTFT)
-        -- CastSpellByName("Enveloping Mist", DebuffTargetWithoutTFT:GetOMToken())
+        isWaitingForTFT = true
+        local target = DebuffTargetWithoutTFT
+        local latency = select(4, GetNetStats()) or 100
+        local delay = (latency / 1000) + 0.05
+        C_Timer.After(delay, function()
+            if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
+                print("Casting Enveloping Mist on", target:GetName())
+                EnvelopingMist:CastWithoutQueueCancel(target)
+            end
+            isWaitingForTFT = false
+        end)
     end)
 )
 
@@ -1418,14 +1433,20 @@ DefensiveAPL:AddSpell(
             and BusterTargetWithoutTFT
             and ShouldUseEnvelopingMist(BusterTargetWithoutTFT)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            --and waitingGCDcast(self)
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        print("Casting Enveloping Mist on BusterTargetWithoutTFT", BusterTargetWithoutTFT:GetName())
-        --_G.SpellStopCasting()
-        EnvelopingMist:Cast(BusterTargetWithoutTFT)
-        -- CastSpellByName("Enveloping Mist", BusterTargetWithoutTFT:GetOMToken())
+        isWaitingForTFT = true
+        local target = BusterTargetWithoutTFT
+        local latency = select(4, GetNetStats()) or 100
+        local delay = (latency / 1000) + 0.05
+        C_Timer.After(delay, function()
+            if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
+                print("Casting Enveloping Mist on", target:GetName())
+                EnvelopingMist:CastWithoutQueueCancel(target)
+            end
+            isWaitingForTFT = false
+        end)
     end)
 )
 
@@ -1437,14 +1458,20 @@ DefensiveAPL:AddSpell(
             (TankTarget:GetRealizedHP() < 70 or TankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown())
             and ShouldUseEnvelopingMist(TankTarget)
             and (not Player:IsCastingOrChanneling() or spinningCrane())
-            --and waitingGCDcast(self)
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        print("Casting Enveloping Mist on TankTarget", TankTarget:GetName())
-        -- _G.SpellStopCasting()
-        EnvelopingMist:Cast(TankTarget)
-        -- CastSpellByName("Enveloping Mist", TankTarget:GetOMToken())
+        isWaitingForTFT = true
+        local target = TankTarget
+        local latency = select(4, GetNetStats()) or 100
+        local delay = (latency / 1000) + 0.05
+        C_Timer.After(delay, function()
+            if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
+                print("Casting Enveloping Mist on", target:GetName())
+                EnvelopingMist:CastWithoutQueueCancel(target)
+            end
+            isWaitingForTFT = false
+        end)
     end)
 )
 DefensiveAPL:AddSpell(
@@ -1459,14 +1486,20 @@ DefensiveAPL:AddSpell(
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        print("Casting Enveloping Mist on RisingSunKick", Target:GetName())
-        -- _G.SpellStopCasting()
-        if not Player:IsFacing(Target) and not Player:IsMoving() then
-            FaceObject(Target:GetOMToken())
-        end
-        RisingSunKick:Cast(Target)
-        -- _G.SpellStopCasting()
-        -- CastSpellByName("Rising Sun Kick", Target:GetOMToken())
+        isWaitingForTFT = true
+        local target = Target
+        local latency = select(4, GetNetStats()) or 100
+        local delay = (latency / 1000) + 0.05
+        C_Timer.After(delay, function()
+            if target and target:IsValid() and RisingSunKick:IsInRange(target) then
+                print("Casting Rising Sun Kick on", target:GetName())
+                if not Player:IsFacing(target) and not Player:IsMoving() then
+                    FaceObject(target:GetOMToken())
+                end
+                RisingSunKick:CastWithoutQueueCancel(target)
+            end
+            isWaitingForTFT = false
+        end)
     end)
 )
 -- DefensiveAPL:AddSpell(
@@ -1654,6 +1687,7 @@ StompAPL:AddSpell(
         return Target:IsValid() and self:IsKnownAndUsable() --self:IsInRange(Target) and
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and not isWaitingForTFT
         --and waitingGCDcast(self)
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Target):PreCast(function()
