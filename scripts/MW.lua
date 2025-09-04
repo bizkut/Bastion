@@ -1091,9 +1091,11 @@ local VivifyAPL = Bastion.APL:New('vivify')
 TFTFollowUpAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         local target = EnvelopeLowest or DebuffTargetWithoutTFT or BusterTargetWithoutTFT or TankTarget
-        return target:IsValid() and ShouldUseEnvelopingMist(target)
-    end):SetTarget(function()
-        return EnvelopeLowest or DebuffTargetWithoutTFT or BusterTargetWithoutTFT or TankTarget
+        if target:IsValid() and ShouldUseEnvelopingMist(target) then
+            self:SetTarget(target)
+            return true
+        end
+        return false
     end)
 )
 
