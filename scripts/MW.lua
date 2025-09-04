@@ -1402,11 +1402,11 @@ DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         local target = EnvelopeLowest or DebuffTargetWithoutTFT or BusterTargetWithoutTFT or TankTarget
         local rskTarget = Target
-        local shouldUseForEnveloping = target:IsValid() and ShouldUseEnvelopingMist(target)
-        local shouldUseForRisingSunKick = rskTarget:IsValid() and RisingSunKick:IsKnownAndUsable() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax()
+
+        local shouldUseForEnveloping = self:GetCharges() >= 1 and target:IsValid() and ShouldUseEnvelopingMist(target)
+        local shouldUseForRisingSunKick = self:GetCharges() >= 2 and rskTarget:IsValid() and RisingSunKick:IsKnownAndUsable() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax()
 
         return self:IsKnownAndUsable()
-            and self:GetCharges() > 0
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and (shouldUseForEnveloping or shouldUseForRisingSunKick)
     end):SetTarget(Player)
