@@ -1067,12 +1067,32 @@ local CooldownAPL = Bastion.APL:New('cooldown')
 local DefensiveAPL = Bastion.APL:New('defensive')
 local DpsAPL = Bastion.APL:New('dps')
 local ToDAPL = Bastion.APL:New('touchofdeath')
+local TFTFollowUpAPL = Bastion.APL:New('tftfolloup')
 --local AspectAPL = Bastion.APL:New('aspect')
 local InterruptAPL = Bastion.APL:New('interrupt')
 local StompAPL = Bastion.APL:New('stomp')
 local TrinketAPL = Bastion.APL:New('trinket')
 local manaAPL = Bastion.APL:New('mana')
 local VivifyAPL = Bastion.APL:New('vivify')
+
+-- TFT Followup APL
+TFTFollowUpAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        local target = EnvelopeLowest or DebuffTargetWithoutTFT or BusterTargetWithoutTFT or TankTarget
+        return target:IsValid() and ShouldUseEnvelopingMist(target)
+    end):SetTarget(function()
+        return EnvelopeLowest or DebuffTargetWithoutTFT or BusterTargetWithoutTFT or TankTarget
+    end)
+)
+
+TFTFollowUpAPL:AddSpell(
+    RisingSunKick:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Target:IsValid()
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and HarmonyMax()
+    end):SetTarget(Target)
+)
 -- Add a variable to track Mana Tea stacks
 local manaTeaSt = SpellBook:GetSpell(115867)
 local manaTeaStacks = 0
@@ -1380,94 +1400,16 @@ DefensiveAPL:AddItem(
 -- )
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and ThunderFocusTea:GetCharges() >= 1
-            and EnvelopeLowest
-            and ShouldUseEnvelopingMist(EnvelopeLowest)
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-    end):SetTarget(Player):OnCast(function()
-        local target = EnvelopeLowest
-        if target and target:IsValid() then
-            print("Casting Enveloping Mist on", target:GetName())
-            EnvelopingMist:Cast(target)
-        end
-    end)
-)
+        local target = EnvelopeLowest or DebuffTargetWithoutTFT or BusterTargetWithoutTFT or TankTarget
+        local rskTarget = Target
+        local shouldUseForEnveloping = target:IsValid() and ShouldUseEnvelopingMist(target)
+        local shouldUseForRisingSunKick = rskTarget:IsValid() and RisingSunKick:IsKnownAndUsable() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax()
 
-DefensiveAPL:AddSpell(
-    ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            and ThunderFocusTea:GetCharges() >= 1
-            and DebuffTargetWithoutTFT
-            and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and self:GetCharges() > 0
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-    end):SetTarget(Player):OnCast(function()
-        local target = DebuffTargetWithoutTFT
-            if target and target:IsValid() then
-                print("Casting Enveloping Mist on", target:GetName())
-                EnvelopingMist:Cast(target)
-            end
-
-    end)
-)
-
-DefensiveAPL:AddSpell(
-    ThunderFocusTea:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and BusterTargetWithoutTFT
-            and ShouldUseEnvelopingMist(BusterTargetWithoutTFT)
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and ThunderFocusTea:GetCharges() >= 2
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-    end):SetTarget(Player):OnCast(function()
-        local target = BusterTargetWithoutTFT
-            if target and target:IsValid() then
-                print("Casting Enveloping Mist on", target:GetName())
-                EnvelopingMist:Cast(target)
-            end
-    end)
-)
-
-DefensiveAPL:AddSpell(
-    ThunderFocusTea:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and TankTarget
-            and
-            (TankTarget:GetRealizedHP() < 70 or TankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown())
-            and ShouldUseEnvelopingMist(TankTarget)
-            and (not Player:IsCastingOrChanneling() or spinningCrane())
-            and ThunderFocusTea:GetCharges() >= 2
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-    end):SetTarget(Player):OnCast(function()
-        local target = TankTarget
-            if target and target:IsValid() then
-                print("Casting Enveloping Mist on", target:GetName())
-                EnvelopingMist:Cast(target)
-            end
-    end)
-)
-DefensiveAPL:AddSpell(
-    ThunderFocusTea:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and HarmonyMax()
-            and Target:IsValid()
-            and RisingSunKick:IsKnownAndUsable()
-            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            and (not Player:IsCastingOrChanneling() or spinningCrane())
-            and ThunderFocusTea:GetCharges() >= 2
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-    end):SetTarget(Player):OnCast(function()
-        local target = Target
-            if target and target:IsValid() then
-                print("Casting Rising Sun Kick on", target:GetName())
-                if not Player:IsFacing(target) and not Player:IsMoving() then
-                    FaceObject(target:GetOMToken())
-                end
-                RisingSunKick:Cast(target)
-            end
-    end)
+            and (shouldUseForEnveloping or shouldUseForRisingSunKick)
+    end):SetTarget(Player)
 )
 -- DefensiveAPL:AddSpell(
 --     EnvelopingMist:CastableIf(function(self)
@@ -1771,6 +1713,12 @@ manaAPL:AddSpell(
 
 -- Module Sync
 RestoMonkModule:Sync(function()
+    local lastSpell = Bastion.LastSpell:Get()
+    if lastSpell and lastSpell:GetID() == ThunderFocusTea:GetID() and Bastion.LastSpell:GetTimeSince() < 2 then
+        TFTFollowUpAPL:Execute()
+        return
+    end
+
     JadeEmpower = false
     HasFocusTea = false
     if not Player:IsAffectingCombat() then
