@@ -56,9 +56,9 @@ end
 
 function Bastion:UpdateSpellQueueWindow()
     local _, _, latency, _ = GetNetStats()
-    -- The formula is 2 * latency + 150 + 30 (avg random delay) to counteract the subtractions in Casting.lua
-    -- The goal is to have the effective window be latency + 150.
-    local spellQueueWindow = (2 * latency) + 180
+    -- The formula is 2 * latency + 50 + 30 (avg random delay) to counteract the subtractions in Casting.lua
+    -- The goal is to have the effective window be latency + 50.
+    local spellQueueWindow = (2 * latency) + 80
 
     -- The effective window is capped at 260. Since we subtract latency and random delay, the CVar cap needs to account for that.
     -- EffectiveCap = CVarCap - latency - random_delay.
