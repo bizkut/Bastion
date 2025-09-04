@@ -104,7 +104,6 @@ local isCastingCrackling = false
 local hasUsedOffGCDDefensive = {}
 local hasUsedOffGCDInterrupt = false
 local hasUsedOffGCDDps = false
-local isWaitingForTFT = false
 
 -- Add this helper function near the top of the file
 
@@ -1188,7 +1187,6 @@ VivifyAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and (not Player:IsMoving() or Player:GetAuras():FindMy(Vivacious):IsUp())
             and not stopCasting()
-            and not isWaitingForTFT
         --and waitingGCDcast(self)
     end):SetTarget(Lowest)
 )
@@ -1237,7 +1235,6 @@ CooldownAPL:AddSpell(
             --and ((Lowest:GetRealizedHP() < 80) or (waitingGCDcast(BlackoutKick) and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4) or (Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
             and
             ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
-            and not isWaitingForTFT
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
         --and not recentAoE()
     end):SetTarget(Lowest)
@@ -1306,7 +1303,6 @@ RenewAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             --and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 90)
             and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 100)
-            and not isWaitingForTFT
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(RenewLowest)
 )
@@ -1321,7 +1317,6 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindAny(LifeCocoon):IsDown()
             and not recentDefensive()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and not isWaitingForTFT
     end):SetTarget(Player)
 )
 
@@ -1392,17 +1387,11 @@ DefensiveAPL:AddSpell(
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        isWaitingForTFT = true
         local target = EnvelopeLowest
-        local latency = select(4, GetNetStats()) or 100
-        local delay = (latency / 1000) + 0.05
-        C_Timer.After(delay, function()
-            if target and target:IsValid() then
-                print("Casting Enveloping Mist on", target:GetName())
-                EnvelopingMist:Cast(target)
-            end
-            isWaitingForTFT = false
-        end)
+        if target and target:IsValid() then
+            print("Casting Enveloping Mist on", target:GetName())
+            EnvelopingMist:Cast(target)
+        end
     end)
 )
 
@@ -1415,17 +1404,12 @@ DefensiveAPL:AddSpell(
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        isWaitingForTFT = true
         local target = DebuffTargetWithoutTFT
-        local latency = select(4, GetNetStats()) or 100
-        local delay = (latency / 1000) + 0.05
-        C_Timer.After(delay, function()
             if target and target:IsValid() then
                 print("Casting Enveloping Mist on", target:GetName())
                 EnvelopingMist:Cast(target)
             end
-            isWaitingForTFT = false
-        end)
+
     end)
 )
 
@@ -1438,17 +1422,11 @@ DefensiveAPL:AddSpell(
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        isWaitingForTFT = true
         local target = BusterTargetWithoutTFT
-        local latency = select(4, GetNetStats()) or 100
-        local delay = (latency / 1000) + 0.05
-        C_Timer.After(delay, function()
             if target and target:IsValid() then
                 print("Casting Enveloping Mist on", target:GetName())
                 EnvelopingMist:Cast(target)
             end
-            isWaitingForTFT = false
-        end)
     end)
 )
 
@@ -1463,17 +1441,11 @@ DefensiveAPL:AddSpell(
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        isWaitingForTFT = true
         local target = TankTarget
-        local latency = select(4, GetNetStats()) or 100
-        local delay = (latency / 1000) + 0.05
-        C_Timer.After(delay, function()
             if target and target:IsValid() then
                 print("Casting Enveloping Mist on", target:GetName())
                 EnvelopingMist:Cast(target)
             end
-            isWaitingForTFT = false
-        end)
     end)
 )
 DefensiveAPL:AddSpell(
@@ -1487,11 +1459,7 @@ DefensiveAPL:AddSpell(
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
-        isWaitingForTFT = true
         local target = Target
-        local latency = select(4, GetNetStats()) or 100
-        local delay = (latency / 1000) + 0.05
-        C_Timer.After(delay, function()
             if target and target:IsValid() then
                 print("Casting Rising Sun Kick on", target:GetName())
                 if not Player:IsFacing(target) and not Player:IsMoving() then
@@ -1499,8 +1467,6 @@ DefensiveAPL:AddSpell(
                 end
                 RisingSunKick:Cast(target)
             end
-            isWaitingForTFT = false
-        end)
     end)
 )
 -- DefensiveAPL:AddSpell(
@@ -1688,7 +1654,6 @@ StompAPL:AddSpell(
         return Target:IsValid() and self:IsKnownAndUsable() --self:IsInRange(Target) and
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            and not isWaitingForTFT
         --and waitingGCDcast(self)
         --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Target):PreCast(function()
