@@ -94,6 +94,8 @@ function Bastion.Bootstrap()
     Bastion.ObjectManager = Bastion.require("ObjectManager"):New()
     ---@type EventManager
     Bastion.EventManager = Bastion.require("EventManager")
+    ---@type LastSpell
+    Bastion.LastSpell = Bastion.require('LastSpell')
     Bastion.Globals.EventManager = Bastion.EventManager:New()
     ---@type Spell
     Bastion.Spell = Bastion.require("Spell")
@@ -138,6 +140,7 @@ function Bastion.Bootstrap()
 
         if unit == "player" and spell then
             spell.lastCastAt = GetTime()
+            Bastion.LastSpell:Set(spell)
 
             if spell:GetPostCastFunction() then
                 spell:GetPostCastFunction()(spell)
