@@ -240,7 +240,9 @@ function Spell:Cast(unit, condition)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
-    SpellCancelQueuedSpell()
+    if self:GetID() ~= 116680 then
+        SpellCancelQueuedSpell()
+    end
 
     Bastion:Debug("Casting", self)
 
@@ -276,7 +278,9 @@ function Spell:ForceCast(unit)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
-    SpellCancelQueuedSpell()
+    if self:GetID() ~= 116680 then
+        SpellCancelQueuedSpell()
+    end
 
     Bastion:Debug("Casting", self)
 

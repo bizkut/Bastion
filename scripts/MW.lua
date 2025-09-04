@@ -1386,6 +1386,7 @@ DefensiveAPL:AddItem(
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable()
+            and ThunderFocusTea:GetCharges() >= 1
             and EnvelopeLowest
             and ShouldUseEnvelopingMist(EnvelopeLowest)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
@@ -1408,6 +1409,7 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable()
+            and ThunderFocusTea:GetCharges() >= 1
             and DebuffTargetWithoutTFT
             and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
@@ -1482,7 +1484,6 @@ DefensiveAPL:AddSpell(
             and RisingSunKick:IsKnownAndUsable()
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and (not Player:IsCastingOrChanneling() or spinningCrane())
-            --and waitingGCDcast(self)
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
