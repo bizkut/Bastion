@@ -1089,12 +1089,25 @@ local VivifyAPL = Bastion.APL:New('vivify')
 -- TFT Followup APL
 TFTFollowUpAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
-        local target = EnvelopeLowest or DebuffTargetWithoutTFT or BusterTargetWithoutTFT or TankTarget
-        if target:IsValid() and ShouldUseEnvelopingMist(target) then
-            print("Using Enveloping Mist on:", target:GetName())
-            self:SetTarget(target)
-            return true
+        -- A prioritized list of potential targets.
+        local potential_targets = {
+            { "EnvelopeLowest", EnvelopeLowest },
+            { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
+            { "BusterTargetWithoutTFT", BusterTargetWithoutTFT },
+            { "TankTarget", TankTarget }
+        }
+
+        -- Iterate through the list to find the first target that meets the conditions.
+        for _, data in ipairs(potential_targets) do
+            local name, target = data[1], data[2]
+            if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
+                print("Using Enveloping Mist on: " .. target:GetName() .. " (Reason: " .. name .. ")")
+                self:SetTarget(target)
+                return true -- Found a valid target, cast the spell.
+            end
         end
+
+        -- No suitable target was found in the list.
         return false
     end)
 )
