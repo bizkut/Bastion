@@ -1400,15 +1400,30 @@ DefensiveAPL:AddItem(
 -- )
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
-        local target = EnvelopeLowest or DebuffTargetWithoutTFT or BusterTargetWithoutTFT or TankTarget
+        -- Targets requiring >= 1 charge
+        local envelopingTarget = EnvelopeLowest or DebuffTargetWithoutTFT
+        local shouldUseForEnveloping1Charge = self:GetCharges() >= 1 and envelopingTarget:IsValid() and ShouldUseEnvelopingMist(envelopingTarget)
+
+        -- Targets requiring >= 2 charges
+        local busterTarget = BusterTargetWithoutTFT
+        local tankTarget = TankTarget
         local rskTarget = Target
 
-        local shouldUseForEnveloping = self:GetCharges() >= 1 and target:IsValid() and ShouldUseEnvelopingMist(target)
-        local shouldUseForRisingSunKick = self:GetCharges() >= 2 and rskTarget:IsValid() and RisingSunKick:IsKnownAndUsable() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax()
+        local shouldUseForBuster = self:GetCharges() >= 2 and busterTarget:IsValid() and ShouldUseEnvelopingMist(busterTarget)
+        local shouldUseForTank = self:GetCharges() >= 2 and tankTarget:IsValid() and ShouldUseEnvelopingMist(tankTarget) and (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
+        local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and RisingSunKick:IsKnownAndUsable() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax()
+
+        -- Prevent double-counting if targets overlap
+        if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
+            shouldUseForEnveloping1Charge = false
+        end
+        if busterTarget:IsValid() and busterTarget:IsUnit(tankTarget) then
+             shouldUseForBuster = false
+        end
 
         return self:IsKnownAndUsable()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and (shouldUseForEnveloping or shouldUseForRisingSunKick)
+            and (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseForRSK)
     end):SetTarget(Player)
 )
 -- DefensiveAPL:AddSpell(
