@@ -104,6 +104,7 @@ local isCastingCrackling = false
 local hasUsedOffGCDDefensive = {}
 local hasUsedOffGCDInterrupt = false
 local hasUsedOffGCDDps = false
+local envelopingTarget = nil
 
 -- Add this helper function near the top of the file
 
