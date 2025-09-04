@@ -1091,6 +1091,7 @@ TFTFollowUpAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         local target = EnvelopeLowest or DebuffTargetWithoutTFT or BusterTargetWithoutTFT or TankTarget
         if target:IsValid() and ShouldUseEnvelopingMist(target) then
+            print("Using Enveloping Mist on:", target:GetName())
             self:SetTarget(target)
             return true
         end
