@@ -54,6 +54,24 @@ function Bastion.require(class)
     return Bastion:Require("~/src/" .. class .. "/" .. class)
 end
 
+function Bastion:UpdateSpellQueueWindow()
+    local _, _, latency, _ = GetNetStats()
+    -- The formula is 2 * latency + 150 + 30 (avg random delay) to counteract the subtractions in Casting.lua
+    -- The goal is to have the effective window be latency + 150.
+    local spellQueueWindow = (2 * latency) + 180
+
+    -- The effective window is capped at 260. Since we subtract latency and random delay, the CVar cap needs to account for that.
+    -- EffectiveCap = CVarCap - latency - random_delay.
+    -- 260 = CVarCap - latency - 30 -> CVarCap = 290 + latency.
+    local cap = 290 + latency
+    if spellQueueWindow > cap then
+        spellQueueWindow = cap
+    end
+
+    SetCVar("spellQueueWindow", spellQueueWindow)
+    -- self:Print("Spell Queue Window CVar set to", spellQueueWindow)
+end
+
 -- fenv for all required files
 function Bastion.Bootstrap()
 
@@ -130,6 +148,14 @@ function Bastion.Bootstrap()
         local u = Bastion.UnitManager[unit]
 
         if u then u:GetAuras():OnUpdate(auras) end
+    end)
+
+    Bastion.Globals.EventManager:RegisterWoWEvent("PLAYER_REGEN_DISABLED", function()
+        Bastion:UpdateSpellQueueWindow()
+    end)
+
+    Bastion.Globals.EventManager:RegisterWoWEvent("PLAYER_REGEN_ENABLED", function()
+        Bastion:UpdateSpellQueueWindow()
     end)
 
     Bastion.Globals.EventManager:RegisterWoWEvent("UNIT_SPELLCAST_SUCCEEDED",
@@ -436,3 +462,4 @@ function Bastion.Bootstrap()
 end
 
 Bastion.Bootstrap()
+Bastion:UpdateSpellQueueWindow()
