@@ -1397,7 +1397,7 @@ DefensiveAPL:AddSpell(
         local latency = select(4, GetNetStats()) or 100
         local delay = (latency / 1000) + 0.05
         C_Timer.After(delay, function()
-            if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
+            if target and target:IsValid() then
                 print("Casting Enveloping Mist on", target:GetName())
                 EnvelopingMist:Cast(target)
             end
@@ -1420,7 +1420,7 @@ DefensiveAPL:AddSpell(
         local latency = select(4, GetNetStats()) or 100
         local delay = (latency / 1000) + 0.05
         C_Timer.After(delay, function()
-            if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
+            if target and target:IsValid() then
                 print("Casting Enveloping Mist on", target:GetName())
                 EnvelopingMist:Cast(target)
             end
@@ -1443,7 +1443,7 @@ DefensiveAPL:AddSpell(
         local latency = select(4, GetNetStats()) or 100
         local delay = (latency / 1000) + 0.05
         C_Timer.After(delay, function()
-            if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
+            if target and target:IsValid() then
                 print("Casting Enveloping Mist on", target:GetName())
                 EnvelopingMist:Cast(target)
             end
@@ -1468,7 +1468,7 @@ DefensiveAPL:AddSpell(
         local latency = select(4, GetNetStats()) or 100
         local delay = (latency / 1000) + 0.05
         C_Timer.After(delay, function()
-            if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
+            if target and target:IsValid() then
                 print("Casting Enveloping Mist on", target:GetName())
                 EnvelopingMist:Cast(target)
             end
@@ -1492,7 +1492,7 @@ DefensiveAPL:AddSpell(
         local latency = select(4, GetNetStats()) or 100
         local delay = (latency / 1000) + 0.05
         C_Timer.After(delay, function()
-            if target and target:IsValid() and RisingSunKick:IsInRange(target) then
+            if target and target:IsValid() then
                 print("Casting Rising Sun Kick on", target:GetName())
                 if not Player:IsFacing(target) and not Player:IsMoving() then
                     FaceObject(target:GetOMToken())
