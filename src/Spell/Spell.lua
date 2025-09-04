@@ -240,7 +240,9 @@ function Spell:Cast(unit, condition)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
-    SpellCancelQueuedSpell()
+    if self:GetID() ~= 116680 then
+        SpellCancelQueuedSpell()
+    end
 
     Bastion:Debug("Casting", self)
 
@@ -276,7 +278,9 @@ function Spell:ForceCast(unit)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
-    SpellCancelQueuedSpell()
+    if self:GetID() ~= 116680 then
+        SpellCancelQueuedSpell()
+    end
 
     Bastion:Debug("Casting", self)
 
@@ -680,85 +684,6 @@ end
 ---@return boolean
 function Spell:IsFree()
     return self:GetCost() == 0
-end
-
--- Cast the spell but dont cancel queue
----@param unit Unit
----@param condition? string|function
----@return boolean
-function Spell:CastWithoutQueueCancel(unit, condition)
-    if condition then
-        if type(condition) == "string" and  not self:EvaluateCondition(condition) then
-            return false
-        elseif type(condition) == "function" and not condition(self) then
-            return false
-        end
-    end
-
-    if not self:Castable() then
-        return false
-    end
-
-    if not self:IsOffGCD() and Casting:PlayerIsBusy() then
-        return false
-    end
-
-    if self:InterruptsCast() then
-        SpellStopCasting()
-    end
-
-    -- Call pre cast function
-    if self:GetPreCastFunction() then
-        self:GetPreCastFunction()(self)
-    end
-
-    -- Check if the mouse was looking
-    self.wasLooking = IsMouselooking()
-
-    -- if unit:GetOMToken() contains 'nameplate' then we need to use Object wrapper to cast
-    local u = unit:GetOMToken()
-    if type(u) == "string" and string.find(u, 'nameplate') then
-        u = Object(u)
-    end
-
-    -- Cast the spell
-    CastSpellByName(self:GetName(), u)
-
-    Bastion:Debug("Casting without queue cancel", self)
-
-    -- Set the last cast time
-    self.lastCastAttempt = GetTime()
-
-    -- Call post cast function
-    if self:GetOnCastFunction() then
-        self:GetOnCastFunction()(self)
-    end
-
-    return true
-end
-
--- ForceCast the spell but dont cancel queue
----@param unit Unit
----@return boolean
-function Spell:ForceCastWithoutQueueCancel(unit)
-    -- Check if the mouse was looking
-    self.wasLooking = IsMouselooking()
-
-    -- if unit:GetOMToken() contains 'nameplate' then we need to use Object wrapper to cast
-    local u = unit:GetOMToken()
-    if type(u) == "string" and string.find(u, 'nameplate') then
-        u = Object(u)
-    end
-
-    -- Cast the spell
-    CastSpellByName(self:GetName(), u)
-
-    Bastion:Debug("Force casting without queue cancel", self)
-
-    -- Set the last cast time
-    self.lastCastAttempt = GetTime()
-
-    return true
 end
 
 return Spell

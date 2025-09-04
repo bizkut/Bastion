@@ -1386,6 +1386,7 @@ DefensiveAPL:AddItem(
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable()
+            and ThunderFocusTea:GetCharges() >= 1
             and EnvelopeLowest
             and ShouldUseEnvelopingMist(EnvelopeLowest)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
@@ -1398,7 +1399,7 @@ DefensiveAPL:AddSpell(
         C_Timer.After(delay, function()
             if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
                 print("Casting Enveloping Mist on", target:GetName())
-                EnvelopingMist:CastWithoutQueueCancel(target)
+                EnvelopingMist:Cast(target)
             end
             isWaitingForTFT = false
         end)
@@ -1408,6 +1409,7 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         return self:IsKnownAndUsable()
+            and ThunderFocusTea:GetCharges() >= 1
             and DebuffTargetWithoutTFT
             and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
@@ -1420,7 +1422,7 @@ DefensiveAPL:AddSpell(
         C_Timer.After(delay, function()
             if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
                 print("Casting Enveloping Mist on", target:GetName())
-                EnvelopingMist:CastWithoutQueueCancel(target)
+                EnvelopingMist:Cast(target)
             end
             isWaitingForTFT = false
         end)
@@ -1443,7 +1445,7 @@ DefensiveAPL:AddSpell(
         C_Timer.After(delay, function()
             if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
                 print("Casting Enveloping Mist on", target:GetName())
-                EnvelopingMist:CastWithoutQueueCancel(target)
+                EnvelopingMist:Cast(target)
             end
             isWaitingForTFT = false
         end)
@@ -1468,7 +1470,7 @@ DefensiveAPL:AddSpell(
         C_Timer.After(delay, function()
             if target and target:IsValid() and EnvelopingMist:IsInRange(target) then
                 print("Casting Enveloping Mist on", target:GetName())
-                EnvelopingMist:CastWithoutQueueCancel(target)
+                EnvelopingMist:Cast(target)
             end
             isWaitingForTFT = false
         end)
@@ -1482,7 +1484,6 @@ DefensiveAPL:AddSpell(
             and RisingSunKick:IsKnownAndUsable()
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and (not Player:IsCastingOrChanneling() or spinningCrane())
-            --and waitingGCDcast(self)
             and ThunderFocusTea:GetCharges() >= 2
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Player):OnCast(function()
@@ -1496,7 +1497,7 @@ DefensiveAPL:AddSpell(
                 if not Player:IsFacing(target) and not Player:IsMoving() then
                     FaceObject(target:GetOMToken())
                 end
-                RisingSunKick:CastWithoutQueueCancel(target)
+                RisingSunKick:Cast(target)
             end
             isWaitingForTFT = false
         end)
