@@ -17,9 +17,7 @@ local RenewingMist = SpellBook:GetSpell(115151)
 local EnvelopingMist = SpellBook:GetSpell(124682)
 local Vivify = SpellBook:GetSpell(116670)
 local RisingSunKick = SpellBook:GetSpell(107428)
-local ThunderFocusTea = SpellBook:GetSpell(116680):SetOffGCD(true):PostCast(function(self)
-    TFTFollowUpAPL:Execute()
-end)
+local ThunderFocusTea = SpellBook:GetSpell(116680):SetOffGCD(true)
 local TigerPalm = SpellBook:GetSpell(100780)
 local BlackoutKick = SpellBook:GetSpell(100784)
 local SpinningCraneKick = SpellBook:GetSpell(101546)
@@ -438,7 +436,8 @@ end
 
 local function canDamage(unit)
     local ccUnit = nil
-    if unit:GetAuras():FindAny(Paralysis):IsUp()
+    if unit:IsDead()
+        or unit:GetAuras():FindAny(Paralysis):IsUp()
         or unit:GetAuras():FindAny(Polymorph):IsUp()
     then
         return false
@@ -1017,9 +1016,9 @@ local function recentInterrupt()
 
     local lastSpellID = lastSpell:GetID()
     local isInterrupt = (lastSpellID == LegSweep:GetID()) or
-                        (lastSpellID == SpearHandStrike:GetID()) or
-                        (lastSpellID == Paralysis:GetID()) or
-                        (lastSpellID == RingOfPeace:GetID())
+        (lastSpellID == SpearHandStrike:GetID()) or
+        (lastSpellID == Paralysis:GetID()) or
+        (lastSpellID == RingOfPeace:GetID())
 
     if isInterrupt and Bastion.LastSpell:GetTimeSince() < 2 then
         return true
@@ -1286,6 +1285,7 @@ CooldownAPL:AddSpell(
             and (Player:GetPartyHPAround(40, 90) >= 3 or Player:GetEnemies(30) >= 3)
             and (IsMelee(Target) or IsMelee(rangeTarget) or rangeTarget:GetDistance(Player) < 8)
             and Target:IsValid()
+            and Target:IsAlive()
     end):SetTarget(Player)
 -- :PreCast(function()
 --     --hasUsedOffGCDDps = true
@@ -1416,29 +1416,35 @@ DefensiveAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         -- Targets requiring >= 1 charge
         local envelopingTarget = EnvelopeLowest or DebuffTargetWithoutTFT
-        local shouldUseForEnveloping1Charge = self:GetCharges() >= 1 and envelopingTarget:IsValid() and ShouldUseEnvelopingMist(envelopingTarget)
+        local shouldUseForEnveloping1Charge = self:GetCharges() >= 1 and envelopingTarget:IsValid() and
+            ShouldUseEnvelopingMist(envelopingTarget)
 
         -- Targets requiring >= 2 charges
         local busterTarget = BusterTargetWithoutTFT
         local tankTarget = TankTarget
         local rskTarget = Target
 
-        local shouldUseForBuster = self:GetCharges() >= 2 and busterTarget:IsValid() and ShouldUseEnvelopingMist(busterTarget)
-        local shouldUseForTank = self:GetCharges() >= 2 and tankTarget:IsValid() and ShouldUseEnvelopingMist(tankTarget) and (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
-        local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and RisingSunKick:IsKnownAndUsable() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax()
+        local shouldUseForBuster = self:GetCharges() >= 2 and busterTarget:IsValid() and
+            ShouldUseEnvelopingMist(busterTarget)
+        local shouldUseForTank = self:GetCharges() >= 2 and tankTarget:IsValid() and ShouldUseEnvelopingMist(tankTarget) and
+            (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
+        local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and RisingSunKick:IsKnownAndUsable() and
+            Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax()
 
         -- Prevent double-counting if targets overlap
         if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
             shouldUseForEnveloping1Charge = false
         end
         if busterTarget:IsValid() and busterTarget:IsUnit(tankTarget) then
-             shouldUseForBuster = false
+            shouldUseForBuster = false
         end
 
         return self:IsKnownAndUsable()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseForRSK)
-    end):SetTarget(Player)
+    end):SetTarget(Player):PostCast(function(self)
+        TFTFollowUpAPL:Execute()
+    end)
 )
 -- DefensiveAPL:AddSpell(
 --     EnvelopingMist:CastableIf(function(self)
@@ -1611,6 +1617,7 @@ StompAPL:AddSpell(
             and self:GetTimeSinceLastCastAttempt() > self:GetCooldown()
             and (IsMelee(Target) or IsMelee(rangeTarget) or rangeTarget:GetDistance(Player) < 10)
             and Target:IsValid()
+            and Target:IsAlive()
     end):SetTarget(Player)
 -- :PreCast(function()
 --     --hasUsedOffGCDDps = true
