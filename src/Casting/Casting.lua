@@ -4,13 +4,21 @@ local Tinkr, Bastion = ...
 local Casting = {}
 
 function Casting:GetSpellQueueWindow()
-    local _, _, _, world_lag = GetNetStats()
-    local _, queue_window_end = GetSpellQueueWindow()
+    local _, _, latency, _ = GetNetStats()
+
+    -- Calculate the spell queue window based on latency + 150ms
+    local spellQueueWindow = latency + 150
 
     -- Add a small random delay to simulate a very good human player
     local random_delay = math.random(10, 50) -- A random delay between 10 and 50ms
+    spellQueueWindow = spellQueueWindow - random_delay
 
-    return (queue_window_end or 400) - world_lag - random_delay
+    -- Cap the total window to a maximum of 260ms
+    if spellQueueWindow > 260 then
+        spellQueueWindow = 260
+    end
+
+    return spellQueueWindow
 end
 
 function Casting:PlayerIsBusy()

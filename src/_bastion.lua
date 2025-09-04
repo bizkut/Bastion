@@ -54,18 +54,6 @@ function Bastion.require(class)
     return Bastion:Require("~/src/" .. class .. "/" .. class)
 end
 
-function Bastion:UpdateSpellQueueWindow()
-    local _, _, latency, _ = GetNetStats()
-    local spellQueueWindow = latency + 150
-
-    if spellQueueWindow > 260 then
-        spellQueueWindow = 260
-    end
-
-    SetCVar("spellQueueWindow", spellQueueWindow)
-    self:Print("Spell Queue Window set to", spellQueueWindow)
-end
-
 -- fenv for all required files
 function Bastion.Bootstrap()
 
@@ -142,14 +130,6 @@ function Bastion.Bootstrap()
         local u = Bastion.UnitManager[unit]
 
         if u then u:GetAuras():OnUpdate(auras) end
-    end)
-
-    Bastion.Globals.EventManager:RegisterWoWEvent("PLAYER_REGEN_DISABLED", function()
-        Bastion:UpdateSpellQueueWindow()
-    end)
-
-    Bastion.Globals.EventManager:RegisterWoWEvent("PLAYER_REGEN_ENABLED", function()
-        Bastion:UpdateSpellQueueWindow()
     end)
 
     Bastion.Globals.EventManager:RegisterWoWEvent("UNIT_SPELLCAST_SUCCEEDED",
@@ -456,4 +436,3 @@ function Bastion.Bootstrap()
 end
 
 Bastion.Bootstrap()
-Bastion:UpdateSpellQueueWindow()
