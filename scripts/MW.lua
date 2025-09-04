@@ -1010,9 +1010,19 @@ local sootheTarget = Bastion.UnitManager:CreateCustomUnit('soothe',
     end)
 
 local function recentInterrupt()
-    if (LegSweep:GetTimeSinceLastCastAttempt() < 2) or (SpearHandStrike:GetTimeSinceLastCastAttempt() < 2) or (Paralysis:GetTimeSinceLastCastAttempt() < 2) then
+    local lastSpell = Bastion.LastSpell:Get()
+    if not lastSpell then return false end
+
+    local lastSpellID = lastSpell:GetID()
+    local isInterrupt = (lastSpellID == LegSweep:GetID()) or
+                        (lastSpellID == SpearHandStrike:GetID()) or
+                        (lastSpellID == Paralysis:GetID()) or
+                        (lastSpellID == RingOfPeace:GetID())
+
+    if isInterrupt and Bastion.LastSpell:GetTimeSince() < 2 then
         return true
     end
+
     return false
 end
 
