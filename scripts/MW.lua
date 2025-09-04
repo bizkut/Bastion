@@ -17,7 +17,9 @@ local RenewingMist = SpellBook:GetSpell(115151)
 local EnvelopingMist = SpellBook:GetSpell(124682)
 local Vivify = SpellBook:GetSpell(116670)
 local RisingSunKick = SpellBook:GetSpell(107428)
-local ThunderFocusTea = SpellBook:GetSpell(116680):SetOffGCD(true)
+local ThunderFocusTea = SpellBook:GetSpell(116680):SetOffGCD(true):PostCast(function(self)
+    TFTFollowUpAPL:Execute()
+end)
 local TigerPalm = SpellBook:GetSpell(100780)
 local BlackoutKick = SpellBook:GetSpell(100784)
 local SpinningCraneKick = SpellBook:GetSpell(101546)
@@ -1738,12 +1740,6 @@ manaAPL:AddSpell(
 
 -- Module Sync
 RestoMonkModule:Sync(function()
-    local lastSpell = Bastion.LastSpell:Get()
-    if lastSpell and lastSpell:GetID() == ThunderFocusTea:GetID() and Bastion.LastSpell:GetTimeSince() < 2 then
-        TFTFollowUpAPL:Execute()
-        return
-    end
-
     JadeEmpower = false
     HasFocusTea = false
     if not Player:IsAffectingCombat() then
