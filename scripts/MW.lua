@@ -1429,18 +1429,16 @@ TFTFollowUpAPL:AddSpell(
                 { "EnvelopeLowest",         EnvelopeLowest },
                 { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
                 { "BusterTargetWithoutTFT", BusterTargetWithoutTFT },
-                { "TankTarget",             TankTarget },
-                { "CracklingTarget",       lightningTarget }
+                { "CracklingTarget",        Lowest },
+                { "TankTarget",             TankTarget }
             }
             for _, data in ipairs(potential_targets) do
                 local name, target = data[1], data[2]
-                if target and target:IsValid() and target:IsFriendly() and ShouldUseEnvelopingMist(target) then
+                if target and target:IsValid() and target and ShouldUseEnvelopingMist(target) then
                     print("Got the target: " ..
                         target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
                     --self:SetTarget(target)
                     --return true -- Found a valid target, cast the spell.
-                elseif target and target:IsValid() and target:IsEnemy() then
-                    print("Cast TFT for JadeEmpowerment")
                 end
             end
         end
