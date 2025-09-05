@@ -106,7 +106,8 @@ local hasUsedOffGCDDefensive = {}
 local hasUsedOffGCDInterrupt = false
 local hasUsedOffGCDDps = false
 local envelopingTarget = nil
-
+local potential_targets = {}
+local envelopingTarget = nil
 -- Add this helper function near the top of the file
 
 -- Add this helper function near the top of the file, after the SpellBook initialization
@@ -485,6 +486,14 @@ end
 local function CondCrackling()
     -- Lightning condition
     if Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 then
+        return true
+    end
+    return false
+end
+
+local function CondChiji()
+    -- Chiji condition
+    if Player:GetPartyHPAround(40, 70) >= 2 or Player:GetPartyHPAround(40, 75) >= 3 then
         return true
     end
     return false
@@ -1088,52 +1097,6 @@ local TrinketAPL = Bastion.APL:New('trinket')
 local manaAPL = Bastion.APL:New('mana')
 local VivifyAPL = Bastion.APL:New('vivify')
 
--- TFT Followup APL
-TFTFollowUpAPL:AddSpell(
-    EnvelopingMist:CastableIf(function(self)
-        if LastSpell:Get() ~= ThunderFocusTea or LastSpell:GetTimeSince() > 1 then return false end
-        -- A prioritized list of potential targets.
-        local potential_targets = {
-            { "EnvelopeLowest", EnvelopeLowest },
-            { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
-            { "BusterTargetWithoutTFT", BusterTargetWithoutTFT },
-            { "TankTarget", TankTarget }
-        }
-
-        -- Iterate through the list to find the first target that meets the conditions.
-        for _, data in ipairs(potential_targets) do
-            local name, target = data[1], data[2]
-            if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
-                print("Using Enveloping Mist on: " .. target:GetName() .. " (Reason: " .. name .. ")")
-                self:SetTarget(target)
-                return true -- Found a valid target, cast the spell.
-            end
-        end
-
-        -- No suitable target was found in the list.
-        return false
-    end)
-)
-
-TFTFollowUpAPL:AddSpell(
-    RisingSunKick:CastableIf(function(self)
-        if LastSpell:Get() ~= ThunderFocusTea or LastSpell:GetTimeSince() > 1 then return false end
-        return self:IsKnownAndUsable()
-            and Target:IsValid()
-            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            and HarmonyMax()
-    end):SetTarget(Target)
-)
--- Add a variable to track Mana Tea stacks
-local manaTeaSt = SpellBook:GetSpell(115867)
-local manaTeaStacks = 0
-
--- Add a function to update Mana Tea stacks
-local function UpdateManaTeaStacks()
-    local aura = Player:GetAuras():FindMy(manaTeaSt)
-    manaTeaStacks = aura and aura:GetCount() or 0
-end
-
 -- Modify the Interrupt APL
 
 InterruptAPL:AddSpell(
@@ -1430,10 +1393,10 @@ DefensiveAPL:AddItem(
 --         -- end
 --     end)
 -- )
-DefensiveAPL:AddSpell(
+TFTFollowUpAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         -- Targets requiring >= 1 charge
-        local envelopingTarget = EnvelopeLowest or DebuffTargetWithoutTFT
+        envelopingTarget = EnvelopeLowest or DebuffTargetWithoutTFT
         local shouldUseForEnveloping1Charge = self:GetCharges() >= 1 and envelopingTarget:IsValid() and
             ShouldUseEnvelopingMist(envelopingTarget)
 
@@ -1441,14 +1404,18 @@ DefensiveAPL:AddSpell(
         local busterTarget = BusterTargetWithoutTFT
         local tankTarget = TankTarget
         local rskTarget = Target
-
+        local lightningTarget = nil
+        local shouldUseLightning = self:GetCharges() >= 1 and CondChiji() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
         local shouldUseForBuster = self:GetCharges() >= 2 and busterTarget:IsValid() and
             ShouldUseEnvelopingMist(busterTarget)
         local shouldUseForTank = self:GetCharges() >= 2 and tankTarget:IsValid() and ShouldUseEnvelopingMist(tankTarget) and
             (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
-        local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and RisingSunKick:IsKnownAndUsable() and
+        local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and
             Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax()
-
+        if shouldUseLightning then
+            -- Cast TFT for JadeEmpowerment
+            lightningTarget = rangeTarget
+        end
         -- Prevent double-counting if targets overlap
         if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
             shouldUseForEnveloping1Charge = false
@@ -1456,16 +1423,92 @@ DefensiveAPL:AddSpell(
         if busterTarget:IsValid() and busterTarget:IsUnit(tankTarget) then
             shouldUseForBuster = false
         end
-
+        -- A prioritized list of potential targets.
+        if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning) then
+            potential_targets = {
+                { "EnvelopeLowest",         EnvelopeLowest },
+                { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
+                { "BusterTargetWithoutTFT", BusterTargetWithoutTFT },
+                { "TankTarget",             TankTarget },
+                { "CracklingTarget",       lightningTarget }
+            }
+            for _, data in ipairs(potential_targets) do
+                local name, target = data[1], data[2]
+                if target and target:IsValid() and target:IsFriendly() and ShouldUseEnvelopingMist(target) then
+                    print("Got the target: " ..
+                        target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
+                    --self:SetTarget(target)
+                    --return true -- Found a valid target, cast the spell.
+                elseif target and target:IsValid() and target:IsEnemy() then
+                    print("Cast TFT for JadeEmpowerment")
+                end
+            end
+        end
         return self:IsKnownAndUsable()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseForRSK)
-    end):SetTarget(Player):OnCast(function(self)
-        LastSpell:Set(self)
-    end):PostCast(function(self)
-        TFTFollowUpAPL:Execute()
-    end)
+            and (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseForRSK or shouldUseLightning)
+    end):SetTarget(Player)
+-- :PostCast(function(self)
+--     -- _G.SpellStopCasting()
+--     for _, data in ipairs(potential_targets) do
+--         local name, target = data[1], data[2]
+--         if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
+--             print("Cast target: " .. target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
+--             --self:SetTarget(target)
+--             EnvelopingMist:Cast(target)
+--             if next(potential_targets) ~= nil then
+--                 for k in pairs(potential_targets) do
+--                     potential_targets[k] = nil
+--                 end
+--             end
+--             return true -- Found a valid target, cast the spell.
+--         end
+--     end
+--     if RisingSunKick:IsKnownAndUsable() then
+--         RisingSunKick:Cast(Target)
+--     end
+-- end)
 )
+-- TFT Followup APL
+-- TFTFollowUpAPL:AddSpell(
+--     EnvelopingMist:CastableIf(function(self)
+--         -- Iterate through the list to find the first target that meets the conditions.
+--         for _, data in ipairs(potential_targets) do
+--             local name, target = data[1], data[2]
+--             if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
+--                 print("Using Enveloping Mist on: " .. target:GetName() .. " (Reason: " .. name .. ")")
+--                 self:SetTarget(target)
+--                 if next(potential_targets) ~= nil then
+--                     for k in pairs(potential_targets) do
+--                         potential_targets[k] = nil
+--                     end
+--                 end
+--                 return true -- Found a valid target, cast the spell.
+--             end
+--         end
+
+--         -- No suitable target was found in the list.
+--         return false
+--     end)
+-- )
+
+-- TFTFollowUpAPL:AddSpell(
+--     RisingSunKick:CastableIf(function(self)
+--         return self:IsKnownAndUsable()
+--             and ThunderFocusTea:GetCharges() >= 1
+--             and Target:IsValid()
+--             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+--     end):SetTarget(Target)
+-- )
+-- Add a variable to track Mana Tea stacks
+local manaTeaSt = SpellBook:GetSpell(115867)
+local manaTeaStacks = 0
+
+-- Add a function to update Mana Tea stacks
+local function UpdateManaTeaStacks()
+    local aura = Player:GetAuras():FindMy(manaTeaSt)
+    manaTeaStacks = aura and aura:GetCount() or 0
+end
 -- DefensiveAPL:AddSpell(
 --     EnvelopingMist:CastableIf(function(self)
 --         return self:IsKnownAndUsable()
@@ -1612,7 +1655,7 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     InvokeChiJi:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
-            and (Player:GetPartyHPAround(40, 70) >= 2 or Player:GetPartyHPAround(40, 75) >= 3)
+            and CondChiji()
             and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()
             and not recentAoE()
     end):SetTarget(Player):PreCast(function()
@@ -1771,9 +1814,18 @@ manaAPL:AddSpell(
 RestoMonkModule:Sync(function()
     JadeEmpower = false
     HasFocusTea = false
-    if not Player:IsAffectingCombat() then
-        cachedUnits["EnvelopeTarget"] = nil
-    end
+    -- If we just cast TFT, stop casting and immediately cast the follow-up APL
+    -- if LastSpell:Get() == ThunderFocusTea and LastSpell:GetTimeSince() < 2 then
+    --     _G.SpellStopCasting()
+    --     TFTFollowUpAPL:Execute()
+    -- end
+    -- if Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
+    --     if next(potential_targets) ~= nil then
+    --         for k in pairs(potential_targets) do
+    --             potential_targets[k] = nil
+    --         end
+    --     end
+    -- end
     -- Scan units once per frame
     scanFriends()
     scanEnemies()
@@ -1844,6 +1896,20 @@ RestoMonkModule:Sync(function()
         end
         ToDAPL:Execute()
         InterruptAPL:Execute()
+        TFTFollowUpAPL:Execute()
+        for _, data in ipairs(potential_targets) do
+            local name, target = data[1], data[2]
+            if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
+                print("Using Enveloping Mist on: " .. target:GetName() .. " (Reason: " .. name .. ")")
+                CastSpellByName("Enveloping Mist", target:GetOMToken())
+                if next(potential_targets) ~= nil then
+                    for k in pairs(potential_targets) do
+                        potential_targets[k] = nil
+                    end
+                end
+                return true -- Found a valid target, cast the spell.
+            end
+        end
         DefensiveAPL:Execute()
         TrinketAPL:Execute()
         StompAPL:Execute()
