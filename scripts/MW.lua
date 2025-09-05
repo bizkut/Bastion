@@ -1408,12 +1408,12 @@ TFTFollowUpAPL:AddSpell(
         local lightningTarget = nil
         local shouldUseLightning = self:GetCharges() >= 1 and CondChiji() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
         local shouldUseForBuster = self:GetCharges() >= 2 and busterTarget:IsValid() and
-            ShouldUseEnvelopingMist(busterTarget)
+            ShouldUseEnvelopingMist(busterTarget) and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
         local shouldUseForTank = self:GetCharges() >= 2 and tankTarget:IsValid() and ShouldUseEnvelopingMist(tankTarget) and
             (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
         local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and
             Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
-        if shouldUseLightning and Lowest and Lowest:IsValid() and ShouldUseEnvelopingMist(Lowest) then
+        if (shouldUseForRSK or shouldUseLightning) and Lowest and Lowest:IsValid() and ShouldUseEnvelopingMist(Lowest) then
             -- Cast TFT for JadeEmpowerment
             lightningTarget = Lowest
         end
