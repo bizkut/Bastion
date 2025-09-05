@@ -1405,17 +1405,17 @@ TFTFollowUpAPL:AddSpell(
         local busterTarget = BusterTargetWithoutTFT
         local tankTarget = TankTarget
         local rskTarget = Target
-        --local lightningTarget = nil
+        local lightningTarget = nil
         local shouldUseLightning = self:GetCharges() >= 1 and CondChiji() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
         local shouldUseForBuster = self:GetCharges() >= 2 and busterTarget:IsValid() and
             ShouldUseEnvelopingMist(busterTarget)
         local shouldUseForTank = self:GetCharges() >= 2 and tankTarget:IsValid() and ShouldUseEnvelopingMist(tankTarget) and
             (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 90 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
         local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and
-            Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax()
-        if shouldUseLightning then
+            Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
+        if shouldUseLightning and Lowest and Lowest:IsValid() and ShouldUseEnvelopingMist(Lowest) then
             -- Cast TFT for JadeEmpowerment
-            lightningTarget = rangeTarget
+            lightningTarget = Lowest
         end
         -- Prevent double-counting if targets overlap
         if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
@@ -1430,7 +1430,7 @@ TFTFollowUpAPL:AddSpell(
                 { "EnvelopeLowest",         EnvelopeLowest },
                 { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
                 { "BusterTargetWithoutTFT", BusterTargetWithoutTFT },
-                { "CracklingTarget",        Lowest },
+                { "CracklingTarget",        lightningTarget },
                 { "TankTarget",             TankTarget }
             }
             for _, data in ipairs(potential_targets) do
