@@ -11,6 +11,7 @@ local SpellBook = Bastion.SpellBook:New()
 local ItemBook = Bastion.ItemBook:New()
 
 local MythicPlusUtils = Bastion.require("MythicPlusUtils"):New()
+local LastSpell = Bastion.require("LastSpell")
 
 -- Spells
 local RenewingMist = SpellBook:GetSpell(115151)
@@ -1090,6 +1091,7 @@ local VivifyAPL = Bastion.APL:New('vivify')
 -- TFT Followup APL
 TFTFollowUpAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
+        if LastSpell:Get() ~= ThunderFocusTea or LastSpell:GetTimeSince() > 1 then return false end
         -- A prioritized list of potential targets.
         local potential_targets = {
             { "EnvelopeLowest", EnvelopeLowest },
@@ -1115,6 +1117,7 @@ TFTFollowUpAPL:AddSpell(
 
 TFTFollowUpAPL:AddSpell(
     RisingSunKick:CastableIf(function(self)
+        if LastSpell:Get() ~= ThunderFocusTea or LastSpell:GetTimeSince() > 1 then return false end
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
@@ -1457,7 +1460,9 @@ DefensiveAPL:AddSpell(
         return self:IsKnownAndUsable()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseForRSK)
-    end):SetTarget(Player):PostCast(function(self)
+    end):SetTarget(Player):OnCast(function(self)
+        LastSpell:Set(self)
+    end):PostCast(function(self)
         TFTFollowUpAPL:Execute()
     end)
 )
