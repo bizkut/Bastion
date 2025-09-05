@@ -485,7 +485,7 @@ end
 
 local function CondCrackling()
     -- Lightning condition
-    if Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 then
+    if Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 85) >= 3 then
         return true
     end
     return false
@@ -493,7 +493,7 @@ end
 
 local function CondChiji()
     -- Chiji condition
-    if Player:GetPartyHPAround(40, 70) >= 2 or Player:GetPartyHPAround(40, 75) >= 3 then
+    if Player:GetPartyHPAround(40, 70) >= 3 or Player:GetPartyHPAround(40, 80) >= 4 then
         return true
     end
     return false
@@ -1217,7 +1217,8 @@ VivifyAPL:AddSpell(
 CooldownAPL:AddSpell(
     Revival:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            and Player:GetPartyHPAround(40, 60) >= 3
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and (Player:GetPartyHPAround(40, 50) >= 3 or Player:GetPartyHPAround(40, 60) >= 4)
             and not recentAoE()
     end):SetTarget(Player):PreCast(function()
         if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
@@ -1404,7 +1405,7 @@ TFTFollowUpAPL:AddSpell(
         local busterTarget = BusterTargetWithoutTFT
         local tankTarget = TankTarget
         local rskTarget = Target
-        local lightningTarget = nil
+        --local lightningTarget = nil
         local shouldUseLightning = self:GetCharges() >= 1 and CondChiji() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
         local shouldUseForBuster = self:GetCharges() >= 2 and busterTarget:IsValid() and
             ShouldUseEnvelopingMist(busterTarget)
@@ -1623,7 +1624,7 @@ DefensiveAPL:AddSpell(
     SheilunsGift:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
             and
-            ((Player:GetPartyHPAround(40, 80) >= 2) or (Player:GetPartyHPAround(40, 80) >= 1 and (SheilunsGift:GetCount() >= 10)) or Lowest:GetRealizedHP() < 50)
+            ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 75) >= 3) or (Player:GetPartyHPAround(40, 85) >= 2 and (SheilunsGift:GetCount() >= 9)))
             and (SheilunsGift:GetCount() >= 5)
             and not Player:IsMoving()
             and not stopCasting()
