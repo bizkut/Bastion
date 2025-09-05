@@ -109,6 +109,14 @@ local envelopingTarget = nil
 local potential_targets = {}
 local envelopingTarget = nil
 -- Add this helper function near the top of the file
+-- Add this helper function near the top of the file
+local function SetEnvelopeTarget(unit)
+    envelopingTarget = unit
+end
+
+local function GetEnvelopeTarget()
+    return envelopingTarget
+end
 
 -- Add this helper function near the top of the file, after the SpellBook initialization
 local function gcdDuration()
@@ -1396,10 +1404,11 @@ DefensiveAPL:AddItem(
 -- )
 TFTFollowUpAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
+        SetEnvelopeTarget(nil)
         -- Targets requiring >= 1 charge
-         if (EnvelopeLowest and EnvelopeLowest:GetRealizedHP() < 60) or DebuffTargetWithoutTFT then
+        if (EnvelopeLowest and EnvelopeLowest:GetRealizedHP() < 60) or DebuffTargetWithoutTFT then
             envelopingTarget = EnvelopeLowest or DebuffTargetWithoutTFT
-         end
+        end
         local shouldUseForEnveloping1Charge = self:GetCharges() >= 1 and envelopingTarget and envelopingTarget:IsValid()
 
         -- Targets requiring >= 2 charges
@@ -1425,49 +1434,38 @@ TFTFollowUpAPL:AddSpell(
         if busterTarget:IsValid() and busterTarget:IsUnit(tankTarget) then
             shouldUseForBuster = false
         end
+
         -- A prioritized list of potential targets.
         if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning) then
-            potential_targets = {
+            local potential_targets_list = {
                 { "EnvelopeLowest",         envelopingTarget },
                 { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
                 { "BusterTargetWithoutTFT", BusterTargetWithoutTFT },
                 { "CracklingTarget",        lightningTarget },
                 { "TankTarget",             TankTarget }
             }
-            for _, data in ipairs(potential_targets) do
+            for _, data in ipairs(potential_targets_list) do
                 local name, target = data[1], data[2]
-                if target and target:IsValid() and target and ShouldUseEnvelopingMist(target) then
-                    print("Got the target: " ..
-                        target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
-                    --self:SetTarget(target)
-                    --return true -- Found a valid target, cast the spell.
+                if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
+                    print("Setting envelope target to: " .. target:GetName())
+                    SetEnvelopeTarget(target)
+                    break -- Found the highest priority target
                 end
             end
         end
+
         return self:IsKnownAndUsable()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseForRSK or shouldUseLightning)
-    end):SetTarget(Player)
--- :PostCast(function(self)
---     -- _G.SpellStopCasting()
---     for _, data in ipairs(potential_targets) do
---         local name, target = data[1], data[2]
---         if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
---             print("Cast target: " .. target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
---             --self:SetTarget(target)
---             EnvelopingMist:Cast(target)
---             if next(potential_targets) ~= nil then
---                 for k in pairs(potential_targets) do
---                     potential_targets[k] = nil
---                 end
---             end
---             return true -- Found a valid target, cast the spell.
---         end
---     end
---     if RisingSunKick:IsKnownAndUsable() then
---         RisingSunKick:Cast(Target)
---     end
--- end)
+    end):SetTarget(Player):PostCast(function(self)
+    local target = GetEnvelopeTarget()
+    if target and target:IsValid() and EnvelopingMist:IsKnownAndUsable() then
+        EnvelopingMist:Cast(target)
+    elseif RisingSunKick:IsKnownAndUsable() then
+        RisingSunKick:Cast(Target)
+    end
+    SetEnvelopeTarget(nil) -- Clear the target
+end)
 )
 -- TFT Followup APL
 -- TFTFollowUpAPL:AddSpell(
@@ -1897,19 +1895,6 @@ RestoMonkModule:Sync(function()
         ToDAPL:Execute()
         InterruptAPL:Execute()
         TFTFollowUpAPL:Execute()
-        for _, data in ipairs(potential_targets) do
-            local name, target = data[1], data[2]
-            if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
-                print("Using Enveloping Mist on: " .. target:GetName() .. " (Reason: " .. name .. ")")
-                CastSpellByName("Enveloping Mist", target:GetOMToken())
-                if next(potential_targets) ~= nil then
-                    for k in pairs(potential_targets) do
-                        potential_targets[k] = nil
-                    end
-                end
-                return true -- Found a valid target, cast the spell.
-            end
-        end
         DefensiveAPL:Execute()
         TrinketAPL:Execute()
         StompAPL:Execute()
