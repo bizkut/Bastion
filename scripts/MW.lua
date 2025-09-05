@@ -701,7 +701,7 @@ local function scanFriends()
 
         -- EnvelopeLowest and envelopCount logic
         -- local envelopeAura = unit:GetAuras():FindMy(EnvelopingMist)
-        if ShouldUseEnvelopingMist(unit) and realizedHP < 60 and ThunderFocusTea:GetCharges() >= 1 then
+        if ShouldUseEnvelopingMist(unit) and ThunderFocusTea:GetCharges() >= 1 then
             if realizedHP < envelopeLowestHP then
                 cachedUnits.envelopeLowest = unit
                 --cachedUnits["envelopeLowestTFT"] = unit
@@ -1192,7 +1192,7 @@ VivifyAPL:AddSpell(
             and not Player:IsMoving()
             and not stopCasting()
         --and waitingGCDcast(self)
-        -- and EnvelopeLowest:GetHP() < 60
+           and EnvelopeLowest:GetRealizedHP() < 60
     end):SetTarget(EnvelopeLowest)
 )
 VivifyAPL:AddSpell(
@@ -1397,9 +1397,10 @@ DefensiveAPL:AddItem(
 TFTFollowUpAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         -- Targets requiring >= 1 charge
-        envelopingTarget = EnvelopeLowest or DebuffTargetWithoutTFT
-        local shouldUseForEnveloping1Charge = self:GetCharges() >= 1 and envelopingTarget:IsValid() and
-            ShouldUseEnvelopingMist(envelopingTarget)
+         if (EnvelopeLowest and EnvelopeLowest:GetRealizedHP() < 60) or DebuffTargetWithoutTFT then
+            envelopingTarget = EnvelopeLowest or DebuffTargetWithoutTFT
+         end
+        local shouldUseForEnveloping1Charge = self:GetCharges() >= 1 and envelopingTarget and envelopingTarget:IsValid()
 
         -- Targets requiring >= 2 charges
         local busterTarget = BusterTargetWithoutTFT
@@ -1418,7 +1419,7 @@ TFTFollowUpAPL:AddSpell(
             lightningTarget = Lowest
         end
         -- Prevent double-counting if targets overlap
-        if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
+        if envelopingTarget and envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
             shouldUseForEnveloping1Charge = false
         end
         if busterTarget:IsValid() and busterTarget:IsUnit(tankTarget) then
@@ -1427,7 +1428,7 @@ TFTFollowUpAPL:AddSpell(
         -- A prioritized list of potential targets.
         if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning) then
             potential_targets = {
-                { "EnvelopeLowest",         EnvelopeLowest },
+                { "EnvelopeLowest",         envelopingTarget },
                 { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
                 { "BusterTargetWithoutTFT", BusterTargetWithoutTFT },
                 { "CracklingTarget",        lightningTarget },
