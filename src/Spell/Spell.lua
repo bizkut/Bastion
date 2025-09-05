@@ -16,7 +16,8 @@ local Spell = {
     target = false,
     release_at = false,
     isOffGCD = false,
-    interruptsCast = false
+    interruptsCast = false,
+    envelopeTarget = nil
 }
 
 local usableExcludes = {
@@ -240,6 +241,10 @@ function Spell:Cast(unit, condition)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
+    if self:GetID() ~= 116680 then
+        CastSpellByName("Enveloping Mist", self:GetEnvelopeTarget():GetOMToken())
+    end
+
     SpellCancelQueuedSpell()
 
     Bastion:Debug("Casting", self)
@@ -600,6 +605,17 @@ function Spell:SetTarget(unit)
     return self
 end
 
+-- Set the spells target
+---@param unit Unit
+---@return Spell
+function Spell:SetEnvelopeTarget(unit)
+    self.envelopeTarget = unit
+    return self
+end
+
+function Spell:GetEnvelopeTarget()
+    return self.envelopeTarget
+end
 -- Get the spells target
 ---@return Unit
 function Spell:GetTarget()

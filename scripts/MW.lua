@@ -493,7 +493,7 @@ end
 
 local function CondChiji()
     -- Chiji condition
-    if Player:GetPartyHPAround(40, 70) >= 3 or Player:GetPartyHPAround(40, 80) >= 4 then
+    if Player:GetPartyHPAround(40, 70) >= 2 or Player:GetPartyHPAround(40, 75) >= 3 then
         return true
     end
     return false
@@ -701,7 +701,7 @@ local function scanFriends()
 
         -- EnvelopeLowest and envelopCount logic
         -- local envelopeAura = unit:GetAuras():FindMy(EnvelopingMist)
-        if ShouldUseEnvelopingMist(unit) and ThunderFocusTea:GetCharges() >= 1 then
+        if ShouldUseEnvelopingMist(unit) and realizedHP < 60 and ThunderFocusTea:GetCharges() >= 1 then
             if realizedHP < envelopeLowestHP then
                 cachedUnits.envelopeLowest = unit
                 --cachedUnits["envelopeLowestTFT"] = unit
@@ -1250,7 +1250,7 @@ CooldownAPL:AddSpell(
             --and ((Lowest:GetRealizedHP() < 80) or (waitingGCDcast(BlackoutKick) and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4) or (Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
             and
             ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
-        --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
         --and not recentAoE()
     end):SetTarget(Lowest)
 )
@@ -1302,8 +1302,7 @@ DispelAPL:AddSpell(
     Detox:CastableIf(function(self)
         return DispelTarget:IsValid() and self:IsKnownAndUsable()
             and (not Player:IsCastingOrChanneling() or spinningCrane() or (DispelTarget:GetRealizedHP() < 50))
-            and
-            ((debuffThresholds[DispelTarget:GetGUID()] and (GetTime() > debuffThresholds[DispelTarget:GetGUID()])) or DispelTarget:IsMouseover())
+            --and ((debuffThresholds[DispelTarget:GetGUID()] and (GetTime() > debuffThresholds[DispelTarget:GetGUID()])) or DispelTarget:IsMouseover())
     end):SetTarget(DispelTarget):OnCast(function(self)
         -- Reset the interrupt threshold after successful dispel
         debuffThresholds[DispelTarget:GetGUID()] = nil
@@ -1319,7 +1318,7 @@ RenewAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             --and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 90)
             and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 100)
-        --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(RenewLowest)
 )
 
@@ -1394,13 +1393,13 @@ DefensiveAPL:AddItem(
 --         -- end
 --     end)
 -- )
+local chosenTarget = nil
 TFTFollowUpAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         -- Targets requiring >= 1 charge
-         if (EnvelopeLowest and EnvelopeLowest:GetRealizedHP() < 60) or DebuffTargetWithoutTFT then
-            envelopingTarget = EnvelopeLowest or DebuffTargetWithoutTFT
-         end
-        local shouldUseForEnveloping1Charge = self:GetCharges() >= 1 and envelopingTarget and envelopingTarget:IsValid()
+        envelopingTarget = EnvelopeLowest or DebuffTargetWithoutTFT
+        local shouldUseForEnveloping1Charge = self:GetCharges() >= 1 and envelopingTarget:IsValid() and
+            ShouldUseEnvelopingMist(envelopingTarget)
 
         -- Targets requiring >= 2 charges
         local busterTarget = BusterTargetWithoutTFT
@@ -1419,35 +1418,47 @@ TFTFollowUpAPL:AddSpell(
             lightningTarget = Lowest
         end
         -- Prevent double-counting if targets overlap
-        if envelopingTarget and envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
+        if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
             shouldUseForEnveloping1Charge = false
         end
         if busterTarget:IsValid() and busterTarget:IsUnit(tankTarget) then
             shouldUseForBuster = false
         end
         -- A prioritized list of potential targets.
-        if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning) then
+        if (shouldUseForRSK or shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning) then
             potential_targets = {
-                { "EnvelopeLowest",         envelopingTarget },
+                { "EnvelopeLowest",         EnvelopeLowest },
                 { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
                 { "BusterTargetWithoutTFT", BusterTargetWithoutTFT },
                 { "CracklingTarget",        lightningTarget },
                 { "TankTarget",             TankTarget }
             }
-            for _, data in ipairs(potential_targets) do
-                local name, target = data[1], data[2]
-                if target and target:IsValid() and target and ShouldUseEnvelopingMist(target) then
-                    print("Got the target: " ..
-                        target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
-                    --self:SetTarget(target)
-                    --return true -- Found a valid target, cast the spell.
-                end
+            for i, data in ipairs(potential_targets) do
+                local name, varName = data[1], data[2]
+                local target = _G[varName] -- look up the actual variable by name
+
+                if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
+                   print("Got the target: " ..
+                       target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
+                    chosenTarget = target
+                   -- clear all other entries and their original variables
+                    for j, otherData in ipairs(potential_targets) do
+                        if j ~= i then
+                            local otherVar = otherData[2]
+                           _G[otherVar] = nil      -- clear the original variable
+                           potential_targets[j] = nil -- clear from the table
+                     end
+                  end
+
+                  --self:SetTarget(target)
+                 --return true -- Found a valid target, cast the spell.
+              end
             end
         end
         return self:IsKnownAndUsable()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseForRSK or shouldUseLightning)
-    end):SetTarget(Player)
+    end):SetTarget(Player):SetEnvelopeTarget(chosenTarget)
 -- :PostCast(function(self)
 --     -- _G.SpellStopCasting()
 --     for _, data in ipairs(potential_targets) do
@@ -1696,7 +1707,7 @@ StompAPL:AddSpell(
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
         --and waitingGCDcast(self)
-        --and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+           -- and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Target):PreCast(function()
         if not Player:IsFacing(Target) and not Player:IsMoving() then
             FaceObject(Target:GetOMToken())
