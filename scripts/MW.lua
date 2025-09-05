@@ -1460,7 +1460,7 @@ TFTFollowUpAPL:AddSpell(
     end):SetTarget(Player):PostCast(function(self)
     local target = GetEnvelopeTarget()
     if target and target:IsValid() and EnvelopingMist:IsKnownAndUsable() then
-        EnvelopingMist:Cast(target)
+        CastSpellByName("Enveloping Mist", target:GetOMToken())
     elseif RisingSunKick:IsKnownAndUsable() then
         RisingSunKick:Cast(Target)
     end
