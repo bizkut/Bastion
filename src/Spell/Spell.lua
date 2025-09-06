@@ -16,7 +16,8 @@ local Spell = {
     target = false,
     release_at = false,
     isOffGCD = false,
-    interruptsCast = false
+    interruptsCast = false,
+    canCastWhileChanneling = false
 }
 
 local usableExcludes = {
@@ -216,7 +217,7 @@ function Spell:Cast(unit, condition)
         return false
     end
 
-    if not self:IsOffGCD() and Casting:PlayerIsBusy() then
+    if not self:IsOffGCD() and Casting:PlayerIsBusy() and not self:CanCastWhileChanneling() then
         return false
     end
 
@@ -240,7 +241,6 @@ function Spell:Cast(unit, condition)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
-
     SpellCancelQueuedSpell()
 
     Bastion:Debug("Casting", self)
@@ -623,6 +623,15 @@ end
 
 function Spell:InterruptsCast()
     return self.interruptsCast
+end
+
+function Spell:SetCanCastWhileChanneling(can_cast_while_channeling)
+    self.canCastWhileChanneling = can_cast_while_channeling
+    return self
+end
+
+function Spell:CanCastWhileChanneling()
+    return self.canCastWhileChanneling
 end
 
 -- IsMagicDispel

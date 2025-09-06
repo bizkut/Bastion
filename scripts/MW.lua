@@ -15,8 +15,8 @@ local LastSpell = Bastion.require("LastSpell")
 
 -- Spells
 local RenewingMist = SpellBook:GetSpell(115151)
-local EnvelopingMist = SpellBook:GetSpell(124682)
-local Vivify = SpellBook:GetSpell(116670)
+local EnvelopingMist = SpellBook:GetSpell(124682):SetCanCastWhileChanneling(true)
+local Vivify = SpellBook:GetSpell(116670):SetCanCastWhileChanneling(true)
 local RisingSunKick = SpellBook:GetSpell(107428)
 local ThunderFocusTea = SpellBook:GetSpell(116680):SetOffGCD(true)
 local TigerPalm = SpellBook:GetSpell(100780)
@@ -500,7 +500,7 @@ local function CondChiji()
 end
 
 local function ShouldUseCocoon(unit)
-    if unit:GetAuras():FindAny(BlessingofProtection):IsUp() or unit:GetAuras():FindAny(DivineShield):IsUp() or unit:GetAuras():FindAny(LifeCocoon):IsUp() or (ObjectSpecializationID(unit:GetOMToken()) == 250) then -- not Blood DK
+    if unit:GetAuras():FindAny(BlessingofProtection):IsUp() or unit:GetAuras():FindAny(DivineShield):IsUp() or unit:GetAuras():FindAny(LifeCocoon):IsUp() or unit:GetAuras():FindMy(EnvelopingMist):IsUp() or (ObjectSpecializationID(unit:GetOMToken()) == 250) then -- not Blood DK
         return false
     end
     if unit:GetHP() > 40 and cocoonThresholds[unit:GetGUID()] then
@@ -624,6 +624,19 @@ local function HarmonyMax()
     if not val then return false end
     if val >= Player:GetMaxHealth() then
         return true
+    end
+    return false
+end
+
+local function isChannelingSoothingMistOnTarget(unit)
+    if Player:GetCastingOrChannelingSpell() == SoothingMist then
+        local channelTargetGUID = ObjectCastingTarget(Player:GetOMToken())
+        if channelTargetGUID then
+            local channelTarget = Bastion.UnitManager:Get(channelTargetGUID)
+            if channelTarget and channelTarget:IsValid() and channelTarget:IsUnit(unit) then
+                return true
+            end
+        end
     end
     return false
 end
@@ -756,8 +769,8 @@ local function scanFriends()
             end
         end
     end)
-    if cachedUnits.envelopeLowest and cachedUnits.debuffTargetWithoutTFT and cachedUnits.envelopeLowest:IsUnit(cachedUnits.debuffTargetWithoutTFT) then
-        cachedUnits.debuffTargetWithoutTFT = nil
+    if cachedUnits.envelopeLowest and cachedUnits.debuffTargetWithTFT and cachedUnits.envelopeLowest:IsUnit(cachedUnits.debuffTargetWithTFT) then
+        cachedUnits.debuffTargetWithTFT = nil
     end
 
     -- Finalize default units
@@ -1230,28 +1243,16 @@ CooldownAPL:AddSpell(
         end
     end)
 )
--- -- Vivify Zen Pulse
+
 -- CooldownAPL:AddSpell(
---     Vivify:CastableIf(function(self)
---         return Lowest:IsValid()
---             --and (Lowest:GetRealizedHP() < 80)
---             and self:IsKnownAndUsable()
---             and not Player:IsCastingOrChanneling()
---             and Player:GetAuras():FindMy(ZenPulse):IsUp()
---             and Player:GetAuras():FindMy(Vivacious):IsUp()
---             and (cachedUnits["renewCount"] >= 4 or Player:GetAuras():FindMy(ZenPulse):GetRemainingTime() <= 2)
---             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
---     end):SetTarget(Lowest)
+--     EnvelopingMist:CastableIf(function(self)
+--         return self:IsKnownAndUsable()
+--             and DebuffTargetWithoutTFT:IsValid()
+--             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+--             and not Player:IsMoving()
+--             and not stopCasting()
+--         end):SetTarget(DebuffTargetWithoutTFT)
 -- )
-CooldownAPL:AddSpell(
-    EnvelopingMist:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and DebuffTargetWithoutTFT:IsValid()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and not Player:IsMoving()
-            and not stopCasting()
-        end):SetTarget(DebuffTargetWithoutTFT)
-)
 CooldownAPL:AddSpell(
     Vivify:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -1266,6 +1267,54 @@ CooldownAPL:AddSpell(
             and not recentAoE()
     end):SetTarget(Lowest)
 )
+-- Soothing Mist only
+CooldownAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and DebuffTargetWithoutTFT:IsValid()
+            and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
+            and isChannelingSoothingMistOnTarget(DebuffTargetWithoutTFT)
+            and not Player:IsMoving()
+            and not stopCasting()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(DebuffTargetWithoutTFT)
+)
+
+CooldownAPL:AddSpell(
+    Vivify:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and DebuffTargetWithoutTFT:IsValid()
+            and isChannelingSoothingMistOnTarget(DebuffTargetWithoutTFT) and DebuffTargetWithoutTFT:GetRealizedHP() < 80
+            and not Player:IsMoving()
+            and not stopCasting()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(DebuffTargetWithoutTFT)
+)
+
+CooldownAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Lowest:IsValid()
+            and ShouldUseEnvelopingMist(Lowest)
+            and isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 60
+            and not Player:IsMoving()
+            and not stopCasting()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(Lowest)
+)
+-- Soothing Mist and normal
+CooldownAPL:AddSpell(
+    Vivify:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Lowest:IsValid()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea() or isChannelingSoothingMistOnTarget(Lowest))
+            and (Lowest:GetRealizedHP() < 50 or isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 80)
+            and not Player:IsMoving()
+            and not stopCasting()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(Lowest)
+)
+
 CooldownAPL:AddSpell(
     JadefireStomp:CastableIf(function(self)
         return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
@@ -1279,24 +1328,6 @@ CooldownAPL:AddSpell(
             and Target:IsValid()
             and Target:IsAlive()
     end):SetTarget(Player)
--- :PreCast(function()
---     --hasUsedOffGCDDps = true
---     if not Player:IsFacing(nearTarget) and not Player:IsMoving() then
---         FaceObject(nearTarget:GetOMToken())
---     end
--- end)
-)
-CooldownAPL:AddSpell(
-    Vivify:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Lowest:IsValid()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and Lowest:GetRealizedHP() < 50
-            and not Player:IsMoving()
-            and not stopCasting()
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-        --and not recentAoE()
-    end):SetTarget(Lowest)
 )
 -- Trinkets
 TrinketAPL:AddItem(
@@ -1361,7 +1392,7 @@ DefensiveAPL:AddItem(
         return self:IsUsable()
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetHP() < 40
-            and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
+            and Player:GetAuras():FindAny(LifeCocoon):IsDown()
             --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
             and not recentDefensive()
     end):SetTarget(Player)
@@ -1372,7 +1403,7 @@ DefensiveAPL:AddSpell(
         return self:IsKnownAndUsable()
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetHP() < 40
-            and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
+            and Player:GetAuras():FindAny(LifeCocoon):IsDown()
             and not recentDefensive()
     end):SetTarget(Player)
 )
@@ -1381,7 +1412,7 @@ DefensiveAPL:AddItem(
     AlgariHealingPotion:UsableIf(function(self)
         return self:IsUsable()
             and Player:GetHP() < 20
-            and not Player:GetAuras():FindAny(LifeCocoon):IsUp()
+            and Player:GetAuras():FindAny(LifeCocoon):IsDown()
             and not recentDefensive()
         --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
     end):SetTarget(Player)
@@ -1615,8 +1646,7 @@ DefensiveAPL:AddSpell(
     LifeCocoon:CastableIf(function(self)
         return cocoonTarget:IsValid() and self:IsKnownAndUsable()
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and cocoonTarget:GetHP() < 40
-        --and ShouldUseCocoon(hpLowest)
+            and ShouldUseCocoon(cocoonTarget)
     end):SetTarget(cocoonTarget):OnCast(function()
         --cocoonThresholds[hpLowest:GetID()] = nil
         for k in pairs(cocoonThresholds) do
@@ -1690,9 +1720,27 @@ DefensiveAPL:AddSpell(
             and not recentAoE()
     end):SetTarget(Player):PreCast(function()
         if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
-            SheilunsGift:Cast(Player)
+            CastSpellByName("Sheilun's Gift")
         end
     end)
+)
+
+DefensiveAPL:AddSpell(
+    SoothingMist:CastableIf(function(self)
+        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and (ThunderFocusTea:GetCharges() == 0)
+            and (DebuffTargetWithoutTFT:GetRealizedHP() < 70)
+            and Player:GetAuras():FindMy(Vivacious):IsDown()
+    end):SetTarget(DebuffTargetWithoutTFT)
+)
+
+DefensiveAPL:AddSpell(
+    SoothingMist:CastableIf(function(self)
+        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and (ThunderFocusTea:GetCharges() == 0)
+            and (Lowest:GetRealizedHP() < 50)
+            and Player:GetAuras():FindMy(Vivacious):IsDown()
+    end):SetTarget(Lowest)
 )
 -- DPS APL
 
@@ -1874,6 +1922,20 @@ RestoMonkModule:Sync(function()
     end
     -- if Player:GetCastingOrChannelingSpell() == EnvelopingMist and EnvelopeLowest:GetHP() > 80 then
     --     _G.SpellStopCasting()
+    -- end
+    -- if Player:GetCastingOrChannelingSpell() == SoothingMist then
+    --     -- if (SoothingMist:GetTarget() == Lowest and Lowest:GetRealizedHP() > 100) or (SoothingMist:GetTarget() == DebuffTargetWithoutTFT and DebuffTargetWithoutTFT:GetRealizedHP() > 100) then
+    --     --     _G.SpellStopCasting()
+    --     if SoothingMist:GetTarget() == DebuffTargetWithoutTFT and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT) then
+    --         CastSpellByName("Enveloping Mist", DebuffTargetWithoutTFT:GetOMToken())
+    --     elseif SoothingMist:GetTarget() == DebuffTargetWithoutTFT and DebuffTargetWithoutTFT:GetRealizedHP() < 70 then
+    --         CastSpellByName("Vivify", DebuffTargetWithoutTFT:GetOMToken())
+    --     elseif SoothingMist:GetTarget() == Lowest and ShouldUseEnvelopingMist(Lowest) then
+    --         CastSpellByName("Enveloping Mist", Lowest:GetOMToken())
+    --     elseif SoothingMist:GetTarget() == Lowest then -- and Lowest:GetRealizedHP() < 70 then
+    --         CastSpellByName("Vivify", Lowest:GetOMToken())
+    --     end
+    --     --return
     -- end
     if Player:GetCastingOrChannelingSpell() == ManaTea and ((Lowest:GetRealizedHP() < 70) or (Player:GetPP() > 98) or (Player:IsMoving() and Player:IsAffectingCombat())) then
         _G.SpellStopCasting()
