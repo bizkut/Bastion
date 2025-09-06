@@ -485,7 +485,7 @@ end
 
 local function CondCrackling()
     -- Lightning condition
-    if Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 85) >= 3 then
+    if Player:GetPartyHPAround(40, 75) >= 2 or Player:GetPartyHPAround(40, 80) >= 3 then
         return true
     end
     return false
@@ -733,7 +733,7 @@ local function scanFriends()
                         cachedUnits.dispelTarget = unit
                     end
                 end
-                if not hasBadDebuff and debuffList[spellID] and not dispelCheck(aura) and aura:GetRemainingTime() > 3 and ThunderFocusTea:GetCharges() >= 1 then
+                if not hasBadDebuff and debuffList[spellID] and not dispelCheck(aura) and aura:GetRemainingTime() > 2 then
                     hasBadDebuff = true
                 end
             end
@@ -745,9 +745,12 @@ local function scanFriends()
                 dispelLowestHP = realizedHP
             end
         end
-        if hasBadDebuff and ShouldUseEnvelopingMist(unit) and realizedHP < 70 then
-            if realizedHP < debuffLowestHP then
+        if hasBadDebuff and ShouldUseEnvelopingMist(unit) and realizedHP < 80 then
+            if (realizedHP < debuffLowestHP) and ThunderFocusTea:GetCharges() >= 1 then
                 --cachedUnits.potentialDebuffTarget = unit
+                cachedUnits.debuffTargetWithTFT = unit
+                debuffLowestHP = realizedHP
+            elseif (realizedHP < debuffLowestHP) and ThunderFocusTea:GetCharges() == 0 then
                 cachedUnits.debuffTargetWithoutTFT = unit
                 debuffLowestHP = realizedHP
             end
@@ -1240,7 +1243,15 @@ CooldownAPL:AddSpell(
 --             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
 --     end):SetTarget(Lowest)
 -- )
--- Vivify Vivacious, instant cast
+CooldownAPL:AddSpell(
+    EnvelopingMist:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and DebuffTargetWithoutTFT:IsValid()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and not Player:IsMoving()
+            and not stopCasting()
+        end):SetTarget(DebuffTargetWithoutTFT)
+)
 CooldownAPL:AddSpell(
     Vivify:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -1252,24 +1263,9 @@ CooldownAPL:AddSpell(
             and
             ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4))
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-        --and not recentAoE()
+            and not recentAoE()
     end):SetTarget(Lowest)
 )
-
-CooldownAPL:AddSpell(
-    Vivify:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Lowest:IsValid()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and Lowest:GetRealizedHP() < 50
-            and not Player:IsMoving()
-            and not stopCasting()
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-        --and not recentAoE()
-    end):SetTarget(Lowest)
-)
--- AOE
-
 CooldownAPL:AddSpell(
     JadefireStomp:CastableIf(function(self)
         return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
@@ -1290,7 +1286,18 @@ CooldownAPL:AddSpell(
 --     end
 -- end)
 )
-
+CooldownAPL:AddSpell(
+    Vivify:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Lowest:IsValid()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and Lowest:GetRealizedHP() < 50
+            and not Player:IsMoving()
+            and not stopCasting()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+        --and not recentAoE()
+    end):SetTarget(Lowest)
+)
 -- Trinkets
 TrinketAPL:AddItem(
     Signet:UsableIf(function(self)
@@ -1410,7 +1417,7 @@ DefensiveAPL:AddItem(
 TFTFollowUpAPL:AddSpell(
     ThunderFocusTea:CastableIf(function(self)
         -- Targets requiring >= 1 charge
-        envelopingTarget = EnvelopeLowest or DebuffTargetWithoutTFT
+        envelopingTarget = EnvelopeLowest or DebuffTargetWithTFT
         local shouldUseForEnveloping1Charge = self:GetCharges() >= 1 and envelopingTarget:IsValid() and
             ShouldUseEnvelopingMist(envelopingTarget)
 
@@ -1423,7 +1430,7 @@ TFTFollowUpAPL:AddSpell(
         local shouldUseForBuster = self:GetCharges() >= 2 and busterTarget:IsValid() and
             ShouldUseEnvelopingMist(busterTarget) and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
         local shouldUseForTank = self:GetCharges() >= 2 and tankTarget:IsValid() and ShouldUseEnvelopingMist(tankTarget) and
-            (tankTarget:GetRealizedHP() < 60 or (tankTarget:GetRealizedHP() < 80 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
+            (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 80 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
        --local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and
         --    Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2 -- For Sun Kick but use it for Enveloping Mist instead
         if shouldUseLightning and Lowest and Lowest:IsValid() and ShouldUseEnvelopingMist(Lowest) then
@@ -1436,9 +1443,10 @@ TFTFollowUpAPL:AddSpell(
         end
         -- A prioritized list of potential targets.
         if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning) then
+        --if (shouldUseForEnveloping1Charge or shouldUseForTank or shouldUseLightning) then
             potential_targets = {
+                { "DebuffTargetWithTFT",    DebuffTargetWithTFT },
                 { "EnvelopeLowest",         EnvelopeLowest },
-                { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
                 { "BusterTargetWithoutTFT", BusterTargetWithoutTFT },
                 { "CracklingTarget",        lightningTarget },
                 { "TankTarget",             TankTarget }
@@ -1668,7 +1676,7 @@ DefensiveAPL:AddSpell(
             --and waitingGCDcast(self)
             and
             --(Player:GetAuras():FindMy(SecretInfusion):IsUp() or CondCrackling() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
-            (CondCrackling() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
+            (CondCrackling() or CondChiji() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
             --and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (ThunderFocusTea:GetCharges() >= 2))
             and not recentAoE()
     end):SetTarget(rangeTarget)
@@ -1836,15 +1844,10 @@ manaAPL:AddSpell(
 RestoMonkModule:Sync(function()
     JadeEmpower = false
     HasFocusTea = false
-    -- If we just cast TFT, stop casting and immediately cast the follow-up APL
-    -- if LastSpell:Get() == ThunderFocusTea and LastSpell:GetTimeSince() < 2 then
-    --     _G.SpellStopCasting()
-    --     TFTFollowUpAPL:Execute()
-    -- end
-    -- if Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
+    -- if LastSpell:Get() == ThunderFocusTea and LastSpell:GetTimeSince() > 1 then
     --     if next(potential_targets) ~= nil then
-    --         for k in pairs(potential_targets) do
-    --             potential_targets[k] = nil
+    --         for k in pairs(cocoonThresholds) do
+    --             cocoonThresholds[k] = nil
     --         end
     --     end
     -- end
