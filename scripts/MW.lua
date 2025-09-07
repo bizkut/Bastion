@@ -12,6 +12,7 @@ local ItemBook = Bastion.ItemBook:New()
 
 local MythicPlusUtils = Bastion.require("MythicPlusUtils"):New()
 local LastSpell = Bastion.require("LastSpell")
+local lastSpell = Bastion.LastSpell:Get()
 
 -- Spells
 local RenewingMist = SpellBook:GetSpell(115151)
@@ -79,6 +80,7 @@ local AncientConcordance = SpellBook:GetSpell(388740)
 local PotentialEnergy = SpellBook:GetSpell(1239483) -- 2-4 set S3
 local InvokeChiJiBuff = SpellBook:GetSpell(406220)
 local SecretInfusion = SpellBook:GetSpell(388498)
+local BalancedStratagem = SpellBook:GetSpell(451508)
 -- CC
 local Polymorph = SpellBook:GetSpell(118)
 
@@ -763,7 +765,7 @@ local function scanFriends()
                 --cachedUnits.potentialDebuffTarget = unit
                 cachedUnits.debuffTargetWithTFT = unit
                 debuffLowestHP = realizedHP
-            elseif (realizedHP < debuffLowestHP) and ThunderFocusTea:GetCharges() == 0 then
+            elseif (realizedHP < debuffLowestHP) and ThunderFocusTea:GetCharges() < 1 then
                 cachedUnits.debuffTargetWithoutTFT = unit
                 debuffLowestHP = realizedHP
             end
@@ -889,7 +891,7 @@ local function scanEnemies()
                     --     cachedUnits.busterTargetWithTFT = busterTargetUnit
                     --     isCastingEnveloping = true
                     -- else
-                    cachedUnits.busterTargetWithoutTFT = busterTargetUnit
+                    cachedUnits.busterTargetWithTFT = busterTargetUnit
                     -- end
                 end
             end
@@ -942,10 +944,12 @@ local function scanEnemies()
     if not Target:IsValid() or Target:IsDead() or not IsMelee(Target) or not canDamage(Target) then
         --if cachedUnits.nearTarget:GetGUID() ~= autoTarget["Target"] then
         if cachedUnits.nearTarget then
-            autoTarget["Target"] = cachedUnits.nearTarget:GetGUID()
+            --autoTarget["Target"] = cachedUnits.nearTarget:GetGUID()
             if not cachedUnits.nearTarget:IsTarget() then
                 TargetUnit(cachedUnits.nearTarget:GetOMToken())
             end
+        elseif not cachedUnits.nearTarget and cachedUnits.rangeTarget:IsTarget() and not cachedUnits.rangeTarget:IsTarget() then
+            TargetUnit(cachedUnits.rangeTarget:GetOMToken())
         end
     else
         -- Handle case where player's manual target is valid
@@ -953,9 +957,9 @@ local function scanEnemies()
             cachedUnits.nearTarget = Target
         end
     end
-    if cachedUnits.nearTarget and not IsMelee(cachedUnits.nearTarget) then
-        cachedUnits.nearTarget = nil
-    end
+    -- if cachedUnits.nearTarget and not IsMelee(cachedUnits.nearTarget) then
+    --     cachedUnits.nearTarget = nil
+    -- end
     -- Finalize default units
     if not cachedUnits.nearTarget then cachedUnits.nearTarget = Bastion.UnitManager:Get('none') end
     if not cachedUnits.rangeTarget then cachedUnits.rangeTarget = Bastion.UnitManager:Get('none') end
@@ -1039,7 +1043,7 @@ local sootheTarget = Bastion.UnitManager:CreateCustomUnit('soothe',
     end)
 
 local function recentInterrupt()
-    local lastSpell = Bastion.LastSpell:Get()
+    -- local lastSpell = Bastion.LastSpell:Get()
     if not lastSpell then return false end
 
     local lastSpellID = lastSpell:GetID()
@@ -1098,6 +1102,76 @@ end
 local function NeedsUrgentHealing()
     return Lowest:GetRealizedHP() < 80 or Player:GetPartyHPAround(40, 90) >= 2
 end
+
+local function TFTEnvelope()
+    -- Targets requiring >= 1 charge
+    envelopingTarget =  DebuffTargetWithTFT or DebuffTargetWithoutTFT or EnvelopeLowest
+    -- local shouldUseForEnveloping1Charge = ThunderFocusTea:GetCharges() >= 1 and envelopingTarget:IsValid() and
+    --     ShouldUseEnvelopingMist(envelopingTarget)
+
+    local shouldUseForEnveloping1Charge = envelopingTarget:IsValid() and
+        ShouldUseEnvelopingMist(envelopingTarget)
+
+    -- Targets requiring >= 2 charges
+    local busterTarget = BusterTargetWithTFT
+    local tankTarget = TankTarget
+    --local rskTarget = Target
+    local lightningChiji = nil
+    local shouldUseLightning = ThunderFocusTea:GetCharges() >= 2 and CondChiji() and
+        Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and
+        Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+    local shouldUseForBuster = ThunderFocusTea:GetCharges() >= 2 and busterTarget:IsValid() and
+        ShouldUseEnvelopingMist(busterTarget) and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
+    local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and tankTarget:IsValid() and
+        ShouldUseEnvelopingMist(tankTarget) and
+        (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 80 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
+    --local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and
+    --    Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2 -- For Sun Kick but use it for Enveloping Mist instead
+    if shouldUseLightning and Lowest and Lowest:IsValid() and ShouldUseEnvelopingMist(Lowest) then
+        -- Cast TFT for JadeEmpowerment
+        lightningChiji = Lowest
+    end
+    -- Prevent double-counting if targets overlap
+    if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
+        shouldUseForEnveloping1Charge = false
+    end
+    -- A prioritized list of potential targets.
+    if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning)
+        and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+        and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    then
+        --if (shouldUseForEnveloping1Charge or shouldUseForTank or shouldUseLightning) then
+        potential_targets = {
+            { "DebuffTargetWithTFT",    DebuffTargetWithTFT },
+            { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
+            { "EnvelopeLowest",         EnvelopeLowest },
+            { "BusterTargetWithTFT",    BusterTargetWithTFT },
+            { "LightningChiji",         lightningChiji },
+            { "TankTarget",             TankTarget }
+        }
+        for _, data in ipairs(potential_targets) do
+            local name, target = data[1], data[2]
+            if target and target:IsValid() and ShouldUseEnvelopingMist(target) and (target:GetRealizedHP() < 80 or shouldUseLightning) and (ThunderFocusTea:GetCharges() >= 1 or SoothingMist:IsKnownAndUsable() and not isChannelingSoothingMistOnTarget(target)) then
+                SpellCancelQueuedSpell()
+                print("Using Enveloping Mist on: " ..
+                    target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
+                if ThunderFocusTea:GetCharges() >= 1 then
+                    CastSpellByName("Thunder Focus Tea", "player")
+                else
+                    CastSpellByName("Soothing Mist", target:GetOMToken())
+                end
+                CastSpellByName("Enveloping Mist", target:GetOMToken())
+                return true -- Found a valid target, cast the spell.
+            end
+        end
+        if next(potential_targets) ~= nil then
+            for k in pairs(potential_targets) do
+                potential_targets[k] = nil
+            end
+        end
+    end
+end
+
 -- APLs
 local DispelAPL = Bastion.APL:New('dispel')
 local RenewAPL = Bastion.APL:New('renewmist')
@@ -1208,14 +1282,15 @@ VivifyAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and not Player:IsMoving()
             and not stopCasting()
-            --and waitingGCDcast(self)
-            --and EnvelopeLowest:GetRealizedHP() < 60
+        --and waitingGCDcast(self)
+        --and EnvelopeLowest:GetRealizedHP() < 60
     end):SetTarget(EnvelopeLowest)
 )
 VivifyAPL:AddSpell(
     Vivify:CastableIf(function(self)
         return Lowest:IsValid() and self:IsKnownAndUsable()
             and not Player:IsCastingOrChanneling()
+            and Lowest:GetRealizedHP() < 90
             and (not Player:IsMoving() or Player:GetAuras():FindMy(Vivacious):IsUp())
             and not stopCasting()
         --and waitingGCDcast(self)
@@ -1308,7 +1383,8 @@ CooldownAPL:AddSpell(
         return self:IsKnownAndUsable()
             and Lowest:IsValid()
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea() or isChannelingSoothingMistOnTarget(Lowest))
-            and (Lowest:GetRealizedHP() < 50 or isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 80)
+            and
+            ((Lowest:GetRealizedHP() < 40 and ThunderFocusTea:GetCharges() < 1) or (isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 80))
             and not Player:IsMoving()
             and not stopCasting()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
@@ -1354,7 +1430,8 @@ DispelAPL:AddSpell(
     Detox:CastableIf(function(self)
         return DispelTarget:IsValid() and self:IsKnownAndUsable()
             and (not Player:IsCastingOrChanneling() or spinningCrane() or (DispelTarget:GetRealizedHP() < 50))
-            and ((debuffThresholds[DispelTarget:GetGUID()] and (GetTime() > debuffThresholds[DispelTarget:GetGUID()])) or DispelTarget:IsMouseover())
+            and
+            ((debuffThresholds[DispelTarget:GetGUID()] and (GetTime() > debuffThresholds[DispelTarget:GetGUID()])) or DispelTarget:IsMouseover())
     end):SetTarget(DispelTarget):OnCast(function(self)
         -- Reset the interrupt threshold after successful dispel
         debuffThresholds[DispelTarget:GetGUID()] = nil
@@ -1363,11 +1440,21 @@ DispelAPL:AddSpell(
         -- end
     end)
 )
+-- Always put it on tanks
+RenewAPL:AddSpell(
+    RenewingMist:CastableIf(function(self)
+        return MustUseRenewingMist(TankTarget)
+            and not Player:IsCastingOrChanneling()
+            and not Player:IsUnit(TankTarget)
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(TankTarget)
+)
 
 RenewAPL:AddSpell(
     RenewingMist:CastableIf(function(self)
         return MustUseRenewingMist(RenewLowest)
             and not Player:IsCastingOrChanneling()
+            and not TankTarget:IsUnit(RenewLowest)
             --and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 90)
             and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 100)
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
@@ -1453,62 +1540,59 @@ TFTFollowUpAPL:AddSpell(
             ShouldUseEnvelopingMist(envelopingTarget)
 
         -- Targets requiring >= 2 charges
-        local busterTarget = BusterTargetWithoutTFT
+        local busterTarget = BusterTargetWithTFT
         local tankTarget = TankTarget
-        local rskTarget = Target
-        local lightningTarget = nil
-        local shouldUseLightning = self:GetCharges() >= 2 and CondChiji() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+        --local rskTarget = Target
+        local lightningChiji = nil
+        local shouldUseLightning = self:GetCharges() >= 2 and CondChiji() and
+            Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and
+            Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
         local shouldUseForBuster = self:GetCharges() >= 2 and busterTarget:IsValid() and
             ShouldUseEnvelopingMist(busterTarget) and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
         local shouldUseForTank = self:GetCharges() >= 2 and tankTarget:IsValid() and ShouldUseEnvelopingMist(tankTarget) and
             (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 80 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
-       --local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and
+        --local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and
         --    Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2 -- For Sun Kick but use it for Enveloping Mist instead
         if shouldUseLightning and Lowest and Lowest:IsValid() and ShouldUseEnvelopingMist(Lowest) then
             -- Cast TFT for JadeEmpowerment
-            lightningTarget = Lowest
+            lightningChiji = Lowest
         end
         -- Prevent double-counting if targets overlap
         if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
             shouldUseForEnveloping1Charge = false
         end
         -- A prioritized list of potential targets.
-        if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning) then
-        --if (shouldUseForEnveloping1Charge or shouldUseForTank or shouldUseLightning) then
+        if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning)
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+        then
+            --if (shouldUseForEnveloping1Charge or shouldUseForTank or shouldUseLightning) then
             potential_targets = {
-                { "DebuffTargetWithTFT",    DebuffTargetWithTFT },
-                { "EnvelopeLowest",         EnvelopeLowest },
-                { "BusterTargetWithoutTFT", BusterTargetWithoutTFT },
-                { "CracklingTarget",        lightningTarget },
-                { "TankTarget",             TankTarget }
+                { "DebuffTargetWithTFT", DebuffTargetWithTFT },
+                { "EnvelopeLowest",      EnvelopeLowest },
+                { "BusterTargetWithTFT", BusterTargetWithTFT },
+                { "LightningChiji",      lightningChiji },
+                { "TankTarget",          TankTarget }
             }
-            for i, data in ipairs(potential_targets) do
-                local name, varName = data[1], data[2]
-                local target = _G[varName] -- look up the actual variable by name
-
+            for _, data in ipairs(potential_targets) do
+                local name, target = data[1], data[2]
                 if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
-                    print("Got the target: " ..  target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
-                    -- clear all other entries and their original variables
-                    for j, otherData in ipairs(potential_targets) do
-                        if j ~= i then
-                            local otherVar = otherData[2]
-                           _G[otherVar] = nil      -- clear the original variable
-                           potential_targets[j] = nil -- clear from the table
-                     end
-                  end
-
-                  --self:SetTarget(target)
-                 --return true -- Found a valid target, cast the spell.
-              end
+                    SpellCancelQueuedSpell()
+                    print("Using Enveloping Mist on: " ..
+                        target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
+                    CastSpellByName("Enveloping Mist", target:GetOMToken())
+                    return true -- Found a valid target, cast the spell.
+                end
             end
         end
         return self:IsKnownAndUsable()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseForRSK or shouldUseLightning)
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning)
     end):SetTarget(Player)
-    -- :PostCast(function(self)
-    --     CastSpellByName("Enveloping Mist", chosenTarget:GetOMToken())
-    -- end)
+-- :PostCast(function(self)
+--     CastSpellByName("Enveloping Mist", chosenTarget:GetOMToken())
+-- end)
 -- :PostCast(function(self)
 --     -- _G.SpellStopCasting()
 --     for _, data in ipairs(potential_targets) do
@@ -1709,7 +1793,9 @@ DefensiveAPL:AddSpell(
             (CondCrackling() or CondChiji() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
             --and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (ThunderFocusTea:GetCharges() >= 2))
             and not recentAoE()
-    end):SetTarget(rangeTarget)
+    end):SetTarget(rangeTarget):OnCast(function(self)
+        Bastion.Notifications:AddNotification(CracklingJadeLightning:GetIcon(), "Crackling Jade Lightning")
+    end)
 )
 
 DefensiveAPL:AddSpell(
@@ -1728,19 +1814,25 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     SoothingMist:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
-            and (ThunderFocusTea:GetCharges() == 0)
+            and (ThunderFocusTea:GetCharges() < 1)
             and (DebuffTargetWithoutTFT:GetRealizedHP() < 70)
             and Player:GetAuras():FindMy(Vivacious):IsDown()
-    end):SetTarget(DebuffTargetWithoutTFT)
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(DebuffTargetWithoutTFT):OnCast(function(self)
+        Bastion.Notifications:AddNotification(SoothingMist:GetIcon(), "Soothing Mist")
+    end)
 )
 
 DefensiveAPL:AddSpell(
     SoothingMist:CastableIf(function(self)
         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
-            and (ThunderFocusTea:GetCharges() == 0)
+            and (ThunderFocusTea:GetCharges() < 1)
             and (Lowest:GetRealizedHP() < 50)
             and Player:GetAuras():FindMy(Vivacious):IsDown()
-    end):SetTarget(Lowest)
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(Lowest):OnCast(function(self)
+        Bastion.Notifications:AddNotification(SoothingMist:GetIcon(), "Soothing Mist")
+    end)
 )
 -- DPS APL
 
@@ -1774,7 +1866,7 @@ StompAPL:AddSpell(
             and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
         --and waitingGCDcast(self)
-           -- and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+        -- and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Target):PreCast(function()
         if not Player:IsFacing(Target) and not Player:IsMoving() then
             FaceObject(Target:GetOMToken())
@@ -1790,11 +1882,9 @@ DpsAPL:AddSpell(
         return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
             --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(Target,90,40) or Player:IsWithinCone(TankTarget,90,40))
             and not Player:IsMoving()
-            --and waitingGCDcast(self)
-            --and self:GetTimeSinceLastCastAttempt() > 2
-            --and nearTarget:IsValid()
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             and not hasNoAggroTarget()
+            and Player:IsWithinCone(mostEnemies(), 90, 40)
     end):SetTarget(Player)
 -- :PreCast(function()
 --     if not Player:IsFacing(mostEnemies()) and not Player:IsMoving() then
@@ -1815,16 +1905,6 @@ DpsAPL:AddSpell(
         --and waitingGCDcast(self)
     end):SetTarget(Target)
 )
--- Fishing for Harmonic Surge
--- DpsAPL:AddSpell(
---     TigerPalm:CastableIf(function(self)
---         return Target:IsValid() and self:IsKnownAndUsable()
---             and not Player:IsCastingOrChanneling()
---             and Player:IsFacing(Target)
---             and Player:GetAuras():FindMy(PotentialEnergy):IsUp()
---             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
---     end):SetTarget(Target)
--- )
 
 -- DpsAPL:AddSpell(
 --     CracklingJadeLightning:CastableIf(function(self)
@@ -1852,14 +1932,6 @@ DpsAPL:AddSpell(
     end):SetTarget(Player)
 )
 
--- DpsAPL:AddSpell(
---     TigerPalm:CastableIf(function(self)
---         return Target:IsValid() and self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
---             and Player:IsFacing(Target)
---             and (Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4 or Player:GetAuras():FindMy(PotentialEnergy):IsUp())
---             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
---     end):SetTarget(Target)
--- )
 DpsAPL:AddSpell(
     TigerPalm:CastableIf(function(self)
         return Target:IsValid() and self:IsKnownAndUsable()
@@ -1892,18 +1964,14 @@ manaAPL:AddSpell(
 RestoMonkModule:Sync(function()
     JadeEmpower = false
     HasFocusTea = false
-    -- if LastSpell:Get() == ThunderFocusTea and LastSpell:GetTimeSince() > 1 then
-    --     if next(potential_targets) ~= nil then
-    --         for k in pairs(cocoonThresholds) do
-    --             cocoonThresholds[k] = nil
-    --         end
-    --     end
-    -- end
+
     -- Scan units once per frame
     scanFriends()
     scanEnemies()
 
-    --print(ThunderFocusTea:GetCharges())
+    -- if Player:GetAuras():FindMy(BalancedStratagem):GetCount() then
+    --     print("Balanced Stratagem stacks: " .. Player:GetAuras():FindMy(BalancedStratagem):GetCount())
+    -- end
 
     --print("GCD duration: " .. TigerPalm:GetTimeSinceLastCastAttempt() .." GCD: "..gcdDuration())
     --local flag = ObjectMovementFlag('player')
@@ -1940,7 +2008,7 @@ RestoMonkModule:Sync(function()
     if Player:GetCastingOrChannelingSpell() == ManaTea and ((Lowest:GetRealizedHP() < 70) or (Player:GetPP() > 98) or (Player:IsMoving() and Player:IsAffectingCombat())) then
         _G.SpellStopCasting()
     end
-    if Player:GetCastingOrChannelingSpell() == CracklingJadeLightning and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() then
+    if Player:GetCastingOrChannelingSpell() == CracklingJadeLightning and Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and lastSpell and lastSpell:GetID() == CracklingJadeLightning:GetID() then
         _G.SpellStopCasting()
     end
     DispelAPL:Execute()
@@ -1953,8 +2021,8 @@ RestoMonkModule:Sync(function()
     end
     -- OOC manatea
     UpdateManaTeaStacks()
-    if (Lowest:GetRealizedHP() > 80) and (ManaTea:GetTimeSinceLastCastAttempt() > 5) then
-        if ((Player:GetPP() < 90) and (manaTeaStacks >= 10) and not Player:IsAffectingCombat()) or ((Player:GetPP() < 90) and (manaTeaStacks >= 19) and Player:IsAffectingCombat() and not Player:IsMoving()) then
+    if (Lowest:GetRealizedHP() > 80) and (ManaTea:GetTimeSinceLastCastAttempt() > 5) and (manaTeaStacks >= 10)  then
+        if ((Player:GetPP() < 90) and not Player:IsAffectingCombat()) or ((Player:GetPP() < 80) and Player:IsAffectingCombat() and not Player:IsMoving()) then
             manaAPL:Execute()
         end
     end
@@ -1983,21 +2051,23 @@ RestoMonkModule:Sync(function()
         end
         ToDAPL:Execute()
         InterruptAPL:Execute()
-        TFTFollowUpAPL:Execute()
-        for _, data in ipairs(potential_targets) do
-            local name, target = data[1], data[2]
-            if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
-                SpellCancelQueuedSpell()
-                print("Using Enveloping Mist on: " .. target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
-                CastSpellByName("Enveloping Mist", target:GetOMToken())
-                if next(potential_targets) ~= nil then
-                    for k in pairs(potential_targets) do
-                        potential_targets[k] = nil
-                    end
-                end
-                return true -- Found a valid target, cast the spell.
-            end
-        end
+        --TFTFollowUpAPL:Execute()
+        TFTEnvelope()
+        -- for _, data in ipairs(potential_targets) do
+        --     local name, target = data[1], data[2]
+        --     if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
+        --         SpellCancelQueuedSpell()
+        --         print("Using Enveloping Mist on: " ..
+        --             target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
+        --         CastSpellByName("Enveloping Mist", target:GetOMToken())
+        --         if next(potential_targets) ~= nil then
+        --             for k in pairs(potential_targets) do
+        --                 potential_targets[k] = nil
+        --             end
+        --         end
+        --         return true -- Found a valid target, cast the spell.
+        --     end
+        -- end
         DefensiveAPL:Execute()
         TrinketAPL:Execute()
         StompAPL:Execute()
