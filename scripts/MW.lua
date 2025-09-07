@@ -948,7 +948,7 @@ local function scanEnemies()
             if not cachedUnits.nearTarget:IsTarget() then
                 TargetUnit(cachedUnits.nearTarget:GetOMToken())
             end
-        elseif not cachedUnits.nearTarget and cachedUnits.rangeTarget:IsTarget() and not cachedUnits.rangeTarget:IsTarget() then
+        elseif (not cachedUnits.nearTarget or cachedUnits.nearTarget and not canDamage(cachedUnits.nearTarget)) and cachedUnits.rangeTarget and not cachedUnits.rangeTarget:IsTarget() then
             TargetUnit(cachedUnits.rangeTarget:GetOMToken())
         end
     else
