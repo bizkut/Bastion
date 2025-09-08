@@ -477,8 +477,6 @@ end
 
 local function ShouldUseCrackling(unit)
     return CracklingJadeLightning:IsKnownAndUsable() and unit:IsValid() and canDamage(unit) and not Player:IsMoving()
-        --and CracklingJadeLightning:GetTimeSinceLastCastAttempt() > 2
-        --and waitingGCDcast(CracklingJadeLightning)
         and Player:GetAuras():FindMy(JadeEmpowerment):IsUp()
         and not Player:IsCastingOrChanneling()
         and not stopCasting()
@@ -716,7 +714,7 @@ local function scanFriends()
 
         -- EnvelopeLowest and envelopCount logic
         -- local envelopeAura = unit:GetAuras():FindMy(EnvelopingMist)
-        if ShouldUseEnvelopingMist(unit) and realizedHP < 60 then
+        if ShouldUseEnvelopingMist(unit) then
             if realizedHP < envelopeLowestHP then
                 cachedUnits.envelopeLowest = unit
                 --cachedUnits["envelopeLowestTFT"] = unit
@@ -771,9 +769,9 @@ local function scanFriends()
             end
         end
     end)
-    if cachedUnits.envelopeLowest and cachedUnits.debuffTargetWithTFT and cachedUnits.envelopeLowest:IsUnit(cachedUnits.debuffTargetWithTFT) then
-        cachedUnits.debuffTargetWithTFT = nil
-    end
+    -- if cachedUnits.envelopeLowest and cachedUnits.debuffTargetWithTFT and cachedUnits.envelopeLowest:IsUnit(cachedUnits.debuffTargetWithTFT) then
+    --     cachedUnits.debuffTargetWithTFT = nil
+    -- end
 
     -- Finalize default units
     if not cachedUnits.lowest then cachedUnits.lowest = Bastion.UnitManager:Get('none') end
@@ -1104,11 +1102,11 @@ local function NeedsUrgentHealing()
 end
 
 local function TFTEnvelope()
-    -- Targets requiring >= 1 charge
-    envelopingTarget = DebuffTargetWithTFT or DebuffTargetWithoutTFT or EnvelopeLowest
+    if DebuffTargetWithTFT:IsValid() or DebuffTargetWithoutTFT:IsValid() or EnvelopeLowest:GetRealizedHP() < 60 then
+        envelopingTarget = DebuffTargetWithTFT or DebuffTargetWithoutTFT or EnvelopeLowest
+    end
 
-    local shouldUseForEnveloping1Charge = envelopingTarget:IsValid() and
-        ShouldUseEnvelopingMist(envelopingTarget) and envelopingTarget:GetRealizedHP() < 80  -- for DebuffTargetWithoutTFT or EnvelopeLowest
+    local shouldUseForEnveloping1Charge = envelopingTarget and envelopingTarget:IsValid() and ShouldUseEnvelopingMist(envelopingTarget)
 
     -- Targets requiring >= 2 charges
     local busterTarget = BusterTargetWithTFT
@@ -1116,16 +1114,15 @@ local function TFTEnvelope()
     local lightningChiji = Bastion.UnitManager:Get('none')
     local shouldUseLightning = ThunderFocusTea:GetCharges() >= 2 and CondChiji() and
         Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and
-        Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+        Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest)
     local shouldUseForBuster = ThunderFocusTea:GetCharges() >= 2 and busterTarget:IsValid() and
         ShouldUseEnvelopingMist(busterTarget) and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
     local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and tankTarget:IsValid() and
         ShouldUseEnvelopingMist(tankTarget) and
         (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 80 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
 
-    if shouldUseLightning and Lowest and Lowest:IsValid() and ShouldUseEnvelopingMist(Lowest) then
-        -- Cast TFT for JadeEmpowerment
-        lightningChiji = Lowest
+    if shouldUseLightning then
+        lightningChiji = EnvelopeLowest
     end
     -- Prevent double-counting if targets overlap
     --if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
@@ -1140,10 +1137,8 @@ local function TFTEnvelope()
         and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     then
         potential_targets = {
-            { "DebuffTargetWithTFT",    DebuffTargetWithTFT },
-            { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
-            { "EnvelopeLowest",         EnvelopeLowest },
-            { "BusterTargetWithTFT",    busterTarget },
+            { "EnvelopingTarget",       envelopingTarget },
+            { "BusterTarget",           busterTarget },
             { "LightningChiji",         lightningChiji },
             { "TankTarget",             tankTarget }
         }
@@ -1279,8 +1274,7 @@ VivifyAPL:AddSpell(
             and not Player:IsCastingOrChanneling()
             and not Player:IsMoving()
             and not stopCasting()
-        --and waitingGCDcast(self)
-        --and EnvelopeLowest:GetRealizedHP() < 60
+            and EnvelopeLowest:GetRealizedHP() < 60
     end):SetTarget(EnvelopeLowest)
 )
 VivifyAPL:AddSpell(
