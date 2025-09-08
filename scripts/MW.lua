@@ -1153,6 +1153,7 @@ local function TFTEnvelope()
     then
         -- Don't waste the crack
         if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
+            SpellCancelQueuedSpell()
             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
             return
         end
