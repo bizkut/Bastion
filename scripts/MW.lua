@@ -78,7 +78,7 @@ local AspectofHarmony = SpellBook:GetSpell(450769)
 local ClarityofPurpose = SpellBook:GetSpell(451181)
 local AncientConcordance = SpellBook:GetSpell(388740)
 local PotentialEnergy = SpellBook:GetSpell(1239483) -- 2-4 set S3
-local InvokeChiJiBuff = SpellBook:GetSpell(406220)
+local ChiJiBuff = SpellBook:GetSpell(406220)
 local SecretInfusion = SpellBook:GetSpell(388498)
 local BalancedStratagem = SpellBook:GetSpell(451508)
 -- CC
@@ -716,7 +716,7 @@ local function scanFriends()
 
         -- EnvelopeLowest and envelopCount logic
         -- local envelopeAura = unit:GetAuras():FindMy(EnvelopingMist)
-        if ShouldUseEnvelopingMist(unit) and realizedHP < 60 and ThunderFocusTea:GetCharges() >= 1 and unit:GetAuras():FindAny(LifeCocoon):IsDown() then
+        if ShouldUseEnvelopingMist(unit) and realizedHP < 60 and unit:GetAuras():FindAny(LifeCocoon):IsDown() then
             if realizedHP < envelopeLowestHP then
                 cachedUnits.envelopeLowest = unit
                 --cachedUnits["envelopeLowestTFT"] = unit
@@ -1061,7 +1061,7 @@ end
 
 local function recentDefensive()
     if (ExpelHarm:GetTimeSinceLastCastAttempt() < 2) or (FortifyingBrew:GetTimeSinceLastCastAttempt() < 2) or (DiffuseMagic:GetTimeSinceLastCastAttempt() < 2)
-        or AlgariHealingPotion:GetTimeSinceLastUseAttempt() < 2 or Healthstone:GetTimeSinceLastUseAttempt() < 2
+        or (AlgariHealingPotion:GetTimeSinceLastUseAttempt() < 2) or (Healthstone:GetTimeSinceLastUseAttempt() < 2)
     then
         return true
     end
@@ -1106,8 +1106,6 @@ end
 local function TFTEnvelope()
     -- Targets requiring >= 1 charge
     envelopingTarget =  DebuffTargetWithTFT or DebuffTargetWithoutTFT or EnvelopeLowest
-    -- local shouldUseForEnveloping1Charge = ThunderFocusTea:GetCharges() >= 1 and envelopingTarget:IsValid() and
-    --     ShouldUseEnvelopingMist(envelopingTarget)
 
     local shouldUseForEnveloping1Charge = envelopingTarget:IsValid() and
         ShouldUseEnvelopingMist(envelopingTarget)
@@ -1115,8 +1113,7 @@ local function TFTEnvelope()
     -- Targets requiring >= 2 charges
     local busterTarget = BusterTargetWithTFT
     local tankTarget = TankTarget
-    --local rskTarget = Target
-    local lightningChiji = nil
+    local lightningChiji = Bastion.UnitManager:Get('none')
     local shouldUseLightning = ThunderFocusTea:GetCharges() >= 2 and CondChiji() and
         Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and
         Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
@@ -1125,15 +1122,17 @@ local function TFTEnvelope()
     local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and tankTarget:IsValid() and
         ShouldUseEnvelopingMist(tankTarget) and
         (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 80 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
-    --local shouldUseForRSK = self:GetCharges() >= 2 and rskTarget:IsValid() and
-    --    Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2 -- For Sun Kick but use it for Enveloping Mist instead
+    
     if shouldUseLightning and Lowest and Lowest:IsValid() and ShouldUseEnvelopingMist(Lowest) then
         -- Cast TFT for JadeEmpowerment
         lightningChiji = Lowest
     end
     -- Prevent double-counting if targets overlap
-    if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
-        shouldUseForEnveloping1Charge = false
+    --if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
+    if shouldUseForEnveloping1Charge then
+        busterTarget = Bastion.UnitManager:Get('none')
+        tankTarget = Bastion.UnitManager:Get('none')
+        lightningChiji = Bastion.UnitManager:Get('none')
     end
     -- A prioritized list of potential targets.
     if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseForTank or shouldUseLightning)
@@ -1145,9 +1144,9 @@ local function TFTEnvelope()
             { "DebuffTargetWithTFT",    DebuffTargetWithTFT },
             { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
             { "EnvelopeLowest",         EnvelopeLowest },
-            { "BusterTargetWithTFT",    BusterTargetWithTFT },
+            { "BusterTargetWithTFT",    busterTarget },
             { "LightningChiji",         lightningChiji },
-            { "TankTarget",             TankTarget }
+            { "TankTarget",             tankTarget }
         }
         for _, data in ipairs(potential_targets) do
             local name, target = data[1], data[2]
@@ -1699,7 +1698,7 @@ DpsAPL:AddSpell(
     SpinningCraneKick:CastableIf(function(self)
         return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
             and Player:GetEnemies(8) >= 4
-            and Player:GetAuras():FindMy(AwakenedJadefire):IsUp()
+            and (Player:GetAuras():FindMy(AwakenedJadefire):IsUp() or Player:GetAuras():FindMy(ChiJiBuff):IsUp())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             --and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4
             --and not RisingSunKick:IsKnownAndUsable()
