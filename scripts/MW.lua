@@ -1174,10 +1174,10 @@ local function TFTEnvelope()
                     CastSpellByName("Enveloping Mist", target:GetOMToken())
                 elseif ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
                     CastSpellByName("Thunder Focus Tea", "player")
+                    CastSpellByName("Enveloping Mist", target:GetOMToken())
                 -- elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
                 --     CastSpellByName("Soothing Mist", target:GetOMToken())
                 end
-                CastSpellByName("Enveloping Mist", target:GetOMToken())
                 break -- Found a valid target, terminate the loops
             end
         end
