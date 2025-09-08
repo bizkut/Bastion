@@ -1121,7 +1121,7 @@ local function TFTEnvelope()
 
     -- Targets requiring >= 2 charges
 
-    local shouldUseLightning = (ThunderFocusTea:GetCharges() >= 2 or not InvokeChiJi:IsKnownAndUsable()) and CondChiji() and
+    local shouldUseLightning = (ThunderFocusTea:GetCharges() >= 2 or InvokeChiJi:IsOnCooldown()) and CondChiji() and
         Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and
         Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and EnvelopeLowest:IsValid() and
         ShouldUseEnvelopingMist(EnvelopeLowest)
@@ -1174,6 +1174,7 @@ local function TFTEnvelope()
                     CastSpellByName("Enveloping Mist", target:GetOMToken())
                 elseif ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
                     CastSpellByName("Thunder Focus Tea", "player")
+                    SpellCancelQueuedSpell()
                     CastSpellByName("Enveloping Mist", target:GetOMToken())
                 -- elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
                 --     CastSpellByName("Soothing Mist", target:GetOMToken())
