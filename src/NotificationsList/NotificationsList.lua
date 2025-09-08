@@ -14,7 +14,7 @@ function NotificationsList:New()
     -- Create a frame for the notifications
     self.frame = CreateFrame("Frame", "BastionNotificationsList", UIParent)
     self.frame:SetSize(600, 60)
-    self.frame:SetPoint("TOP", UIParent, "TOP", 0, -100)
+    self.frame:SetPoint("TOP", UIParent, "TOP", 0, -500)
     self.frame:SetFrameStrata("HIGH")
 
     -- Remove notifications after 5 seconds

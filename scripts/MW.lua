@@ -471,7 +471,8 @@ local function checkManaTea()
 end
 
 local function ShouldUseEnvelopingMist(unit)
-    return unit:IsValid() and EnvelopingMist:IsKnownAndUsable() and unit:GetAuras():FindMy(EnvelopingMist):IsDown() and unit:GetAuras():FindAny(LifeCocoon):IsDown()
+    return unit:IsValid() and EnvelopingMist:IsKnownAndUsable() and unit:GetAuras():FindMy(EnvelopingMist):IsDown() and
+        unit:GetAuras():FindAny(LifeCocoon):IsDown()
         and Player:GetPP() > 30
 end
 
@@ -480,7 +481,8 @@ local function ShouldUseCrackling(unit)
         and Player:GetAuras():FindMy(JadeEmpowerment):IsUp()
         and not Player:IsCastingOrChanneling()
         and not stopCasting()
-        and unit:GetHealth() * 5 > Player:GetMaxHealth()
+        and
+        (unit:GetHealth() * 5 > Player:GetMaxHealth() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
 end
 
 local function CondCrackling()
@@ -890,6 +892,7 @@ local function scanEnemies()
                     --     isCastingEnveloping = true
                     -- else
                     cachedUnits.busterTargetWithTFT = busterTargetUnit
+                    -- print("Found buster target with TFT: " .. busterTargetUnit:GetName() .. " for spell " .. unit:GetCastingOrChannelingSpell():GetName())
                     -- end
                 end
             end
@@ -1102,11 +1105,14 @@ local function NeedsUrgentHealing()
 end
 
 local function TFTEnvelope()
+    local envelopingTarget = Bastion.UnitManager:Get('none')
     if DebuffTargetWithTFT:IsValid() or DebuffTargetWithoutTFT:IsValid() or EnvelopeLowest:GetRealizedHP() < 60 then
         envelopingTarget = DebuffTargetWithTFT or DebuffTargetWithoutTFT or EnvelopeLowest
     end
 
-    local shouldUseForEnveloping1Charge = envelopingTarget and envelopingTarget:IsValid() and ShouldUseEnvelopingMist(envelopingTarget)
+    local shouldUseForEnveloping1Charge = envelopingTarget:IsValid() and
+        ShouldUseEnvelopingMist(envelopingTarget) and
+        (ThunderFocusTea:GetCharges() >= 1 or SoothingMist:IsKnownAndUsable())
 
     -- Targets requiring >= 2 charges
     local busterTarget = BusterTargetWithTFT
@@ -1114,7 +1120,8 @@ local function TFTEnvelope()
     local lightningChiji = Bastion.UnitManager:Get('none')
     local shouldUseLightning = ThunderFocusTea:GetCharges() >= 2 and CondChiji() and
         Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and
-        Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest)
+        Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and EnvelopeLowest:IsValid() and
+        ShouldUseEnvelopingMist(EnvelopeLowest)
     local shouldUseForBuster = ThunderFocusTea:GetCharges() >= 2 and busterTarget:IsValid() and
         ShouldUseEnvelopingMist(busterTarget) and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
     local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and tankTarget:IsValid() and
@@ -1131,16 +1138,29 @@ local function TFTEnvelope()
         tankTarget = Bastion.UnitManager:Get('none')
         lightningChiji = Bastion.UnitManager:Get('none')
     end
+    if Player:GetAuras():FindMy(ThunderFocusTea):IsUp() then
+        if shouldUseForEnveloping1Charge then
+            SpellCancelQueuedSpell()
+            CastSpellByName("Enveloping Mist", envelopingTarget:GetOMToken())
+        elseif EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) then
+            SpellCancelQueuedSpell()
+            CastSpellByName("Enveloping Mist", EnvelopeLowest:GetOMToken())
+        end
+    end
     -- A prioritized list of potential targets.
     if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
         and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-        and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     then
+        -- Don't waste the crack
+        if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() then
+            CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
+            return
+        end
         potential_targets = {
-            { "EnvelopingTarget",       envelopingTarget },
-            { "BusterTarget",           busterTarget },
-            { "LightningChiji",         lightningChiji },
-            { "TankTarget",             tankTarget }
+            { "EnvelopingTarget", envelopingTarget },
+            { "BusterTarget",     busterTarget },
+            { "LightningChiji",   lightningChiji },
+            { "TankTarget",       tankTarget }
         }
         for _, data in ipairs(potential_targets) do
             local name, target = data[1], data[2]
@@ -1148,13 +1168,13 @@ local function TFTEnvelope()
                 SpellCancelQueuedSpell()
                 print("Using Enveloping Mist on: " ..
                     target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
-                if ThunderFocusTea:GetCharges() >= 1 then
+                if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
                     CastSpellByName("Thunder Focus Tea", "player")
-                elseif SoothingMist:IsKnownAndUsable() then
+                elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
                     CastSpellByName("Soothing Mist", target:GetOMToken())
                 end
                 CastSpellByName("Enveloping Mist", target:GetOMToken())
-                return -- Found a valid target, terminate the loops
+                break -- Found a valid target, terminate the loops
             end
         end
         if next(potential_targets) ~= nil then
@@ -1503,6 +1523,15 @@ local function UpdateManaTeaStacks()
 end
 
 DefensiveAPL:AddSpell(
+    DiffuseMagic:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and Player:GetHP() < 60
+            and not recentDefensive()
+    end):SetTarget(Player)
+)
+
+DefensiveAPL:AddSpell(
     LifeCocoon:CastableIf(function(self)
         return cocoonTarget:IsValid() and self:IsKnownAndUsable()
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
@@ -1513,15 +1542,6 @@ DefensiveAPL:AddSpell(
             cocoonThresholds[k] = nil
         end
     end)
-)
-
-DefensiveAPL:AddSpell(
-    DiffuseMagic:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and Player:GetHP() < 60
-            and not recentDefensive()
-    end):SetTarget(Player)
 )
 
 -- Single
@@ -1601,18 +1621,18 @@ DefensiveAPL:AddSpell(
     end):SetTarget(Player)
 )
 
-DefensiveAPL:AddSpell(
-    SoothingMist:CastableIf(function(self)
-        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
-            and (ThunderFocusTea:GetCharges() < 1)
-            and (DebuffTargetWithoutTFT:GetRealizedHP() < 70)
-            and Player:GetAuras():FindMy(Vivacious):IsDown()
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and not stopCasting()
-    end):SetTarget(DebuffTargetWithoutTFT):OnCast(function(self)
-        Bastion.Notifications:AddNotification(SoothingMist:GetIcon(), "Soothing Mist on Debuff Target")
-    end)
-)
+-- DefensiveAPL:AddSpell(
+--     SoothingMist:CastableIf(function(self)
+--         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+--             and (ThunderFocusTea:GetCharges() < 1)
+--             and (DebuffTargetWithoutTFT:GetRealizedHP() < 70)
+--             and Player:GetAuras():FindMy(Vivacious):IsDown()
+--             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+--             and not stopCasting()
+--     end):SetTarget(DebuffTargetWithoutTFT):OnCast(function(self)
+--         Bastion.Notifications:AddNotification(SoothingMist:GetIcon(), "Soothing Mist on Debuff Target")
+--     end)
+-- )
 
 DefensiveAPL:AddSpell(
     SoothingMist:CastableIf(function(self)
@@ -1767,6 +1787,19 @@ RestoMonkModule:Sync(function()
 
     if Player:IsCastingOrChanneling() and stopCasting() then
         _G.SpellStopCasting()
+    end
+    if Player:GetCastingOrChannelingSpell() == SoothingMist then
+        local soothingTarget = Bastion.UnitManager:Get(ObjectCastingTarget("player"))
+        if not Lowest:IsUnit(soothingTarget) then
+            _G.SpellStopCasting()
+            return
+        end
+        if soothingTarget:GetRealizedHP() < 50 and ShouldUseEnvelopingMist(soothingTarget) and Lowest:IsUnit(soothingTarget) then
+            CastSpellByName("Enveloping Mist", soothingTarget:GetOMToken())
+        end
+        if soothingTarget:GetRealizedHP() < 80 and Lowest:IsUnit(soothingTarget) then
+            CastSpellByName("Vivify", soothingTarget:GetOMToken())
+        end
     end
     if Player:GetCastingOrChannelingSpell() == ManaTea and ((Lowest:GetRealizedHP() < 70) or (Player:GetPP() > 98) or (Player:IsMoving() and Player:IsAffectingCombat())) then
         _G.SpellStopCasting()
