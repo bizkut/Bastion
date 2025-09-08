@@ -38,8 +38,8 @@ local JadefireStomp = SpellBook:GetSpell(388193)
 local SheilunsGift = SpellBook:GetSpell(399491)
 local TouchOfDeath = SpellBook:GetSpell(322109):SetInterruptsCast(true):SetOffGCD(true)
 local SpearHandStrike = SpellBook:GetSpell(116705):SetInterruptsCast(true):SetOffGCD(true)
-local LegSweep = SpellBook:GetSpell(119381):SetInterruptsCast(true)
-local Paralysis = SpellBook:GetSpell(115078):SetInterruptsCast(true)
+local LegSweep = SpellBook:GetSpell(119381)
+local Paralysis = SpellBook:GetSpell(115078)
 local CracklingJadeLightning = SpellBook:GetSpell(117952)
 local ExpelHarm = SpellBook:GetSpell(322101)
 local Detox = SpellBook:GetSpell(115450)
@@ -869,7 +869,7 @@ local function scanEnemies()
                     if not cachedUnits.interruptTargetMeleeSweep then
                         cachedUnits.interruptTargetMeleeSweep = unit
                     end
-                elseif RingOfPeace:IsKnownAndUsable() and RingOfPeace:IsInRange(unit) then
+                elseif RingOfPeace:IsKnownAndUsable() and RingOfPeace:IsInRange(unit) and not Bastion.interrAll then
                     if not cachedUnits.interruptTargetMeleeRing then
                         cachedUnits.interruptTargetMeleeRing = unit
                     end
@@ -1105,20 +1105,23 @@ local function NeedsUrgentHealing()
 end
 
 local function TFTEnvelope()
-    local envelopingTarget = Bastion.UnitManager:Get('none')
-    if DebuffTargetWithTFT:IsValid() or DebuffTargetWithoutTFT:IsValid() or EnvelopeLowest:GetRealizedHP() < 60 then
-        envelopingTarget = DebuffTargetWithTFT or DebuffTargetWithoutTFT or EnvelopeLowest
-    end
-
-    local shouldUseForEnveloping1Charge = envelopingTarget:IsValid() and
-        ShouldUseEnvelopingMist(envelopingTarget) and
-        (ThunderFocusTea:GetCharges() >= 1 or SoothingMist:IsKnownAndUsable())
-
-    -- Targets requiring >= 2 charges
+    --local envelopingTarget = Bastion.UnitManager:Get('none')
     local busterTarget = BusterTargetWithTFT
     local tankTarget = TankTarget
     local lightningChiji = Bastion.UnitManager:Get('none')
-    local shouldUseLightning = ThunderFocusTea:GetCharges() >= 2 and CondChiji() and
+    local envelopeLowestHP = EnvelopeLowest:GetRealizedHP()
+    local tankTargetHP = tankTarget:GetRealizedHP()
+
+    if DebuffTargetWithTFT:IsValid() or DebuffTargetWithoutTFT:IsValid() or (envelopeLowestHP < 60 and (ThunderFocusTea:GetCharges() >= 1 or Player:GetAuras():FindMy(ThunderFocusTea):IsUp())) then
+        envelopingTarget = DebuffTargetWithTFT or DebuffTargetWithoutTFT or EnvelopeLowest
+    end
+    local shouldUseForEnveloping = envelopingTarget and envelopingTarget:IsValid() and
+        ShouldUseEnvelopingMist(envelopingTarget)
+        -- and (ThunderFocusTea:GetCharges() >= 1 or SoothingMist:IsKnownAndUsable())
+
+    -- Targets requiring >= 2 charges
+
+    local shouldUseLightning = (ThunderFocusTea:GetCharges() >= 2 or not InvokeChiJi:IsKnownAndUsable()) and CondChiji() and
         Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and
         Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and EnvelopeLowest:IsValid() and
         ShouldUseEnvelopingMist(EnvelopeLowest)
@@ -1126,37 +1129,36 @@ local function TFTEnvelope()
         ShouldUseEnvelopingMist(busterTarget) and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
     local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and tankTarget:IsValid() and
         ShouldUseEnvelopingMist(tankTarget) and
-        (tankTarget:GetRealizedHP() < 70 or (tankTarget:GetRealizedHP() < 80 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
+        (tankTargetHP < 70 or (tankTargetHP < 80 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
 
     if shouldUseLightning then
         lightningChiji = EnvelopeLowest
     end
     -- Prevent double-counting if targets overlap
     --if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
-    if shouldUseForEnveloping1Charge then
+    if shouldUseForEnveloping and envelopingTarget then
         busterTarget = Bastion.UnitManager:Get('none')
         tankTarget = Bastion.UnitManager:Get('none')
         lightningChiji = Bastion.UnitManager:Get('none')
+        print("TFT Envelope: Using Enveloping Mist target: " .. envelopingTarget:GetName() .. " (HP: " .. envelopingTarget:GetRealizedHP().. ")")
     end
-    if Player:GetAuras():FindMy(ThunderFocusTea):IsUp() then
-        if shouldUseForEnveloping1Charge then
-            SpellCancelQueuedSpell()
-            CastSpellByName("Enveloping Mist", envelopingTarget:GetOMToken())
-        elseif EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) then
-            SpellCancelQueuedSpell()
-            CastSpellByName("Enveloping Mist", EnvelopeLowest:GetOMToken())
-        end
+    if Player:GetAuras():FindMy(ThunderFocusTea):IsUp() and not envelopingTarget and EnvelopeLowest:IsValid() and
+        ShouldUseEnvelopingMist(EnvelopeLowest) then
+        envelopingTarget = EnvelopeLowest
+        shouldUseForEnveloping = true
     end
     -- A prioritized list of potential targets.
-    if (shouldUseForEnveloping1Charge or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
+    if (shouldUseForEnveloping or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
         and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
     then
         -- Don't waste the crack
-        if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() then
+        if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
             return
         end
         potential_targets = {
+            { "DebuffTargetWithTFT", DebuffTargetWithTFT },
+            { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
             { "EnvelopingTarget", envelopingTarget },
             { "BusterTarget",     busterTarget },
             { "LightningChiji",   lightningChiji },
@@ -1168,10 +1170,12 @@ local function TFTEnvelope()
                 SpellCancelQueuedSpell()
                 print("Using Enveloping Mist on: " ..
                     target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
-                if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
+                if name == "DebuffTargetWithoutTFT" and ThunderFocusTea:GetCharges() < 1 then
+                    CastSpellByName("Enveloping Mist", target:GetOMToken())
+                elseif ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
                     CastSpellByName("Thunder Focus Tea", "player")
-                elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
-                    CastSpellByName("Soothing Mist", target:GetOMToken())
+                -- elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
+                --     CastSpellByName("Soothing Mist", target:GetOMToken())
                 end
                 CastSpellByName("Enveloping Mist", target:GetOMToken())
                 break -- Found a valid target, terminate the loops
@@ -1205,6 +1209,7 @@ local VivifyAPL = Bastion.APL:New('vivify')
 InterruptAPL:AddSpell(
     LegSweep:CastableIf(function(self)
         return self:IsKnownAndUsable() and interruptTargetMeleeSweep:IsValid()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             -- Player:IsFacing(interruptTargetMeleeSweep) and
             --Player:GetEnemies(10) >= 3
             and not recentInterrupt()
@@ -1247,7 +1252,7 @@ InterruptAPL:AddSpell(
 InterruptAPL:AddSpell(
     Paralysis:CastableIf(function(self)
         return self:IsKnownAndUsable() and interruptTargetMeleeParalysis:IsValid()
-            -- and Player:IsFacing(interruptTargetMeleeParalysis)
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and not recentInterrupt()
     end):SetTarget(interruptTargetMeleeParalysis):PreCast(function()
         if not Player:IsFacing(interruptTargetMeleeParalysis) and not Player:IsMoving() then
@@ -1259,12 +1264,10 @@ InterruptAPL:AddSpell(
 InterruptAPL:AddSpell(
     LegSweep:CastableIf(function(self)
         return self:IsKnownAndUsable() and InterruptTargetStun:IsValid()
-            and not Player:IsCastingOrChanneling()
-            -- and Player:IsFacing(InterruptTargetStun)
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and (Player:GetEnemies(10) >= 3 or not Paralysis:IsKnownAndUsable())
             and LegSweep:IsInRange(InterruptTargetStun)
             and not recentInterrupt()
-        --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
     end):SetTarget(InterruptTargetStun):PreCast(function()
         if not Player:IsFacing(InterruptTargetStun) and not Player:IsMoving() then
             FaceObject(InterruptTargetStun:GetOMToken())
@@ -1275,7 +1278,7 @@ InterruptAPL:AddSpell(
 InterruptAPL:AddSpell(
     Paralysis:CastableIf(function(self)
         return self:IsKnownAndUsable() and InterruptTargetStun:IsValid() --and Player:IsFacing(InterruptTargetStun)
-            and not Player:IsCastingOrChanneling()
+            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Paralysis:IsInRange(InterruptTargetStun)
             and not recentInterrupt()
     end):SetTarget(InterruptTargetStun):PreCast(function()
