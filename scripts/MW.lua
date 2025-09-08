@@ -1153,7 +1153,6 @@ local function TFTEnvelope()
     then
         -- Don't waste the crack
         if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
-            SpellCancelQueuedSpell()
             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
             return
         end
@@ -1168,7 +1167,7 @@ local function TFTEnvelope()
         for _, data in ipairs(potential_targets) do
             local name, target = data[1], data[2]
             if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
-                SpellCancelQueuedSpell()
+                --SpellCancelQueuedSpell()
                 print("Using Enveloping Mist on: " ..
                     target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
                 if name == "DebuffTargetWithoutTFT" and ThunderFocusTea:GetCharges() < 1 then
@@ -1179,6 +1178,7 @@ local function TFTEnvelope()
                 -- elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
                 --     CastSpellByName("Soothing Mist", target:GetOMToken())
                 end
+                SpellCancelQueuedSpell()
                 break -- Found a valid target, terminate the loops
             end
         end
