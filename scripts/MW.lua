@@ -1296,7 +1296,7 @@ VivifyAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and ShouldUseEnvelopingMist(EnvelopeLowest)
-            and not Player:IsCastingOrChanneling()
+            and (not Player:IsCastingOrChanneling() or isChannelingSoothingMistOnTarget(EnvelopeLowest))
             and not Player:IsMoving()
             and not stopCasting()
             and EnvelopeLowest:GetRealizedHP() < 60
@@ -1305,7 +1305,7 @@ VivifyAPL:AddSpell(
 VivifyAPL:AddSpell(
     Vivify:CastableIf(function(self)
         return Lowest:IsValid() and self:IsKnownAndUsable()
-            and not Player:IsCastingOrChanneling()
+            and (not Player:IsCastingOrChanneling() or isChannelingSoothingMistOnTarget(Lowest))
             and Lowest:GetRealizedHP() < 90
             and (not Player:IsMoving() or Player:GetAuras():FindMy(Vivacious):IsUp())
             and not stopCasting()
@@ -1394,7 +1394,7 @@ CooldownAPL:AddSpell(
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(Lowest)
 )
--- Soothing Mist and Emergency Vivify
+-- Soothing Mist and Emergency Vivify. No Envelping Mist emergency because it is too slow.
 CooldownAPL:AddSpell(
     Vivify:CastableIf(function(self)
         return self:IsKnownAndUsable()
