@@ -1152,7 +1152,7 @@ local function TFTEnvelope()
     --     shouldUseForEnveloping = true
     -- end
     -- A prioritized list of potential targets.
-    if (shouldUseForChiji or shouldUseForEnveloping or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
+    if (DebuffTargetWithTFT:IsValid() or DebuffTargetWithoutTFT:IsValid() or shouldUseForChiji or shouldUseForEnveloping or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
         and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
     then
         -- Don't waste the crack
@@ -1185,10 +1185,10 @@ local function TFTEnvelope()
                             break
                         end
                         CastSpellByName("Thunder Focus Tea", "player")
-                        SpellCancelQueuedSpell()
+                        -- SpellCancelQueuedSpell()
                     elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
                         CastSpellByName("Soothing Mist", target:GetOMToken())
-                        SpellCancelQueuedSpell()
+                        -- SpellCancelQueuedSpell()
                     end
                     CastSpellByName("Enveloping Mist", target:GetOMToken())
                     SpellCancelQueuedSpell()
