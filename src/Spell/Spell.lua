@@ -241,7 +241,7 @@ function Spell:Cast(unit, condition)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
-    SpellCancelQueuedSpell()
+    -- SpellCancelQueuedSpell()
 
     Bastion:Debug("Casting", self)
 
@@ -277,7 +277,7 @@ function Spell:ForceCast(unit)
 
     -- Cast the spell
     CastSpellByName(self:GetName(), u)
-    SpellCancelQueuedSpell()
+    -- SpellCancelQueuedSpell()
 
     Bastion:Debug("Casting", self)
 

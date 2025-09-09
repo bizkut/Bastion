@@ -1158,7 +1158,7 @@ local function TFTEnvelope()
         if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
             print("Using Crackling Jade Lightning for Jade Empowerment dump")
             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
-            SpellCancelQueuedSpell()
+            -- SpellCancelQueuedSpell()
             return
         end
         potential_targets = {
@@ -1172,18 +1172,17 @@ local function TFTEnvelope()
         for _, data in ipairs(potential_targets) do
             local name, target = data[1], data[2]
             if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
-                --SpellCancelQueuedSpell()
                 print("Using Enveloping Mist on: " ..
                     target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
                 if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
                     CastSpellByName("Thunder Focus Tea", "player")
-                    SpellCancelQueuedSpell()
+                    -- SpellCancelQueuedSpell()
                 elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
                     CastSpellByName("Soothing Mist", target:GetOMToken())
-                    SpellCancelQueuedSpell()
+                    -- SpellCancelQueuedSpell()
                 end
                 CastSpellByName("Enveloping Mist", target:GetOMToken())
-                SpellCancelQueuedSpell()
+                -- SpellCancelQueuedSpell()
                 break -- Found a valid target, terminate the loops
             end
         end
@@ -1325,7 +1324,7 @@ CooldownAPL:AddSpell(
             and not recentAoE() then
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
                 CastSpellByName("Sheilun's Gift", "player")
-                SpellCancelQueuedSpell()
+                -- SpellCancelQueuedSpell()
             end
             return true
         end
@@ -1613,7 +1612,7 @@ DefensiveAPL:AddSpell(
             and not recentAoE() then
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
                 CastSpellByName("Sheilun's Gift", "player")
-                SpellCancelQueuedSpell()
+                -- SpellCancelQueuedSpell()
             end
             return true
         end
@@ -1795,11 +1794,11 @@ RestoMonkModule:Sync(function()
         -- end
         if soothingTarget:GetRealizedHP() < 50 and ShouldUseEnvelopingMist(soothingTarget) then
             CastSpellByName("Enveloping Mist", soothingTarget:GetOMToken())
-            SpellCancelQueuedSpell()
+            -- SpellCancelQueuedSpell()
             return
         elseif soothingTarget:GetRealizedHP() < 80 and (Lowest:GetRealizedHP() > 40 or Lowest:IsUnit(soothingTarget)) then
             CastSpellByName("Vivify", soothingTarget:GetOMToken())
-            SpellCancelQueuedSpell()
+            -- SpellCancelQueuedSpell()
             return
         else
             _G.SpellStopCasting()
