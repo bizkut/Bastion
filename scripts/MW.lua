@@ -1363,37 +1363,37 @@ CooldownAPL:AddSpell(
     end):SetTarget(Lowest)
 )
 -- Soothing Mist only
-CooldownAPL:AddSpell(
-    EnvelopingMist:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and DebuffTargetWithoutTFT:IsValid()
-            and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
-            and isChannelingSoothingMistOnTarget(DebuffTargetWithoutTFT)
-            and not Player:IsMoving()
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-    end):SetTarget(DebuffTargetWithoutTFT)
-)
+-- CooldownAPL:AddSpell(
+--     EnvelopingMist:CastableIf(function(self)
+--         return self:IsKnownAndUsable()
+--             and DebuffTargetWithoutTFT:IsValid()
+--             and ShouldUseEnvelopingMist(DebuffTargetWithoutTFT)
+--             and isChannelingSoothingMistOnTarget(DebuffTargetWithoutTFT)
+--             and not Player:IsMoving()
+--             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+--     end):SetTarget(DebuffTargetWithoutTFT)
+-- )
 
-CooldownAPL:AddSpell(
-    Vivify:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and DebuffTargetWithoutTFT:IsValid()
-            and isChannelingSoothingMistOnTarget(DebuffTargetWithoutTFT) and DebuffTargetWithoutTFT:GetRealizedHP() < 80
-            and not Player:IsMoving()
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-    end):SetTarget(DebuffTargetWithoutTFT)
-)
+-- CooldownAPL:AddSpell(
+--     Vivify:CastableIf(function(self)
+--         return self:IsKnownAndUsable()
+--             and DebuffTargetWithoutTFT:IsValid()
+--             and isChannelingSoothingMistOnTarget(DebuffTargetWithoutTFT) and DebuffTargetWithoutTFT:GetRealizedHP() < 80
+--             and not Player:IsMoving()
+--             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+--     end):SetTarget(DebuffTargetWithoutTFT)
+-- )
 
-CooldownAPL:AddSpell(
-    EnvelopingMist:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Lowest:IsValid()
-            and ShouldUseEnvelopingMist(Lowest)
-            and isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 60
-            and not Player:IsMoving()
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-    end):SetTarget(Lowest)
-)
+-- CooldownAPL:AddSpell(
+--     EnvelopingMist:CastableIf(function(self)
+--         return self:IsKnownAndUsable()
+--             and Lowest:IsValid()
+--             and ShouldUseEnvelopingMist(Lowest)
+--             and isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 60
+--             and not Player:IsMoving()
+--             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+--     end):SetTarget(Lowest)
+-- )
 -- Soothing Mist and Emergency Vivify. No Envelping Mist emergency because it is too slow.
 CooldownAPL:AddSpell(
     Vivify:CastableIf(function(self)
