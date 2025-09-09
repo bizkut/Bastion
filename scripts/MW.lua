@@ -1172,7 +1172,7 @@ local function TFTEnvelope()
         }
         for _, data in ipairs(potential_targets) do
             local name, target = data[1], data[2]
-            if target and target:IsValid() and ShouldUseEnvelopingMist(target) then
+            if target and target:IsValid() and target:IsAlive() and ShouldUseEnvelopingMist(target) then
                 if (name == "EnvelopingTarget" and target:GetRealizedHP() < 50 and ThunderFocusTea:GetCharges() >= 1) or name ~= "EnvelopingTarget" then
                     print("Using Enveloping Mist on: " ..
                         target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
@@ -1181,7 +1181,7 @@ local function TFTEnvelope()
                             print("Using Crackling Jade Lightning for Jade Empowerment dump")
                             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
                             -- SpellCancelQueuedSpell()
-                            return
+                            break
                         end
                         CastSpellByName("Thunder Focus Tea", "player")
                         -- SpellCancelQueuedSpell()
