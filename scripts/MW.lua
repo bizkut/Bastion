@@ -1801,9 +1801,12 @@ RestoMonkModule:Sync(function()
         -- end
         if soothingTarget:GetRealizedHP() < 50 and ShouldUseEnvelopingMist(soothingTarget) then
             CastSpellByName("Enveloping Mist", soothingTarget:GetOMToken())
-        end
-        if soothingTarget:GetRealizedHP() < 80 and (Lowest:GetRealizedHP() > 40 or Lowest:IsUnit(soothingTarget)) then
+            return
+        elseif soothingTarget:GetRealizedHP() < 80 and (Lowest:GetRealizedHP() > 40 or Lowest:IsUnit(soothingTarget)) then
             CastSpellByName("Vivify", soothingTarget:GetOMToken())
+            return
+        else
+            _G.SpellStopCasting()
         end
     end
     if Player:GetCastingOrChannelingSpell() == ManaTea and ((Lowest:GetRealizedHP() < 70) or (Player:GetPP() > 98) or (Player:IsMoving() and Player:IsAffectingCombat())) then
