@@ -1176,8 +1176,8 @@ local function TFTEnvelope()
                     CastSpellByName("Thunder Focus Tea", "player")
                     SpellCancelQueuedSpell()
                     CastSpellByName("Enveloping Mist", target:GetOMToken())
-                -- elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
-                --     CastSpellByName("Soothing Mist", target:GetOMToken())
+                elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
+                    CastSpellByName("Soothing Mist", target:GetOMToken())
                 end
                 SpellCancelQueuedSpell()
                 break -- Found a valid target, terminate the loops
@@ -1626,18 +1626,18 @@ DefensiveAPL:AddSpell(
     end):SetTarget(Player)
 )
 
--- DefensiveAPL:AddSpell(
---     SoothingMist:CastableIf(function(self)
---         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
---             and (ThunderFocusTea:GetCharges() < 1)
---             and (DebuffTargetWithoutTFT:GetRealizedHP() < 70)
---             and Player:GetAuras():FindMy(Vivacious):IsDown()
---             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
---             and not stopCasting()
---     end):SetTarget(DebuffTargetWithoutTFT):OnCast(function(self)
---         Bastion.Notifications:AddNotification(SoothingMist:GetIcon(), "Soothing Mist on Debuff Target")
---     end)
--- )
+DefensiveAPL:AddSpell(
+    SoothingMist:CastableIf(function(self)
+        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+            and (ThunderFocusTea:GetCharges() < 1)
+            and (DebuffTargetWithoutTFT:GetRealizedHP() < 70)
+            and Player:GetAuras():FindMy(Vivacious):IsDown()
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+            and not stopCasting()
+    end):SetTarget(DebuffTargetWithoutTFT):OnCast(function(self)
+        Bastion.Notifications:AddNotification(SoothingMist:GetIcon(), "Soothing Mist on Debuff Target")
+    end)
+)
 
 DefensiveAPL:AddSpell(
     SoothingMist:CastableIf(function(self)
@@ -1795,14 +1795,14 @@ RestoMonkModule:Sync(function()
     end
     if Player:GetCastingOrChannelingSpell() == SoothingMist then
         local soothingTarget = Bastion.UnitManager:Get(ObjectCastingTarget("player"))
-        if not Lowest:IsUnit(soothingTarget) then
-            _G.SpellStopCasting()
-            return
-        end
-        if soothingTarget:GetRealizedHP() < 50 and ShouldUseEnvelopingMist(soothingTarget) and Lowest:IsUnit(soothingTarget) then
+        -- if not Lowest:IsUnit(soothingTarget) then
+        --     _G.SpellStopCasting()
+        --     return
+        -- end
+        if soothingTarget:GetRealizedHP() < 50 and ShouldUseEnvelopingMist(soothingTarget) then
             CastSpellByName("Enveloping Mist", soothingTarget:GetOMToken())
         end
-        if soothingTarget:GetRealizedHP() < 80 and Lowest:IsUnit(soothingTarget) then
+        if soothingTarget:GetRealizedHP() < 80 and (Lowest:GetRealizedHP() > 40 or Lowest:IsUnit(soothingTarget)) then
             CastSpellByName("Vivify", soothingTarget:GetOMToken())
         end
     end
