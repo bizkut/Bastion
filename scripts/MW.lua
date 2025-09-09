@@ -81,6 +81,7 @@ local PotentialEnergy = SpellBook:GetSpell(1239483) -- 2-4 set S3
 local ChiJiBuff = SpellBook:GetSpell(406220)
 local SecretInfusion = SpellBook:GetSpell(388498)
 local BalancedStratagem = SpellBook:GetSpell(451508)
+local EnvelopingBreath = SpellBook:GetSpell(325209) -- Chiji buff after enveloping mist
 -- CC
 local Polymorph = SpellBook:GetSpell(118)
 
@@ -1108,7 +1109,7 @@ local function TFTEnvelope()
     --local envelopingTarget = Bastion.UnitManager:Get('none')
     local busterTarget = BusterTargetWithTFT
     local tankTarget = TankTarget
-    local lightningChiji = Bastion.UnitManager:Get('none')
+    local ChijiTarget = Bastion.UnitManager:Get('none')
     local envelopeLowestHP = EnvelopeLowest:GetRealizedHP()
     local tankTargetHP = tankTarget:GetRealizedHP()
 
@@ -1130,16 +1131,18 @@ local function TFTEnvelope()
     local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and tankTarget:IsValid() and
         ShouldUseEnvelopingMist(tankTarget) and
         (tankTargetHP < 70 or (tankTargetHP < 80 and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
+    local shouldUseForChiji = Player:GetAuras():FindMy(ChiJiBuff):IsUp() and envelopeLowestHP < 70 and
+        EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest)
 
-    if shouldUseLightning then
-        lightningChiji = EnvelopeLowest
+    if shouldUseLightning or shouldUseForChiji then
+        ChijiTarget = EnvelopeLowest
     end
     -- Prevent double-counting if targets overlap
     --if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
     if shouldUseForEnveloping and envelopingTarget then
         busterTarget = Bastion.UnitManager:Get('none')
         tankTarget = Bastion.UnitManager:Get('none')
-        lightningChiji = Bastion.UnitManager:Get('none')
+        ChijiTarget = Bastion.UnitManager:Get('none')
         print("TFT Envelope: Using Enveloping Mist target: " .. envelopingTarget:GetName() .. " (HP: " .. envelopingTarget:GetRealizedHP().. ")")
     end
     if Player:GetAuras():FindMy(ThunderFocusTea):IsUp() and not envelopingTarget and EnvelopeLowest:IsValid() and
@@ -1148,7 +1151,7 @@ local function TFTEnvelope()
         shouldUseForEnveloping = true
     end
     -- A prioritized list of potential targets.
-    if (shouldUseForEnveloping or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
+    if (shouldUseForChiji or shouldUseForEnveloping or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
         and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
     then
         -- Don't waste the crack
@@ -1161,7 +1164,7 @@ local function TFTEnvelope()
             { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
             { "EnvelopingTarget", envelopingTarget },
             { "BusterTarget",     busterTarget },
-            { "LightningChiji",   lightningChiji },
+            { "ChijiTarget",   ChijiTarget },
             { "TankTarget",       tankTarget }
         }
         for _, data in ipairs(potential_targets) do
