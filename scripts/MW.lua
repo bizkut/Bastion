@@ -1126,14 +1126,14 @@ local function TFTEnvelope()
     local shouldUseLightning = (ThunderFocusTea:GetCharges() >= 2 or InvokeChiJi:IsOnCooldown()) and CondChiji() and
         Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and
         Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and EnvelopeLowest:IsValid() and
-        ShouldUseEnvelopingMist(EnvelopeLowest)
+        ShouldUseEnvelopingMist(EnvelopeLowest) and not Player:IsMoving() and not stopCasting()
     local shouldUseForBuster = ThunderFocusTea:GetCharges() >= 2 and busterTarget:IsValid() and
         ShouldUseEnvelopingMist(busterTarget) -- and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
     local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and tankTarget:IsValid() and
         ShouldUseEnvelopingMist(tankTarget) and
         (tankTargetHP < 70 or (HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
     local shouldUseForChiji = Player:GetAuras():FindMy(ChiJiBuff):IsUp() and envelopeLowestHP < 80 and
-        EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest) and not Player:IsMoving() and not stopCasting()
+        EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest)
 
     if shouldUseLightning or shouldUseForChiji then
         ChijiTarget = EnvelopeLowest
