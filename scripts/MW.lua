@@ -1126,7 +1126,7 @@ local function TFTEnvelope()
     local shouldUseLightning = (ThunderFocusTea:GetCharges() >= 2 or InvokeChiJi:IsOnCooldown()) and CondChiji() and
         Player:GetAuras():FindMy(JadeEmpowerment):IsDown() and rangeTarget:IsValid() and
         Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and EnvelopeLowest:IsValid() and
-        ShouldUseEnvelopingMist(EnvelopeLowest) and not Player:IsMoving() and not stopCasting()
+        ShouldUseEnvelopingMist(EnvelopeLowest)
     local shouldUseForBuster = ThunderFocusTea:GetCharges() >= 2 and busterTarget:IsValid() and
         ShouldUseEnvelopingMist(busterTarget) -- and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
     local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and tankTarget:IsValid() and
@@ -1174,23 +1174,24 @@ local function TFTEnvelope()
             local name, target = data[1], data[2]
             if target and target:IsValid() and target:IsAlive() and ShouldUseEnvelopingMist(target) then
                 if (name == "EnvelopingTarget" and target:GetRealizedHP() < 50 and ThunderFocusTea:GetCharges() >= 1) or name ~= "EnvelopingTarget" then
+                    SpellCancelQueuedSpell()
                     print("Using Enveloping Mist on: " ..
                         target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
                     if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
                         if Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
                             print("Using Crackling Jade Lightning for Jade Empowerment dump")
                             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
-                            -- SpellCancelQueuedSpell()
+                            SpellCancelQueuedSpell()
                             break
                         end
                         CastSpellByName("Thunder Focus Tea", "player")
-                        -- SpellCancelQueuedSpell()
+                        SpellCancelQueuedSpell()
                     elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
                         CastSpellByName("Soothing Mist", target:GetOMToken())
-                        -- SpellCancelQueuedSpell()
+                        SpellCancelQueuedSpell()
                     end
                     CastSpellByName("Enveloping Mist", target:GetOMToken())
-                    -- SpellCancelQueuedSpell()
+                    SpellCancelQueuedSpell()
                     break -- Found a valid target, terminate the loops
                 end
             end
