@@ -1333,8 +1333,9 @@ CooldownAPL:AddSpell(
             and (Player:GetPartyHPAround(40, 55) >= 2 or Player:GetPartyHPAround(40, 65) >= 3)
             and not recentAoE() then
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
+                SpellCancelQueuedSpell()
                 CastSpellByName("Sheilun's Gift", "player")
-                -- SpellCancelQueuedSpell()
+                SpellCancelQueuedSpell()
             end
             return true
         end
@@ -1621,8 +1622,9 @@ DefensiveAPL:AddSpell(
             and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()
             and not recentAoE() then
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
+                SpellCancelQueuedSpell()
                 CastSpellByName("Sheilun's Gift", "player")
-                -- SpellCancelQueuedSpell()
+                SpellCancelQueuedSpell()
             end
             return true
         end
