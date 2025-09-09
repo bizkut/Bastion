@@ -1118,7 +1118,7 @@ local function TFTEnvelope()
     end
     local shouldUseForEnveloping = envelopingTarget and envelopingTarget:IsValid() and
         ShouldUseEnvelopingMist(envelopingTarget)
-        -- and (ThunderFocusTea:GetCharges() >= 1 or SoothingMist:IsKnownAndUsable())
+    -- and (ThunderFocusTea:GetCharges() >= 1 or SoothingMist:IsKnownAndUsable())
 
     -- Targets requiring >= 2 charges
 
@@ -1143,7 +1143,7 @@ local function TFTEnvelope()
         busterTarget = Bastion.UnitManager:Get('none')
         tankTarget = Bastion.UnitManager:Get('none')
         ChijiTarget = Bastion.UnitManager:Get('none')
-        print("TFT Envelope: Using Enveloping Mist target: " .. envelopingTarget:GetName() .. " (HP: " .. envelopingTarget:GetRealizedHP().. ")")
+        --print("TFT Envelope: Using Enveloping Mist target: " ..envelopingTarget:GetName() .. " (HP: " .. envelopingTarget:GetRealizedHP() .. ")")
     end
     if Player:GetAuras():FindMy(ThunderFocusTea):IsUp() and not envelopingTarget and EnvelopeLowest:IsValid() and
         ShouldUseEnvelopingMist(EnvelopeLowest) then
@@ -1156,16 +1156,18 @@ local function TFTEnvelope()
     then
         -- Don't waste the crack
         if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
+            print("Using Crackling Jade Lightning for Jade Empowerment dump")
             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
+            SpellCancelQueuedSpell()
             return
         end
         potential_targets = {
-            { "DebuffTargetWithTFT", DebuffTargetWithTFT },
+            { "DebuffTargetWithTFT",    DebuffTargetWithTFT },
             { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
-            { "EnvelopingTarget", envelopingTarget },
-            { "BusterTarget",     busterTarget },
-            { "ChijiTarget",   ChijiTarget },
-            { "TankTarget",       tankTarget }
+            { "EnvelopingTarget",       envelopingTarget },
+            { "BusterTarget",           busterTarget },
+            { "ChijiTarget",            ChijiTarget },
+            { "TankTarget",             tankTarget }
         }
         for _, data in ipairs(potential_targets) do
             local name, target = data[1], data[2]
@@ -1318,15 +1320,16 @@ VivifyAPL:AddSpell(
 
 CooldownAPL:AddSpell(
     Revival:CastableIf(function(self)
-        return self:IsKnownAndUsable()
+        if self:IsKnownAndUsable()
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and (Player:GetPartyHPAround(40, 50) >= 2 or Player:GetPartyHPAround(40, 60) >= 3)
-            and not recentAoE()
-    end):SetTarget(Player):PreCast(function()
-        if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
-            CastSpellByName("Sheilun's Gift", "player")
+            and not recentAoE() then
+            if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
+                CastSpellByName("Sheilun's Gift", "player")
+            end
+            return true
         end
-    end)
+    end):SetTarget(Player)
 )
 
 -- CooldownAPL:AddSpell(
@@ -1602,22 +1605,9 @@ DefensiveAPL:AddSpell(
     end)
 )
 
--- DefensiveAPL:AddSpell(
---     InvokeChiJi:CastableIf(function(self)
---         return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
---             and CondChiji()
---             and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()
---             and not recentAoE()
---     end):SetTarget(Player):PreCast(function()
---         if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
---             CastSpellByName("Sheilun's Gift","player")
---         end
---     end)
--- )
--- Test
 DefensiveAPL:AddSpell(
     InvokeChiJi:CastableIf(function(self)
-        if self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+        if self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and CondChiji()
             and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()
             and not recentAoE() then
@@ -1804,9 +1794,11 @@ RestoMonkModule:Sync(function()
         -- end
         if soothingTarget:GetRealizedHP() < 50 and ShouldUseEnvelopingMist(soothingTarget) then
             CastSpellByName("Enveloping Mist", soothingTarget:GetOMToken())
+            SpellCancelQueuedSpell()
             return
         elseif soothingTarget:GetRealizedHP() < 80 and (Lowest:GetRealizedHP() > 40 or Lowest:IsUnit(soothingTarget)) then
             CastSpellByName("Vivify", soothingTarget:GetOMToken())
+            SpellCancelQueuedSpell()
             return
         else
             _G.SpellStopCasting()
