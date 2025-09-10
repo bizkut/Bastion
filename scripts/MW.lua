@@ -13,6 +13,7 @@ local ItemBook = Bastion.ItemBook:New()
 local MythicPlusUtils = Bastion.require("MythicPlusUtils"):New()
 local LastSpell = Bastion.require("LastSpell")
 local lastSpell = Bastion.LastSpell:Get()
+local Casting = Bastion.require('Casting')
 
 -- Spells
 local RenewingMist = SpellBook:GetSpell(115151)
@@ -483,7 +484,7 @@ local function ShouldUseCrackling(unit)
         --and not Player:IsCastingOrChanneling()
         and not stopCasting()
         and
-        (unit:GetHealth() * 5 > Player:GetMaxHealth() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
+        ((unit:GetHealth() * 5 > Player:GetMaxHealth()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
 end
 
 local function CondCrackling()
@@ -1153,6 +1154,7 @@ local function TFTEnvelope()
     -- end
     -- A prioritized list of potential targets.
     if (DebuffTargetWithTFT:IsValid() or DebuffTargetWithoutTFT:IsValid() or shouldUseForChiji or shouldUseForEnveloping or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
+        and not Casting:PlayerIsBusy(ThunderFocusTea)
         --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
     then
         -- Don't waste the crack
@@ -1174,7 +1176,7 @@ local function TFTEnvelope()
             local name, target = data[1], data[2]
             if target and target:IsValid() and target:IsAlive() and ShouldUseEnvelopingMist(target) then
                 if (name == "EnvelopingTarget" and target:GetRealizedHP() < 50 and ThunderFocusTea:GetCharges() >= 1) or name ~= "EnvelopingTarget" then
-                    SpellCancelQueuedSpell()
+                    -- SpellCancelQueuedSpell()
                     print("Using Enveloping Mist on: " ..
                         target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
                     if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
@@ -1191,7 +1193,7 @@ local function TFTEnvelope()
                         -- SpellCancelQueuedSpell()
                     end
                     CastSpellByName("Enveloping Mist", target:GetOMToken())
-                    -- SpellCancelQueuedSpell()
+                    SpellCancelQueuedSpell()
                     break -- Found a valid target, terminate the loops
                 end
             end
@@ -1330,7 +1332,7 @@ CooldownAPL:AddSpell(
     Revival:CastableIf(function(self)
         if self:IsKnownAndUsable()
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and (Player:GetPartyHPAround(40, 55) >= 2 or Player:GetPartyHPAround(40, 65) >= 3)
+            and (Player:GetPartyHPAround(40, 60) >= 2 or Player:GetPartyHPAround(40, 65) >= 3)
             and not recentAoE() then
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
                 SpellCancelQueuedSpell()
@@ -1357,9 +1359,9 @@ CooldownAPL:AddSpell(
         return self:IsKnownAndUsable()
             and Lowest:IsValid()
             and Player:GetAuras():FindMy(Vivacious):IsUp()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and
-            ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and cachedUnits["renewCount"] >= 3 or ThunderFocusTea:GetCharges() < 1)) -- Deep Clarity for Zen Pulse
+            ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and cachedUnits["renewCount"] >= 3)) -- or ThunderFocusTea:GetCharges() < 1)) -- Deep Clarity for Zen Pulse
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and not recentAoE()
     end):SetTarget(Lowest)
@@ -1370,7 +1372,7 @@ CooldownAPL:AddSpell(
         return self:IsKnownAndUsable()
             and Lowest:IsValid()
             and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 3
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetPartyHPAround(40, 80) >= 3
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and not Player:IsMoving()
@@ -1410,12 +1412,12 @@ CooldownAPL:AddSpell(
 --             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
 --     end):SetTarget(Lowest)
 -- )
--- Soothing Mist and Emergency Vivify. No Envelping Mist emergency because it is too slow.
+-- Soothing Mist and Emergency Vivify. No Enveloping Mist emergency because it is too slow?
 CooldownAPL:AddSpell(
     Vivify:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Lowest:IsValid()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea() or isChannelingSoothingMistOnTarget(Lowest))
+            -- and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea() or isChannelingSoothingMistOnTarget(Lowest))
             and
             ((Lowest:GetRealizedHP() < 50 and ThunderFocusTea:GetCharges() < 1) or (isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 80))
             and not Player:IsMoving()
@@ -1442,7 +1444,7 @@ CooldownAPL:AddSpell(
 TrinketAPL:AddItem(
     Signet:UsableIf(function(self)
         return self:IsUsable() and not self:IsOnCooldown() and self:IsEquipped()
-            and not Player:IsCastingOrChanneling()
+            -- and not Player:IsCastingOrChanneling()
             and (Player:GetPartyHPAround(40, 70) >= 2)
             --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
             and not recentTrinket()
@@ -1452,7 +1454,7 @@ TrinketAPL:AddItem(
 TrinketAPL:AddItem(
     Siphon:UsableIf(function(self)
         return self:IsUsable() and not self:IsOnCooldown() and self:IsEquipped()
-            and not Player:IsCastingOrChanneling()
+            -- and not Player:IsCastingOrChanneling()
             and (Player:GetPartyHPAround(40, 70) >= 2)
             --and self:GetTimeSinceLastUseAttempt() > Player:GetGCD()
             and not recentTrinket()
@@ -1571,7 +1573,7 @@ DefensiveAPL:AddSpell(
         return self:IsKnownAndUsable() and PressurePoints:IsKnown() and sootheTarget:IsValid()
             --Player:IsFacing(sootheTarget) and
             --Paralysis:IsInRange(sootheTarget)
-            and not Player:IsCastingOrChanneling()
+            -- and not Player:IsCastingOrChanneling()
             and sootheThresholds[sootheTarget:GetGUID()] and (GetTime() > sootheThresholds[sootheTarget:GetGUID()])
     end):SetTarget(sootheTarget):OnCast(function(self)
         -- Reset the soothe threshold after successful dispel
@@ -1598,7 +1600,7 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     CracklingJadeLightning:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            and not Player:IsCastingOrChanneling()
+            -- and not Player:IsCastingOrChanneling()
             and ShouldUseCrackling(rangeTarget)
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
             --and Player:GetAuras():FindMy(SecretInfusion):IsUp()
@@ -1606,7 +1608,7 @@ DefensiveAPL:AddSpell(
             --and waitingGCDcast(self)
             and
             --(Player:GetAuras():FindMy(SecretInfusion):IsUp() or CondCrackling() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
-            (CondCrackling() or CondChiji() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
+            (CondCrackling() or CondChiji())
             --and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (ThunderFocusTea:GetCharges() >= 2))
             and not recentAoE()
     end):SetTarget(rangeTarget):OnCast(function(self)
@@ -1618,7 +1620,7 @@ DefensiveAPL:AddSpell(
     InvokeChiJi:CastableIf(function(self)
         if self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and CondChiji()
-            and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()
+            and (Player:GetAuras():FindMy(JadeEmpowerment):IsDown() or Player:IsMoving())
             and not recentAoE() then
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
                 SpellCancelQueuedSpell()
@@ -1632,7 +1634,7 @@ DefensiveAPL:AddSpell(
 
 DefensiveAPL:AddSpell(
     SoothingMist:CastableIf(function(self)
-        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+        return self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane())
             and (ThunderFocusTea:GetCharges() < 1)
             and (DebuffTargetWithoutTFT:GetRealizedHP() < 70)
             and Player:GetAuras():FindMy(Vivacious):IsDown()
@@ -1645,7 +1647,7 @@ DefensiveAPL:AddSpell(
 
 DefensiveAPL:AddSpell(
     SoothingMist:CastableIf(function(self)
-        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+        return self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane())
             and (ThunderFocusTea:GetCharges() < 1)
             and (Lowest:GetRealizedHP() < 50)
             and Player:GetAuras():FindMy(Vivacious):IsDown()
@@ -1755,7 +1757,7 @@ DpsAPL:AddSpell(
 ToDAPL:AddSpell(
     TouchOfDeath:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            -- and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and TouchOfDeathTargetOld:IsValid()
             --and waitingGCDcast(TouchOfDeath)
             --and Player:IsFacing(TouchOfDeathTargetOld)
