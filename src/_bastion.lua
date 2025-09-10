@@ -68,8 +68,10 @@ function Bastion:UpdateSpellQueueWindow()
         spellQueueWindow = cap
     end
 
-    SetCVar("spellQueueWindow", spellQueueWindow)
-    self:Print("Spell Queue Window CVar set to", spellQueueWindow)
+    if GetCVar("spellQueueWindow") ~= tostring(spellQueueWindow) then
+        SetCVar("spellQueueWindow", spellQueueWindow)
+        self:Print("Spell Queue Window CVar set to", spellQueueWindow)
+    end
 end
 
 -- fenv for all required files
