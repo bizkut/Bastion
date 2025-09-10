@@ -17,7 +17,9 @@ local Spell = {
     release_at = false,
     isOffGCD = false,
     interruptsCast = false,
-    canCastWhileChanneling = false
+    canCastWhileChanneling = false,
+    interruptsSCK = false,
+    interruptsManaTea = false
 }
 
 local usableExcludes = {
@@ -217,12 +219,25 @@ function Spell:Cast(unit, condition)
         return false
     end
 
-    if not self:IsOffGCD() and Casting:PlayerIsBusy() and not self:CanCastWhileChanneling() then
+    if not self:IsOffGCD() and Casting:PlayerIsBusy(self) and not self:CanCastWhileChanneling() then
         return false
     end
 
     if self:InterruptsCast() then
         SpellStopCasting()
+    end
+
+    -- If PlayerIsBusy returned false, it might be because an interrupt is intended.
+    -- We check for that situation here and stop the channel before any PreCast actions.
+    local player = Bastion.UnitManager:Get('player')
+    if player then
+        local channelingSpell = player:GetCastingOrChannelingSpell()
+        if channelingSpell then
+            local channelingSpellID = channelingSpell:GetID()
+            if (channelingSpellID == 101546 and self:InterruptsSCK()) or (channelingSpellID == 115294 and self:InterruptsManaTea()) then
+                SpellStopCasting()
+            end
+        end
     end
 
     -- Call pre cast function
@@ -631,7 +646,29 @@ function Spell:SetCanCastWhileChanneling(can_cast_while_channeling)
 end
 
 function Spell:CanCastWhileChanneling()
-    return self.canCastWhileChanneling
+    if self.canCastWhileChanneling and
+    Bastion.UnitManager:Get('player'):GetCastingOrChannelingSpell():GetID() == 115175 then -- Soothing Mist
+        return true
+    end
+    return false
+end
+
+function Spell:SetInterruptsSCK(flag)
+    self.interruptsSCK = flag
+    return self
+end
+
+function Spell:InterruptsSCK()
+    return self.interruptsSCK
+end
+
+function Spell:SetInterruptsManaTea(flag)
+    self.interruptsManaTea = flag
+    return self
+end
+
+function Spell:InterruptsManaTea()
+    return self.interruptsManaTea
 end
 
 -- IsMagicDispel

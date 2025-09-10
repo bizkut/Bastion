@@ -13,12 +13,29 @@ function Casting:GetSpellQueueWindow()
     return (queue_window_end or 400) - world_lag - random_delay
 end
 
-function Casting:PlayerIsBusy()
+function Casting:PlayerIsBusy(spellToCast)
     -- Check for spell cast
-    local _, _, _, _, cast_end_time, _, _, _, spell_id = UnitCastingInfo("player")
-    if spell_id and cast_end_time and cast_end_time > 0 then
+    local _, _, _, _, cast_end_time, _, _, _, cast_spell_id = UnitCastingInfo("player")
+    if cast_spell_id and cast_end_time and cast_end_time > 0 then
         local cast_time_left = (cast_end_time / 1000) - GetTime()
         return cast_time_left > (self:GetSpellQueueWindow() / 1000)
+    end
+
+    -- Check for channeled spell
+    local _, _, _, _, channel_end_time, _, _, channel_spell_id = UnitChannelInfo("player")
+    if channel_spell_id and channel_end_time and channel_end_time > 0 then
+        -- We are channeling. Check for special interrupt conditions.
+        if spellToCast then
+            if channel_spell_id == 101546 and spellToCast:InterruptsSCK() then
+                return false -- Not busy, because we are allowed to interrupt.
+            end
+            if channel_spell_id == 115294 and spellToCast:InterruptsManaTea() then
+                return false -- Not busy, because we are allowed to interrupt.
+            end
+        end
+        -- If no special interrupt, we are busy for the remainder of the channel.
+        local channel_time_left = (channel_end_time / 1000) - GetTime()
+        return channel_time_left > (self:GetSpellQueueWindow() / 1000)
     end
 
     -- Check for GCD

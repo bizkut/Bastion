@@ -16,33 +16,33 @@ local lastSpell = Bastion.LastSpell:Get()
 
 -- Spells
 local RenewingMist = SpellBook:GetSpell(115151)
-local EnvelopingMist = SpellBook:GetSpell(124682):SetCanCastWhileChanneling(true)
-local Vivify = SpellBook:GetSpell(116670):SetCanCastWhileChanneling(true)
-local RisingSunKick = SpellBook:GetSpell(107428)
-local ThunderFocusTea = SpellBook:GetSpell(116680):SetOffGCD(true)
+local EnvelopingMist = SpellBook:GetSpell(124682):SetCanCastWhileChanneling(true):SetInterruptsManaTea(true):SetInterruptsSCK(true)
+local Vivify = SpellBook:GetSpell(116670):SetCanCastWhileChanneling(true):SetInterruptsManaTea(true):SetInterruptsSCK(true)
+local RisingSunKick = SpellBook:GetSpell(107428):SetInterruptsManaTea(true):SetInterruptsSCK(true)
+local ThunderFocusTea = SpellBook:GetSpell(116680):SetInterruptsManaTea(true):SetInterruptsSCK(true)
 local TigerPalm = SpellBook:GetSpell(100780)
-local BlackoutKick = SpellBook:GetSpell(100784)
+local BlackoutKick = SpellBook:GetSpell(100784):SetInterruptsSCK(true)
 local SpinningCraneKick = SpellBook:GetSpell(101546)
-local Revival = SpellBook:GetSpell(115310):SetInterruptsCast(true)
-local Restoral = SpellBook:GetSpell(388615):SetInterruptsCast(true)
-local InvokeYulon = SpellBook:GetSpell(322118)
-local InvokeChiJi = SpellBook:GetSpell(325197)
-local SoothingMist = SpellBook:GetSpell(115175)
+local Revival = SpellBook:GetSpell(115310):SetOffGCD(true)
+local Restoral = SpellBook:GetSpell(388615):SetOffGCD(true)
+local InvokeYulon = SpellBook:GetSpell(322118):SetOffGCD(true)
+local InvokeChiJi = SpellBook:GetSpell(325197):SetInterruptsManaTea(true):SetInterruptsSCK(true)
+local SoothingMist = SpellBook:GetSpell(115175):SetInterruptsManaTea(true):SetInterruptsSCK(true)
 local ManaTea = SpellBook:GetSpell(115294)
 local CelestialConduit = SpellBook:GetSpell(443028)
 local UnityWithin = SpellBook:GetSpell(443591)
-local FortifyingBrew = SpellBook:GetSpell(115203):SetInterruptsCast(true):SetOffGCD(true)
-local DiffuseMagic = SpellBook:GetSpell(122783):SetOffGCD(true)
-local LifeCocoon = SpellBook:GetSpell(116849):SetOffGCD(true)
-local JadefireStomp = SpellBook:GetSpell(388193)
-local SheilunsGift = SpellBook:GetSpell(399491)
-local TouchOfDeath = SpellBook:GetSpell(322109):SetInterruptsCast(true):SetOffGCD(true)
-local SpearHandStrike = SpellBook:GetSpell(116705):SetInterruptsCast(true):SetOffGCD(true)
-local LegSweep = SpellBook:GetSpell(119381)
-local Paralysis = SpellBook:GetSpell(115078)
+local FortifyingBrew = SpellBook:GetSpell(115203):SetOffGCD(true)
+local DiffuseMagic = SpellBook:GetSpell(122783):SetInterruptsManaTea(true):SetInterruptsSCK(true)
+local LifeCocoon = SpellBook:GetSpell(116849):SetInterruptsManaTea(true):SetInterruptsSCK(true) -- :SetOffGCD(true)
+local JadefireStomp = SpellBook:GetSpell(388193):SetInterruptsSCK(true)
+local SheilunsGift = SpellBook:GetSpell(399491):SetInterruptsSCK(true)
+local TouchOfDeath = SpellBook:GetSpell(322109):SetInterruptsManaTea(true):SetInterruptsSCK(true)
+local SpearHandStrike = SpellBook:GetSpell(116705):SetOffGCD(true)
+local LegSweep = SpellBook:GetSpell(119381):SetInterruptsCast(true)
+local Paralysis = SpellBook:GetSpell(115078):SetInterruptsCast(true)
 local CracklingJadeLightning = SpellBook:GetSpell(117952)
 local ExpelHarm = SpellBook:GetSpell(322101)
-local Detox = SpellBook:GetSpell(115450)
+local Detox = SpellBook:GetSpell(115450):SetInterruptsManaTea(true):SetInterruptsSCK(true):SetOffGCD(true) -- special addition off-GCD condition
 local Drinking = SpellBook:GetSpell(452389) -- Rocky Road
 local Eating = SpellBook:GetSpell(396918)
 local EatingDelves = SpellBook:GetSpell(458739)
@@ -480,7 +480,7 @@ end
 local function ShouldUseCrackling(unit)
     return CracklingJadeLightning:IsKnownAndUsable() and unit:IsValid() and canDamage(unit) and not Player:IsMoving()
         and Player:GetAuras():FindMy(JadeEmpowerment):IsUp()
-        and not Player:IsCastingOrChanneling()
+        --and not Player:IsCastingOrChanneling()
         and not stopCasting()
         and
         (unit:GetHealth() * 5 > Player:GetMaxHealth() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
@@ -1153,7 +1153,7 @@ local function TFTEnvelope()
     -- end
     -- A prioritized list of potential targets.
     if (DebuffTargetWithTFT:IsValid() or DebuffTargetWithoutTFT:IsValid() or shouldUseForChiji or shouldUseForEnveloping or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
-        and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+        --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
     then
         -- Don't waste the crack
         -- if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
@@ -1224,10 +1224,10 @@ local VivifyAPL = Bastion.APL:New('vivify')
 InterruptAPL:AddSpell(
     LegSweep:CastableIf(function(self)
         return self:IsKnownAndUsable() and interruptTargetMeleeSweep:IsValid()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            -- and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             -- Player:IsFacing(interruptTargetMeleeSweep) and
             --Player:GetEnemies(10) >= 3
-            and not recentInterrupt()
+            --and not recentInterrupt()
     end):SetTarget(interruptTargetMeleeSweep):PreCast(function()
         if not Player:IsFacing(interruptTargetMeleeSweep) and not Player:IsMoving() then
             FaceObject(interruptTargetMeleeSweep:GetOMToken())
@@ -1238,10 +1238,10 @@ InterruptAPL:AddSpell(
 InterruptAPL:AddSpell(
     RingOfPeace:CastableIf(function(self)
         return self:IsKnownAndUsable() and interruptTargetMeleeRing:IsValid()
-            and not Player:IsCastingOrChanneling()
+            --and not Player:IsCastingOrChanneling()
             --Player:IsFacing(interruptTargetMeleeRing) and
             --Player:GetEnemies(10) >= 3 and not LegSweep:IsKnownAndUsable()
-            and not recentInterrupt()
+            --and not recentInterrupt()
     end):SetTarget(interruptTargetMeleeRing):OnCast(function(self)
         if IsSpellPending() == 64 then
             local x, y, z = ObjectPosition(interruptTargetMeleeRing:GetOMToken())
@@ -1256,7 +1256,7 @@ InterruptAPL:AddSpell(
     SpearHandStrike:CastableIf(function(self)
         return self:IsKnownAndUsable() and interruptTargetMeleeSpear:IsValid()
             -- and Player:IsFacing(interruptTargetMeleeSpear)
-            and not recentInterrupt()
+            --and not recentInterrupt()
     end):SetTarget(interruptTargetMeleeSpear):PreCast(function()
         if not Player:IsFacing(interruptTargetMeleeSpear) and not Player:IsMoving() then
             FaceObject(interruptTargetMeleeSpear:GetOMToken())
@@ -1267,8 +1267,8 @@ InterruptAPL:AddSpell(
 InterruptAPL:AddSpell(
     Paralysis:CastableIf(function(self)
         return self:IsKnownAndUsable() and interruptTargetMeleeParalysis:IsValid()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and not recentInterrupt()
+            --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            --and not recentInterrupt()
     end):SetTarget(interruptTargetMeleeParalysis):PreCast(function()
         if not Player:IsFacing(interruptTargetMeleeParalysis) and not Player:IsMoving() then
             FaceObject(interruptTargetMeleeParalysis:GetOMToken())
@@ -1282,7 +1282,7 @@ InterruptAPL:AddSpell(
             and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and (Player:GetEnemies(10) >= 3 or not Paralysis:IsKnownAndUsable())
             and LegSweep:IsInRange(InterruptTargetStun)
-            and not recentInterrupt()
+            --and not recentInterrupt()
     end):SetTarget(InterruptTargetStun):PreCast(function()
         if not Player:IsFacing(InterruptTargetStun) and not Player:IsMoving() then
             FaceObject(InterruptTargetStun:GetOMToken())
@@ -1329,7 +1329,7 @@ VivifyAPL:AddSpell(
 CooldownAPL:AddSpell(
     Revival:CastableIf(function(self)
         if self:IsKnownAndUsable()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and (Player:GetPartyHPAround(40, 55) >= 2 or Player:GetPartyHPAround(40, 65) >= 3)
             and not recentAoE() then
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
@@ -1462,7 +1462,7 @@ TrinketAPL:AddItem(
 DispelAPL:AddSpell(
     Detox:CastableIf(function(self)
         return DispelTarget:IsValid() and self:IsKnownAndUsable()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or (DispelTarget:GetRealizedHP() < 50))
+            and (not Player:IsCastingOrChanneling() or (DispelTarget:GetRealizedHP() < 50))
             and
             ((debuffThresholds[DispelTarget:GetGUID()] and (GetTime() > debuffThresholds[DispelTarget:GetGUID()])) or DispelTarget:IsMouseover())
     end):SetTarget(DispelTarget):OnCast(function(self)
@@ -1477,7 +1477,7 @@ DispelAPL:AddSpell(
 RenewAPL:AddSpell(
     RenewingMist:CastableIf(function(self)
         return MustUseRenewingMist(TankTarget)
-            and not Player:IsCastingOrChanneling()
+            -- and not Player:IsCastingOrChanneling()
             and not Player:IsUnit(TankTarget)
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(TankTarget)
@@ -1486,9 +1486,8 @@ RenewAPL:AddSpell(
 RenewAPL:AddSpell(
     RenewingMist:CastableIf(function(self)
         return MustUseRenewingMist(RenewLowest)
-            and not Player:IsCastingOrChanneling()
+            --and not Player:IsCastingOrChanneling()
             and not TankTarget:IsUnit(RenewLowest)
-            --and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 90)
             and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 100)
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(RenewLowest)
@@ -1500,7 +1499,7 @@ DefensiveAPL:AddSpell(
     ExpelHarm:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Player:GetHP() < 80
-            and not Player:IsCastingOrChanneling()
+            --and not Player:IsCastingOrChanneling()
             and Player:GetAuras():FindAny(LifeCocoon):IsDown()
             and not recentDefensive()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
@@ -1555,7 +1554,7 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     LifeCocoon:CastableIf(function(self)
         return cocoonTarget:IsValid() and self:IsKnownAndUsable()
-            and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            -- and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and ShouldUseCocoon(cocoonTarget)
     end):SetTarget(cocoonTarget):OnCast(function()
         --cocoonThresholds[hpLowest:GetID()] = nil
@@ -1584,7 +1583,7 @@ DefensiveAPL:AddSpell(
 )
 DefensiveAPL:AddSpell(
     SheilunsGift:CastableIf(function(self)
-        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+        return self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane())
             and
             ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 75) >= 3) or (Player:GetPartyHPAround(40, 85) >= 2 and (SheilunsGift:GetCount() >= 9)))
             and (SheilunsGift:GetCount() >= 4)
@@ -1617,7 +1616,7 @@ DefensiveAPL:AddSpell(
 
 DefensiveAPL:AddSpell(
     InvokeChiJi:CastableIf(function(self)
-        if self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+        if self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and CondChiji()
             and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()
             and not recentAoE() then
@@ -1660,7 +1659,7 @@ DefensiveAPL:AddSpell(
 
 StompAPL:AddSpell(
     JadefireStomp:CastableIf(function(self)
-        return self:IsKnownAndUsable() and (not Player:IsCastingOrChanneling() or spinningCrane())
+        return self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane())
             --and not Player:IsMoving()
             --and rangeTarget:IsValid()
             and
@@ -1685,7 +1684,7 @@ StompAPL:AddSpell(
 StompAPL:AddSpell(
     RisingSunKick:CastableIf(function(self)
         return Target:IsValid() and self:IsKnownAndUsable() --self:IsInRange(Target) and
-            and (not Player:IsCastingOrChanneling() or spinningCrane())
+            --and (not Player:IsCastingOrChanneling() or spinningCrane())
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
         --and waitingGCDcast(self)
         -- and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
@@ -1701,7 +1700,7 @@ StompAPL:AddSpell(
 
 DpsAPL:AddSpell(
     ChiBurst:CastableIf(function(self)
-        return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
+        return self:IsKnownAndUsable() -- and not Player:IsCastingOrChanneling()
             --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(Target,90,40) or Player:IsWithinCone(TankTarget,90,40))
             and not Player:IsMoving()
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
@@ -1718,7 +1717,7 @@ DpsAPL:AddSpell(
 DpsAPL:AddSpell(
     BlackoutKick:CastableIf(function(self)
         return Target:IsValid() and self:IsKnownAndUsable()
-            and (not Player:IsCastingOrChanneling() or spinningCrane())
+            --and (not Player:IsCastingOrChanneling() or spinningCrane())
             --and self:IsInRange(Target)
             --and Player:IsFacing(Target)
             and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4
@@ -1730,7 +1729,7 @@ DpsAPL:AddSpell(
 
 DpsAPL:AddSpell(
     SpinningCraneKick:CastableIf(function(self)
-        return self:IsKnownAndUsable() and not Player:IsCastingOrChanneling()
+        return self:IsKnownAndUsable() -- and not Player:IsCastingOrChanneling()
             and Player:GetEnemies(8) >= 4
             and (Player:GetAuras():FindMy(AwakenedJadefire):IsUp() or Player:GetAuras():FindMy(ChiJiBuff):IsUp()) -- Gust of Mists
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
@@ -1745,7 +1744,7 @@ DpsAPL:AddSpell(
 DpsAPL:AddSpell(
     TigerPalm:CastableIf(function(self)
         return Target:IsValid() and self:IsKnownAndUsable()
-            and not Player:IsCastingOrChanneling()
+            --and not Player:IsCastingOrChanneling()
             and not RisingSunKick:IsKnownAndUsable()
         --and Player:IsFacing(Target)
         --and waitingGCDcast(self)
