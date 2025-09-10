@@ -219,14 +219,14 @@ function Spell:Cast(unit, condition)
         return false
     end
 
-    if self:InterruptsCast() then
-        SpellStopCasting()
-    end
-
     if not self:IsOffGCD() and Casting:PlayerIsBusy(self) and not self:CanCastWhileChanneling() then
         return false
     end
 
+    if self:InterruptsCast() then
+        SpellStopCasting()
+    end
+    
     -- If PlayerIsBusy returned false, it might be because an interrupt is intended.
     -- We check for that situation here and stop the channel before any PreCast actions.
     local player = Bastion.UnitManager:Get('player')
