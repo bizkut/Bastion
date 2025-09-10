@@ -149,7 +149,7 @@ function Item:Use(unit, condition)
         SpellStopCasting()
     end
 
-    if not self:IsOffGCD() and Casting:PlayerIsBusy() then
+    if not self:IsOffGCD() and Casting:PlayerIsBusy(self) then
         return false
     end
 
@@ -455,6 +455,22 @@ end
 
 function Item:InterruptsCast()
     return self.interruptsCast
+end
+
+function Item:InterruptsSCK()
+    local spell = self:GetSpell()
+    if spell then
+        return spell:InterruptsSCK()
+    end
+    return false
+end
+
+function Item:InterruptsManaTea()
+    local spell = self:GetSpell()
+    if spell then
+        return spell:InterruptsManaTea()
+    end
+    return false
 end
 
 -- IsMagicDispel
