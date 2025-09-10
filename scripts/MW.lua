@@ -1181,7 +1181,7 @@ local function TFTEnvelope()
                         if Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
                             print("Using Crackling Jade Lightning for Jade Empowerment dump")
                             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
-                            SpellCancelQueuedSpell()
+                            -- SpellCancelQueuedSpell()
                             break
                         end
                         CastSpellByName("Thunder Focus Tea", "player")
@@ -1191,7 +1191,7 @@ local function TFTEnvelope()
                         -- SpellCancelQueuedSpell()
                     end
                     CastSpellByName("Enveloping Mist", target:GetOMToken())
-                    SpellCancelQueuedSpell()
+                    -- SpellCancelQueuedSpell()
                     break -- Found a valid target, terminate the loops
                 end
             end
@@ -1335,7 +1335,7 @@ CooldownAPL:AddSpell(
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
                 SpellCancelQueuedSpell()
                 CastSpellByName("Sheilun's Gift", "player")
-                SpellCancelQueuedSpell()
+                -- SpellCancelQueuedSpell()
             end
             return true
         end
@@ -1623,7 +1623,7 @@ DefensiveAPL:AddSpell(
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
                 SpellCancelQueuedSpell()
                 CastSpellByName("Sheilun's Gift", "player")
-                SpellCancelQueuedSpell()
+                -- SpellCancelQueuedSpell()
             end
             return true
         end
