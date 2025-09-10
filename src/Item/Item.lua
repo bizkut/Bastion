@@ -145,12 +145,12 @@ function Item:Use(unit, condition)
         return false
     end
 
-    if not self:IsOffGCD() and Casting:PlayerIsBusy() then
-        return false
-    end
-
     if self:InterruptsCast() then
         SpellStopCasting()
+    end
+
+    if not self:IsOffGCD() and Casting:PlayerIsBusy() then
+        return false
     end
 
     -- Call pre Use function

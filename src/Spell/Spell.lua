@@ -219,12 +219,12 @@ function Spell:Cast(unit, condition)
         return false
     end
 
-    if not self:IsOffGCD() and Casting:PlayerIsBusy(self) and not self:CanCastWhileChanneling() then
-        return false
-    end
-
     if self:InterruptsCast() then
         SpellStopCasting()
+    end
+
+    if not self:IsOffGCD() and Casting:PlayerIsBusy(self) and not self:CanCastWhileChanneling() then
+        return false
     end
 
     -- If PlayerIsBusy returned false, it might be because an interrupt is intended.
