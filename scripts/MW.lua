@@ -112,7 +112,6 @@ local hasUsedOffGCDDps = false
 local envelopingTarget = nil
 local potential_targets = {}
 local envelopingTarget = nil
-local isAoEQueuedInThisTick = false
 -- Add this helper function near the top of the file
 
 -- Add this helper function near the top of the file, after the SpellBook initialization
@@ -1084,10 +1083,6 @@ local function recentTrinket()
     return false
 end
 
-local function canCastAoE()
-    return not isAoEQueuedInThisTick
-end
-
 local function nearTargetBigger()
     local bigger = cachedUnits.nearTarget or Bastion.UnitManager:Get('none')
     if (cachedUnits.rangeTarget or Bastion.UnitManager:Get('none')):GetHealth() > bigger:GetHealth() then
@@ -1199,6 +1194,59 @@ local function TFTEnvelope()
             end
         end
     end
+end
+
+local function handleAoESpells()
+    -- Revival
+    if Revival:IsKnownAndUsable() and (Player:GetPartyHPAround(40, 60) >= 2 or Player:GetPartyHPAround(40, 65) >= 3) then
+        if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
+            SpellCancelQueuedSpell()
+            CastSpellByName("Sheilun's Gift", "player")
+        end
+        Revival:Cast(Player)
+        SpellCancelQueuedSpell()
+        return true
+    end
+
+    -- InvokeChiJi
+    if InvokeChiJi:IsKnownAndUsable() and CondChiji() and (Player:GetAuras():FindMy(JadeEmpowerment):IsDown() or Player:IsMoving()) then
+        if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
+            SpellCancelQueuedSpell()
+            CastSpellByName("Sheilun's Gift", "player")
+        end
+        InvokeChiJi:Cast(Player)
+        SpellCancelQueuedSpell()
+        return true
+    end
+
+    -- SheilunsGift
+    if SheilunsGift:IsKnownAndUsable() and ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 75) >= 3) or (Player:GetPartyHPAround(40, 85) >= 2 and (SheilunsGift:GetCount() >= 9))) and (SheilunsGift:GetCount() >= 4) and not Player:IsMoving() and not stopCasting() and SheilunsGift:GetTimeSinceLastCastAttempt() > 3 then
+        SheilunsGift:Cast(Player)
+        SpellCancelQueuedSpell()
+        return true
+    end
+
+    -- CracklingJadeLightning
+    if CracklingJadeLightning:IsKnownAndUsable() and ShouldUseCrackling(rangeTarget) and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp() and CracklingJadeLightning:GetTimeSinceLastCastAttempt() > 3 and (CondCrackling() or CondChiji() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2)) then
+        CracklingJadeLightning:Cast(rangeTarget)
+        Bastion.Notifications:AddNotification(CracklingJadeLightning:GetIcon(), "Crackling Jade Lightning")
+        SpellCancelQueuedSpell()
+        return true
+    end
+
+    -- Vivify (Vivacious)
+    if Vivify:IsKnownAndUsable() and Lowest:IsValid() and Player:GetAuras():FindMy(Vivacious):IsUp() and ((Lowest:GetRealizedHP() < 60) or (Lowest:GetRealizedHP() < 80 and cachedUnits["renewCount"] >= 3)) and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
+        Vivify:Cast(Lowest)
+        return true
+    end
+
+    -- Vivify (ZenPulse)
+    if Vivify:IsKnownAndUsable() and Lowest:IsValid() and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 3 and Player:GetPartyHPAround(40, 80) >= 3 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() and not Player:IsMoving() and not stopCasting() then
+        Vivify:Cast(Lowest)
+        return true
+    end
+
+    return false
 end
 
 -- APLs
@@ -1323,26 +1371,6 @@ VivifyAPL:AddSpell(
     end):SetTarget(Lowest)
 )
 
-CooldownAPL:AddSpell(
-    Revival:CastableIf(function(self)
-        if self:IsKnownAndUsable()
-            --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and (Player:GetPartyHPAround(40, 60) >= 2 or Player:GetPartyHPAround(40, 65) >= 3)
-            and canCastAoE() then
-            if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
-                SpellCancelQueuedSpell()
-                CastSpellByName("Sheilun's Gift", "player")
-                -- SpellCancelQueuedSpell()
-            end
-            return true
-        end
-    end):SetTarget(Player):PreCast(function()
-        isAoEQueuedInThisTick = true
-    end):OnCast(function(self)
-        SpellCancelQueuedSpell()
-    end)
-)
-
 -- CooldownAPL:AddSpell(
 --     EnvelopingMist:CastableIf(function(self)
 --         return self:IsKnownAndUsable()
@@ -1352,33 +1380,6 @@ CooldownAPL:AddSpell(
 --             and not stopCasting()
 --         end):SetTarget(DebuffTargetWithoutTFT)
 -- )
--- Vivacious
-CooldownAPL:AddSpell(
-    Vivify:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Lowest:IsValid()
-            and Player:GetAuras():FindMy(Vivacious):IsUp()
-            --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and
-            ((Lowest:GetRealizedHP() < 60) or (Lowest:GetRealizedHP() < 80 and cachedUnits["renewCount"] >= 3))
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and canCastAoE()
-    end):SetTarget(Lowest)
-)
--- Zen Pulse AoE
-CooldownAPL:AddSpell(
-    Vivify:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Lowest:IsValid()
-            and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 3
-            --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and Player:GetPartyHPAround(40, 80) >= 3
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-            and not Player:IsMoving()
-            and not stopCasting()
-            and canCastAoE()
-    end):SetTarget(Lowest)
-)
 -- Soothing Mist only
 -- CooldownAPL:AddSpell(
 --     EnvelopingMist:CastableIf(function(self)
@@ -1582,65 +1583,6 @@ DefensiveAPL:AddSpell(
         end
     end)
 )
-DefensiveAPL:AddSpell(
-    SheilunsGift:CastableIf(function(self)
-        return self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane())
-            and
-            ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 75) >= 3) or (Player:GetPartyHPAround(40, 85) >= 2 and (SheilunsGift:GetCount() >= 9)))
-            and (SheilunsGift:GetCount() >= 4)
-            and not Player:IsMoving()
-            and not stopCasting()
-            and SheilunsGift:GetTimeSinceLastCastAttempt() > 3
-            --and waitingGCDcast(self)
-            and canCastAoE()
-    end):SetTarget(Player):PreCast(function()
-        isAoEQueuedInThisTick = true
-    end):OnCast(function(self)
-        SpellCancelQueuedSpell()
-    end)
-)
-
-DefensiveAPL:AddSpell(
-    CracklingJadeLightning:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            -- and not Player:IsCastingOrChanneling()
-            and ShouldUseCrackling(rangeTarget)
-            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            --and Player:GetAuras():FindMy(SecretInfusion):IsUp()
-            and CracklingJadeLightning:GetTimeSinceLastCastAttempt() > 3
-            --and waitingGCDcast(self)
-            and
-            --(Player:GetAuras():FindMy(SecretInfusion):IsUp() or CondCrackling() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
-            (CondCrackling() or CondChiji() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
-            --and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (ThunderFocusTea:GetCharges() >= 2))
-            and canCastAoE()
-    end):SetTarget(rangeTarget):PreCast(function()
-        isAoEQueuedInThisTick = true
-    end):OnCast(function(self)
-        Bastion.Notifications:AddNotification(CracklingJadeLightning:GetIcon(), "Crackling Jade Lightning")
-        SpellCancelQueuedSpell()
-    end)
-)
-
-DefensiveAPL:AddSpell(
-    InvokeChiJi:CastableIf(function(self)
-        if self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
-            and CondChiji()
-            and (Player:GetAuras():FindMy(JadeEmpowerment):IsDown() or Player:IsMoving())
-            and canCastAoE() then
-            if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
-                SpellCancelQueuedSpell()
-                CastSpellByName("Sheilun's Gift", "player")
-                -- SpellCancelQueuedSpell()
-            end
-            return true
-        end
-    end):SetTarget(Player):PreCast(function()
-        isAoEQueuedInThisTick = true
-    end):OnCast(function(self)
-        SpellCancelQueuedSpell()
-    end)
-)
 
 DefensiveAPL:AddSpell(
     SoothingMist:CastableIf(function(self)
@@ -1785,7 +1727,6 @@ manaAPL:AddSpell(
 
 -- Module Sync
 RestoMonkModule:Sync(function()
-    isAoEQueuedInThisTick = false
     JadeEmpower = false
     HasFocusTea = false
 
@@ -1877,6 +1818,7 @@ RestoMonkModule:Sync(function()
         ToDAPL:Execute()
         InterruptAPL:Execute()
         TFTEnvelope()
+        if handleAoESpells() then return end
         DefensiveAPL:Execute()
         TrinketAPL:Execute()
         StompAPL:Execute()
