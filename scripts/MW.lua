@@ -764,14 +764,15 @@ local function scanFriends()
             end
         end
         if hasBadDebuff and ShouldUseEnvelopingMist(unit) and realizedHP < 80 then
-            if (realizedHP < debuffLowestHP) and ThunderFocusTea:GetCharges() >= 1 then
+            -- if (realizedHP < debuffLowestHP) and ThunderFocusTea:GetCharges() >= 1 then
+            if realizedHP < debuffLowestHP then
                 --cachedUnits.potentialDebuffTarget = unit
                 cachedUnits.debuffTargetWithTFT = unit
                 debuffLowestHP = realizedHP
-            elseif (realizedHP < debuffLowestHP) and ThunderFocusTea:GetCharges() < 1 then
-                cachedUnits.debuffTargetWithoutTFT = unit
-                debuffLowestHP = realizedHP
-            end
+            -- elseif (realizedHP < debuffLowestHP) and ThunderFocusTea:GetCharges() < 1 then
+            --     cachedUnits.debuffTargetWithoutTFT = unit
+            --     debuffLowestHP = realizedHP
+            -- end
         end
     end)
     -- if cachedUnits.envelopeLowest and cachedUnits.debuffTargetWithTFT and cachedUnits.envelopeLowest:IsUnit(cachedUnits.debuffTargetWithTFT) then
@@ -1123,7 +1124,7 @@ local function TFTEnvelope()
     local envelopeLowestHP = EnvelopeLowest:GetRealizedHP()
     local tankTargetHP = tankTarget:GetRealizedHP()
 
-    if not DebuffTargetWithTFT:IsValid() and not DebuffTargetWithoutTFT:IsValid() and envelopeLowestHP < 50 and (ThunderFocusTea:GetCharges() >= 1 or Player:GetAuras():FindMy(ThunderFocusTea):IsUp()) then
+    if not DebuffTargetWithTFT:IsValid() and envelopeLowestHP < 50 and (ThunderFocusTea:GetCharges() >= 1 or Player:GetAuras():FindMy(ThunderFocusTea):IsUp()) then
         envelopingTarget = EnvelopeLowest
         --print(envelopeLowestHP)
     end
@@ -1162,7 +1163,7 @@ local function TFTEnvelope()
     --     shouldUseForEnveloping = true
     -- end
     -- A prioritized list of potential targets.
-    if (DebuffTargetWithTFT:IsValid() or DebuffTargetWithoutTFT:IsValid() or shouldUseForChiji or shouldUseForEnveloping or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
+    if (DebuffTargetWithTFT:IsValid() or shouldUseForChiji or shouldUseForEnveloping or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
         and not Casting:PlayerIsBusy(ThunderFocusTea)
         --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
     then
@@ -1174,8 +1175,7 @@ local function TFTEnvelope()
         --     return
         -- end
         potential_targets = {
-            { "DebuffTargetWithTFT",    DebuffTargetWithTFT },
-            { "DebuffTargetWithoutTFT", DebuffTargetWithoutTFT },
+            { "DebuffTarget",           DebuffTargetWithTFT },
             { "EnvelopingTarget",       envelopingTarget },
             { "BusterTarget",           busterTarget },
             { "ChijiTarget",            ChijiTarget },
@@ -1645,11 +1645,11 @@ DefensiveAPL:AddSpell(
     SoothingMist:CastableIf(function(self)
         return self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane())
             and (ThunderFocusTea:GetCharges() < 1)
-            and (DebuffTargetWithoutTFT:GetRealizedHP() < 70)
+            and (DebuffTargetWithTFT:GetRealizedHP() < 70)
             and Player:GetAuras():FindMy(Vivacious):IsDown()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and not stopCasting()
-    end):SetTarget(DebuffTargetWithoutTFT):OnCast(function(self)
+    end):SetTarget(DebuffTargetWithTFT):OnCast(function(self)
         Bastion.Notifications:AddNotification(SoothingMist:GetIcon(), "Soothing Mist on Debuff Target")
     end)
 )
