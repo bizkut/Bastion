@@ -1124,7 +1124,7 @@ local function TFTEnvelope()
     local envelopeLowestHP = EnvelopeLowest:GetRealizedHP()
     local tankTargetHP = tankTarget:GetRealizedHP()
 
-    if not DebuffTargetWithTFT:IsValid() and envelopeLowestHP < 50 and (ThunderFocusTea:GetCharges() >= 1 or Player:GetAuras():FindMy(ThunderFocusTea):IsUp()) then
+    if not DebuffTargetWithTFT:IsValid() and (ThunderFocusTea:GetCharges() >= 1 or Player:GetAuras():FindMy(ThunderFocusTea):IsUp()) then
         envelopingTarget = EnvelopeLowest
         --print(envelopeLowestHP)
     end
@@ -1150,17 +1150,10 @@ local function TFTEnvelope()
         ChijiTarget = EnvelopeLowest
     end
     -- Prevent double-counting if targets overlap
-    --if envelopingTarget:IsValid() and (envelopingTarget:IsUnit(busterTarget) or envelopingTarget:IsUnit(tankTarget)) then
-    if shouldUseForEnveloping and envelopingTarget then
-        busterTarget = Bastion.UnitManager:Get('none')
-        tankTarget = Bastion.UnitManager:Get('none')
-        ChijiTarget = Bastion.UnitManager:Get('none')
-        --print("TFT Envelope: Using Enveloping Mist target: " ..envelopingTarget:GetName() .. " (HP: " .. envelopingTarget:GetRealizedHP() .. ")")
-    end
-    -- if Player:GetAuras():FindMy(ThunderFocusTea):IsUp() and not envelopingTarget and EnvelopeLowest:IsValid() and
-    --     ShouldUseEnvelopingMist(EnvelopeLowest) then
-    --     envelopingTarget = EnvelopeLowest
-    --     shouldUseForEnveloping = true
+    -- if shouldUseForEnveloping and envelopingTarget then
+    --     busterTarget = Bastion.UnitManager:Get('none')
+    --     tankTarget = Bastion.UnitManager:Get('none')
+    --     ChijiTarget = Bastion.UnitManager:Get('none')
     -- end
     -- A prioritized list of potential targets.
     if (DebuffTargetWithTFT:IsValid() or shouldUseForChiji or shouldUseForEnveloping or shouldUseForBuster or shouldUseLightning or shouldUseForTank)
