@@ -1369,7 +1369,7 @@ CooldownAPL:AddSpell(
             and Player:GetAuras():FindMy(Vivacious):IsUp()
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and
-            ((Lowest:GetRealizedHP() < 60 and ThunderFocusTea:GetCharges() < 1) or (Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and cachedUnits["renewCount"] >= 3)) -- Deep Clarity for Zen Pulse
+            ((Lowest:GetRealizedHP() < 60) or (Lowest:GetRealizedHP() < 80 and cachedUnits["renewCount"] >= 3))
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and not recentAoE()
     end):SetTarget(Lowest)
