@@ -1347,7 +1347,9 @@ CooldownAPL:AddSpell(
             end
             return true
         end
-    end):SetTarget(Player)
+    end):SetTarget(Player):OnCast(function(self)
+        SpellCancelQueuedSpell()
+    end)
 )
 
 -- CooldownAPL:AddSpell(
@@ -1600,7 +1602,9 @@ DefensiveAPL:AddSpell(
             and SheilunsGift:GetTimeSinceLastCastAttempt() > 3
             --and waitingGCDcast(self)
             and not recentAoE()
-    end):SetTarget(Player)
+    end):SetTarget(Player):OnCast(function(self)
+        SpellCancelQueuedSpell()
+    end)
 )
 
 DefensiveAPL:AddSpell(
@@ -1619,6 +1623,7 @@ DefensiveAPL:AddSpell(
             and not recentAoE()
     end):SetTarget(rangeTarget):OnCast(function(self)
         Bastion.Notifications:AddNotification(CracklingJadeLightning:GetIcon(), "Crackling Jade Lightning")
+        SpellCancelQueuedSpell()
     end)
 )
 
@@ -1635,7 +1640,9 @@ DefensiveAPL:AddSpell(
             end
             return true
         end
-    end):SetTarget(Player)
+    end):SetTarget(Player):OnCast(function(self)
+        SpellCancelQueuedSpell()
+    end)
 )
 
 DefensiveAPL:AddSpell(
@@ -1716,6 +1723,7 @@ DpsAPL:AddSpell(
             --and Player:GetAuras():FindMy(AncientConcordance):IsDown() -- Blackout Kick buff
             --and Player:GetAuras():FindMy(PotentialEnergy):IsDown()
             and Player:GetAuras():FindMy(PotentialEnergy):GetCount() <= 2
+            and not stopCasting()
     end):SetTarget(Player)
 )
 
