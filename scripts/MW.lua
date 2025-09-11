@@ -751,7 +751,7 @@ local function scanFriends()
                         cachedUnits.dispelTarget = unit
                     end
                 end
-                if not hasBadDebuff and debuffList[spellID] and not dispelCheck(aura) then -- and aura:GetRemainingTime() > 2 then
+                if not hasBadDebuff and debuffList[spellID] and not dispelCheck(aura) and aura:GetRemainingTime() > 2 then
                     hasBadDebuff = true
                 end
             end
