@@ -308,6 +308,7 @@ local debuffList = {
     [446776] = true,  -- Pounce
     [438599] = true,  -- Bleeding Jab
     [431364] = true,  -- Tormenting Ray
+    [469620] = true,  -- Creeping Shadow
     -- TWW S3
     [436322] = true,  -- Poison Bolt
     [433002] = true,  -- Extraction Strike
@@ -737,20 +738,20 @@ local function scanFriends()
                 if not hasDispelable and dispelCheck(aura) and (dispelList[spellID] or Bastion.dispelAll) then
                     -- Special checks for certain debuffs
                     if not (spellID == 432448 and unit:GetPartyHPAround(8, 100) >= 2) and -- Stygian Seed knockback
-                        not (spellID == 320788 and unit:GetPartyHPAround(16, 100) >= 2) and
-                        not (spellID == 462737 and aura:GetCount() < 6) and
-                        not (spellID == 469620 and aura:GetCount() < 8) and
+                        not (spellID == 320788 and unit:GetPartyHPAround(16, 100) >= 2) and -- Frozen Binds Necrotic Wake
+                        not (spellID == 462737 and aura:GetCount() < 6) and -- Black Blood Wound Floodgate
+                        not (spellID == 469620 and aura:GetCount() < 8) and -- Creeping Shadow Darkflame Cleft
                         not (spellID == 473713) then -- Kinetic Explosive Gel
                         hasDispelable = true
                     end
                     if spellID == 473713 then
                         if not debuffThresholds[unit:GetGUID()] then
-                            debuffThresholds[unit:GetGUID()] = GetTime() + 1 + GetRandomDispelDelay()
+                            debuffThresholds[unit:GetGUID()] = GetTime() + 2 + GetRandomDispelDelay() -- Delay dispel by 1-1.6s
                         end
                         cachedUnits.dispelTarget = unit
                     end
                 end
-                if not hasBadDebuff and debuffList[spellID] and not dispelCheck(aura) and aura:GetRemainingTime() > 2 then
+                if not hasBadDebuff and debuffList[spellID] and not dispelCheck(aura) then -- and aura:GetRemainingTime() > 2 then
                     hasBadDebuff = true
                 end
             end
