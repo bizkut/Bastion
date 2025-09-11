@@ -1178,7 +1178,7 @@ local function TFTEnvelope()
                         if Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
                             print("Using Crackling Jade Lightning for Jade Empowerment dump")
                             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
-                            -- SpellCancelQueuedSpell()
+                            SpellCancelQueuedSpell()
                             break
                         end
                         CastSpellByName("Thunder Focus Tea", "player")
