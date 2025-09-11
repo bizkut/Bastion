@@ -70,7 +70,7 @@ function Bastion:UpdateSpellQueueWindow()
 
     if GetCVar("SpellQueueWindow") ~= tostring(spellQueueWindow) then
         SetCVar("SpellQueueWindow", spellQueueWindow)
-        self:Print("Spell Queue Window CVar set to", spellQueueWindow)
+        -- self:Print("Spell Queue Window CVar set to", spellQueueWindow)
     end
 end
 
