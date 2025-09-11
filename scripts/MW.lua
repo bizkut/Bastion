@@ -112,7 +112,7 @@ local hasUsedOffGCDDps = false
 local envelopingTarget = nil
 local potential_targets = {}
 local envelopingTarget = nil
-local nextAoECastTime = 0
+local isAoEQueuedInThisTick = false
 -- Add this helper function near the top of the file
 
 -- Add this helper function near the top of the file, after the SpellBook initialization
@@ -1085,7 +1085,7 @@ local function recentTrinket()
 end
 
 local function canCastAoE()
-    return GetTime() >= nextAoECastTime
+    return not isAoEQueuedInThisTick
 end
 
 local function nearTargetBigger()
@@ -1337,7 +1337,7 @@ CooldownAPL:AddSpell(
             return true
         end
     end):SetTarget(Player):PreCast(function()
-        nextAoECastTime = GetTime() + 2
+        isAoEQueuedInThisTick = true
     end):OnCast(function(self)
         SpellCancelQueuedSpell()
     end)
@@ -1594,7 +1594,7 @@ DefensiveAPL:AddSpell(
             --and waitingGCDcast(self)
             and canCastAoE()
     end):SetTarget(Player):PreCast(function()
-        nextAoECastTime = GetTime() + 2
+        isAoEQueuedInThisTick = true
     end):OnCast(function(self)
         SpellCancelQueuedSpell()
     end)
@@ -1615,7 +1615,7 @@ DefensiveAPL:AddSpell(
             --and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (ThunderFocusTea:GetCharges() >= 2))
             and canCastAoE()
     end):SetTarget(rangeTarget):PreCast(function()
-        nextAoECastTime = GetTime() + 2
+        isAoEQueuedInThisTick = true
     end):OnCast(function(self)
         Bastion.Notifications:AddNotification(CracklingJadeLightning:GetIcon(), "Crackling Jade Lightning")
         SpellCancelQueuedSpell()
@@ -1636,7 +1636,7 @@ DefensiveAPL:AddSpell(
             return true
         end
     end):SetTarget(Player):PreCast(function()
-        nextAoECastTime = GetTime() + 2
+        isAoEQueuedInThisTick = true
     end):OnCast(function(self)
         SpellCancelQueuedSpell()
     end)
@@ -1785,6 +1785,7 @@ manaAPL:AddSpell(
 
 -- Module Sync
 RestoMonkModule:Sync(function()
+    isAoEQueuedInThisTick = false
     JadeEmpower = false
     HasFocusTea = false
 
