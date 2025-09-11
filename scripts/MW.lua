@@ -1141,7 +1141,7 @@ local function TFTEnvelope()
     local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and tankTarget:IsValid() and
         ShouldUseEnvelopingMist(tankTarget) and
         (tankTargetHP < 70 or (HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
-    local shouldUseForChiji = Player:GetAuras():FindMy(ChiJiBuff):IsUp() and envelopeLowestHP < 80 and
+    local shouldUseForChiji = Player:GetAuras():FindMy(ChiJiBuff):IsUp() and envelopeLowestHP < 90 and
         EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest)
 
     if shouldUseLightning or shouldUseForChiji then
@@ -1616,7 +1616,7 @@ DefensiveAPL:AddSpell(
             --and waitingGCDcast(self)
             and
             --(Player:GetAuras():FindMy(SecretInfusion):IsUp() or CondCrackling() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
-            (CondCrackling() or CondChiji())
+            (CondCrackling() or CondChiji() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
             --and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (ThunderFocusTea:GetCharges() >= 2))
             and not recentAoE()
     end):SetTarget(rangeTarget):OnCast(function(self)
