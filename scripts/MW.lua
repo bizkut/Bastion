@@ -1046,7 +1046,7 @@ local sootheTarget = Bastion.UnitManager:CreateCustomUnit('soothe',
     end)
 
 local function recentInterrupt()
-    -- local lastSpell = Bastion.LastSpell:Get()
+    --local lastSpell = Bastion.LastSpell:Get()
     if not lastSpell then return false end
 
     local lastSpellID = lastSpell:GetID()
@@ -1055,7 +1055,7 @@ local function recentInterrupt()
         (lastSpellID == Paralysis:GetID()) or
         (lastSpellID == RingOfPeace:GetID())
 
-    if isInterrupt and Bastion.LastSpell:GetTimeSince() < 2 then
+    if isInterrupt and Bastion.LastSpell:GetTimeSince() < 1 then
         return true
     end
 
@@ -1080,10 +1080,18 @@ local function recentTrinket()
 end
 
 local function recentAoE()
-    if (Revival:GetTimeSinceLastCastAttempt() < 2) or (SheilunsGift:GetTimeSinceLastCastAttempt() < 2) or (InvokeChiJi:GetTimeSinceLastCastAttempt() < 2) or (CracklingJadeLightning:GetTimeSinceLastCastAttempt() < 3)
-    then
+    if not lastSpell then return false end
+
+    local lastSpellID = lastSpell:GetID()
+    local isInterrupt = (lastSpellID == Revival:GetID()) or
+        (lastSpellID == SheilunsGift:GetID()) or
+        (lastSpellID == InvokeChiJi:GetID()) or
+        (lastSpellID == CracklingJadeLightning:GetID())
+
+    if isInterrupt and Bastion.LastSpell:GetTimeSince() < 1 then
         return true
     end
+
     return false
 end
 
@@ -1361,7 +1369,7 @@ CooldownAPL:AddSpell(
             and Player:GetAuras():FindMy(Vivacious):IsUp()
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and
-            ((Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and cachedUnits["renewCount"] >= 3)) -- or ThunderFocusTea:GetCharges() < 1)) -- Deep Clarity for Zen Pulse
+            ((Lowest:GetRealizedHP() < 60 and ThunderFocusTea:GetCharges() < 1) or (Lowest:GetRealizedHP() < 70) or (Lowest:GetRealizedHP() < 80 and cachedUnits["renewCount"] >= 3)) -- Deep Clarity for Zen Pulse
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and not recentAoE()
     end):SetTarget(Lowest)
@@ -1435,7 +1443,7 @@ CooldownAPL:AddSpell(
             and JadefireStomp:GetTimeSinceLastCastAttempt() > 5
             --and waitingGCDcast(self)
             and (Player:GetPartyHPAround(40, 90) >= 3 or Player:GetEnemies(30) >= 3)
-            and (IsMelee(Target) or IsMelee(rangeTarget) or rangeTarget:GetDistance(Player) < 8)
+            and (IsMelee(Target) or IsMelee(rangeTarget) or rangeTarget:GetDistance(Player) < 10)
             and Target:IsValid()
             and Target:IsAlive()
     end):SetTarget(Player)
@@ -1683,6 +1691,36 @@ StompAPL:AddSpell(
 -- end)
 )
 
+DpsAPL:AddSpell(
+    ChiBurst:CastableIf(function(self)
+        return self:IsKnownAndUsable() -- and not Player:IsCastingOrChanneling()
+            --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(Target,90,40) or Player:IsWithinCone(TankTarget,90,40))
+            and not Player:IsMoving()
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            and not hasNoAggroTarget()
+            and Player:IsWithinCone(mostEnemies(), 90, 40)
+    end):SetTarget(Player)
+-- :PreCast(function()
+--     if not Player:IsFacing(mostEnemies()) and not Player:IsMoving() then
+--         FaceObject(mostEnemies():GetOMToken())
+--     end
+-- end)
+)
+
+DpsAPL:AddSpell(
+    SpinningCraneKick:CastableIf(function(self)
+        return self:IsKnownAndUsable() -- and not Player:IsCastingOrChanneling()
+            and Player:GetEnemies(8) >= 4
+            and (Player:GetAuras():FindMy(AwakenedJadefire):IsUp() or Player:GetAuras():FindMy(ChiJiBuff):IsUp()) -- Gust of Mists
+            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
+            --and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4
+            --and not RisingSunKick:IsKnownAndUsable()
+            --and Player:GetAuras():FindMy(AncientConcordance):IsDown() -- Blackout Kick buff
+            --and Player:GetAuras():FindMy(PotentialEnergy):IsDown()
+            and Player:GetAuras():FindMy(PotentialEnergy):GetCount() <= 2
+    end):SetTarget(Player)
+)
+
 StompAPL:AddSpell(
     RisingSunKick:CastableIf(function(self)
         return Target:IsValid() and self:IsKnownAndUsable() --self:IsInRange(Target) and
@@ -1701,46 +1739,17 @@ StompAPL:AddSpell(
 )
 
 DpsAPL:AddSpell(
-    ChiBurst:CastableIf(function(self)
-        return self:IsKnownAndUsable() -- and not Player:IsCastingOrChanneling()
-            --and (Player:IsWithinCone(rangeTarget,90,40) or Player:IsWithinCone(Target,90,40) or Player:IsWithinCone(TankTarget,90,40))
-            and not Player:IsMoving()
-            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            and not hasNoAggroTarget()
-            and Player:IsWithinCone(mostEnemies(), 90, 40)
-    end):SetTarget(Player)
--- :PreCast(function()
---     if not Player:IsFacing(mostEnemies()) and not Player:IsMoving() then
---         FaceObject(mostEnemies():GetOMToken())
---     end
--- end)
-)
-
-DpsAPL:AddSpell(
     BlackoutKick:CastableIf(function(self)
         return Target:IsValid() and self:IsKnownAndUsable()
             --and (not Player:IsCastingOrChanneling() or spinningCrane())
             --and self:IsInRange(Target)
             --and Player:IsFacing(Target)
+            and not RisingSunKick:IsKnownAndUsable()
             and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() >= 4
             and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
         --and RisingSunKick:GetCooldownRemaining() > 3
         --and waitingGCDcast(self)
     end):SetTarget(Target)
-)
-
-DpsAPL:AddSpell(
-    SpinningCraneKick:CastableIf(function(self)
-        return self:IsKnownAndUsable() -- and not Player:IsCastingOrChanneling()
-            and Player:GetEnemies(8) >= 4
-            and (Player:GetAuras():FindMy(AwakenedJadefire):IsUp() or Player:GetAuras():FindMy(ChiJiBuff):IsUp()) -- Gust of Mists
-            and Player:GetAuras():FindMy(JadefireTeachingsBuff):IsUp()
-            --and Player:GetAuras():FindMy(TeachingsOfTheMonastery):GetCount() < 4
-            --and not RisingSunKick:IsKnownAndUsable()
-            and Player:GetAuras():FindMy(AncientConcordance):IsDown() -- Blackout Kick buff
-            --and Player:GetAuras():FindMy(PotentialEnergy):IsDown()
-            and Player:GetAuras():FindMy(PotentialEnergy):GetCount() <= 2
-    end):SetTarget(Player)
 )
 
 DpsAPL:AddSpell(
