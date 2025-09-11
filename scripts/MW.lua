@@ -741,10 +741,12 @@ local function scanFriends()
                         not (spellID == 320788 and unit:GetPartyHPAround(16, 100) >= 2) and -- Frozen Binds Necrotic Wake
                         not (spellID == 462737 and aura:GetCount() < 6) and -- Black Blood Wound Floodgate
                         not (spellID == 469620 and aura:GetCount() < 8) and -- Creeping Shadow Darkflame Cleft
+                        not (spellID == 461487) and -- Cultivated Poisons
+                        not (spellID == 461507) and -- Cultivated Poisons
                         not (spellID == 473713) then -- Kinetic Explosive Gel
                         hasDispelable = true
                     end
-                    if spellID == 473713 then
+                    if spellID == 473713 or spellID == 461487 or spellID == 461507 then
                         if not debuffThresholds[unit:GetGUID()] then
                             debuffThresholds[unit:GetGUID()] = GetTime() + 2 + GetRandomDispelDelay() -- Delay dispel by 1-1.6s
                         end
@@ -772,7 +774,7 @@ local function scanFriends()
             -- elseif (realizedHP < debuffLowestHP) and ThunderFocusTea:GetCharges() < 1 then
             --     cachedUnits.debuffTargetWithoutTFT = unit
             --     debuffLowestHP = realizedHP
-            -- end
+            end
         end
     end)
     -- if cachedUnits.envelopeLowest and cachedUnits.debuffTargetWithTFT and cachedUnits.envelopeLowest:IsUnit(cachedUnits.debuffTargetWithTFT) then
@@ -1090,7 +1092,7 @@ local function recentAoE()
         (lastSpellID == InvokeChiJi:GetID()) or
         (lastSpellID == CracklingJadeLightning:GetID())
 
-    if isInterrupt and Bastion.LastSpell:GetTimeSince() < 1 then
+    if isInterrupt and Bastion.LastSpell:GetTimeSince() < 2 then
         return true
     end
 
@@ -1119,10 +1121,9 @@ end
 local function TFTEnvelope()
     --local envelopingTarget = Bastion.UnitManager:Get('none')
     local busterTarget = BusterTargetWithTFT
-    local tankTarget = TankTarget
+    local tankTarget = Bastion.UnitManager:Get('none')
     local ChijiTarget = Bastion.UnitManager:Get('none')
     local envelopeLowestHP = EnvelopeLowest:GetRealizedHP()
-    local tankTargetHP = tankTarget:GetRealizedHP()
 
     if not DebuffTargetWithTFT:IsValid() and (ThunderFocusTea:GetCharges() >= 1 or Player:GetAuras():FindMy(ThunderFocusTea):IsUp()) then
         envelopingTarget = EnvelopeLowest
@@ -1140,14 +1141,17 @@ local function TFTEnvelope()
         ShouldUseEnvelopingMist(EnvelopeLowest)
     local shouldUseForBuster = ThunderFocusTea:GetCharges() >= 2 and busterTarget:IsValid() and
         ShouldUseEnvelopingMist(busterTarget) -- and Player:GetAuras():FindMy(JadeEmpowerment):GetCount() < 2
-    local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and tankTarget:IsValid() and
-        ShouldUseEnvelopingMist(tankTarget) and
-        (tankTargetHP < 70 or (HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
-    local shouldUseForChiji = Player:GetAuras():FindMy(ChiJiBuff):IsUp() and envelopeLowestHP < 90 and
+    local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and TankTarget:IsValid() and
+        ShouldUseEnvelopingMist(TankTarget) and
+        (TankTarget:GetRealizedHP() < 70 or (HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
+    local shouldUseForChiji = Player:GetAuras():FindMy(ChiJiBuff):IsUp() and envelopeLowestHP < 70 and
         EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest)
 
     if shouldUseLightning or shouldUseForChiji then
         ChijiTarget = EnvelopeLowest
+    end
+    if shouldUseForTank then
+        tankTarget = TankTarget
     end
     -- Prevent double-counting if targets overlap
     -- if shouldUseForEnveloping and envelopingTarget then
@@ -1177,7 +1181,7 @@ local function TFTEnvelope()
         for _, data in ipairs(potential_targets) do
             local name, target = data[1], data[2]
             if target and target:IsValid() and target:IsAlive() and ShouldUseEnvelopingMist(target) then
-                if (name == "EnvelopingTarget" and target:GetRealizedHP() < 50 and ThunderFocusTea:GetCharges() >= 1) or name ~= "EnvelopingTarget" then
+                if (name == "EnvelopingTarget" and target:GetRealizedHP() < 50 and (ThunderFocusTea:GetCharges() >= 1 or Player:GetAuras():FindMy(ThunderFocusTea):IsUp())) or (name == "TankTarget" and ThunderFocusTea:GetCharges() >= 2) or (name ~= "EnvelopingTarget" and name ~= "TankTarget") then
                     -- SpellCancelQueuedSpell()
                     print("Using Enveloping Mist on: " ..
                         target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
@@ -1421,7 +1425,7 @@ CooldownAPL:AddSpell(
             and Lowest:IsValid()
             -- and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea() or isChannelingSoothingMistOnTarget(Lowest))
             and
-            ((Lowest:GetRealizedHP() < 50 and ThunderFocusTea:GetCharges() < 1) or (isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 80))
+            ((Lowest:GetRealizedHP() < 40 and ThunderFocusTea:GetCharges() < 1) or (isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 80))
             and not Player:IsMoving()
             and not stopCasting()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
@@ -1471,10 +1475,10 @@ DispelAPL:AddSpell(
             ((debuffThresholds[DispelTarget:GetGUID()] and (GetTime() > debuffThresholds[DispelTarget:GetGUID()])) or DispelTarget:IsMouseover())
     end):SetTarget(DispelTarget):OnCast(function(self)
         -- Reset the interrupt threshold after successful dispel
-        debuffThresholds[DispelTarget:GetGUID()] = nil
-        -- for k in pairs(debuffThresholds) do
-        --     debuffThresholds[k] = nil
-        -- end
+        -- debuffThresholds[DispelTarget:GetGUID()] = nil
+        for k in pairs(debuffThresholds) do
+            debuffThresholds[k] = nil
+        end
     end)
 )
 -- Always put it on tanks

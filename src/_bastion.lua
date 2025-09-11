@@ -68,8 +68,8 @@ function Bastion:UpdateSpellQueueWindow()
         spellQueueWindow = cap
     end
 
-    if GetCVar("spellQueueWindow") ~= tostring(spellQueueWindow) then
-        SetCVar("spellQueueWindow", spellQueueWindow)
+    if GetCVar("SpellQueueWindow") ~= tostring(spellQueueWindow) then
+        SetCVar("SpellQueueWindow", spellQueueWindow)
         self:Print("Spell Queue Window CVar set to", spellQueueWindow)
     end
 end
