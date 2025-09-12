@@ -145,7 +145,7 @@ local function GetRandomDispelDelay()
 end
 
 local function GetRandomCocoonDelay()
-    return math.random(400, 600) / 1000
+    return math.random(300, 500) / 1000
 end
 
 local dispelList = {
@@ -509,14 +509,11 @@ local function ShouldUseCocoon(unit)
     if unit:GetAuras():FindAny(BlessingofProtection):IsUp() or unit:GetAuras():FindAny(DivineShield):IsUp() or unit:GetAuras():FindAny(LifeCocoon):IsUp() or unit:GetAuras():FindMy(EnvelopingMist):IsUp() or (ObjectSpecializationID(unit:GetOMToken()) == 250) then -- not Blood DK
         return false
     end
-    -- if unit:GetHP() > 40 and cocoonThresholds[unit:GetGUID()] then
-    --     cocoonThresholds[unit:GetGUID()] = nil
-    -- elseif unit:GetHP() < 40 and not cocoonThresholds[unit:GetGUID()] then
-    --     cocoonThresholds[unit:GetGUID()] = GetTime() + GetRandomCocoonDelay()
-    -- elseif unit:GetHP() < 40 and cocoonThresholds[unit:GetGUID()] and (GetTime() > cocoonThresholds[unit:GetGUID()]) then
-    --     return true
-    -- end
-    if unit:GetHP() < 40 and not Casting:PlayerIsBusy(TigerPalm) then
+    if unit:GetHP() > 40 and cocoonThresholds[unit:GetGUID()] then
+        cocoonThresholds[unit:GetGUID()] = nil
+    elseif unit:GetHP() < 40 and not cocoonThresholds[unit:GetGUID()] then
+        cocoonThresholds[unit:GetGUID()] = GetTime() + GetRandomCocoonDelay()
+    elseif unit:GetHP() < 40 and cocoonThresholds[unit:GetGUID()] and (GetTime() > cocoonThresholds[unit:GetGUID()]) then
         return true
     end
     return false
@@ -1365,7 +1362,7 @@ CooldownAPL:AddSpell(
             and Player:GetAuras():FindMy(Vivacious):IsUp()
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and
-            ((Lowest:GetRealizedHP() < 60) or (Lowest:GetRealizedHP() < 80 and cachedUnits["renewCount"] >= 3))
+            ((Lowest:GetRealizedHP() < 60) or (Lowest:GetRealizedHP() < 70 and cachedUnits["renewCount"] >= 4))
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
             and canCastAoE()
     end):SetTarget(Lowest)
@@ -1375,7 +1372,7 @@ CooldownAPL:AddSpell(
     Vivify:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Lowest:IsValid()
-            and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 3
+            and Player:GetAuras():FindMy(ZenPulse):IsUp() and cachedUnits["renewCount"] >= 4
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
             and Player:GetPartyHPAround(40, 80) >= 3
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
@@ -1423,7 +1420,7 @@ CooldownAPL:AddSpell(
             and Lowest:IsValid()
             -- and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea() or isChannelingSoothingMistOnTarget(Lowest))
             and
-            ((Lowest:GetRealizedHP() < 40 and ThunderFocusTea:GetCharges() < 1) or (isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 80))
+            ((Lowest:GetRealizedHP() < 40) or (isChannelingSoothingMistOnTarget(Lowest) and Lowest:GetRealizedHP() < 80))
             and not Player:IsMoving()
             and not stopCasting()
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
