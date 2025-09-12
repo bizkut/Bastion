@@ -1327,6 +1327,7 @@ CooldownAPL:AddSpell(
     Revival:CastableIf(function(self)
         if self:IsKnownAndUsable()
             --and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and not Casting:PlayerIsBusy(Revival)
             and (Player:GetPartyHPAround(40, 60) >= 2 or Player:GetPartyHPAround(40, 65) >= 3)
             and canCastAoE() then
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
@@ -1625,6 +1626,7 @@ DefensiveAPL:AddSpell(
 DefensiveAPL:AddSpell(
     InvokeChiJi:CastableIf(function(self)
         if self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane() or checkManaTea())
+            and not Casting:PlayerIsBusy(InvokeChiJi)
             and CondChiji()
             and (Player:GetAuras():FindMy(JadeEmpowerment):IsDown() or Player:IsMoving())
             and canCastAoE() then
