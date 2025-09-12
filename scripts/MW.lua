@@ -34,7 +34,7 @@ local CelestialConduit = SpellBook:GetSpell(443028)
 local UnityWithin = SpellBook:GetSpell(443591)
 local FortifyingBrew = SpellBook:GetSpell(115203):SetOffGCD(true)
 local DiffuseMagic = SpellBook:GetSpell(122783):SetInterruptsManaTea(true):SetInterruptsSCK(true)
-local LifeCocoon = SpellBook:GetSpell(116849):SetOffGCD(true)
+local LifeCocoon = SpellBook:GetSpell(116849):SetInterruptsManaTea(true):SetInterruptsSCK(true) -- :SetOffGCD(true)
 local JadefireStomp = SpellBook:GetSpell(388193):SetInterruptsSCK(true)
 local SheilunsGift = SpellBook:GetSpell(399491):SetInterruptsManaTea(true):SetInterruptsSCK(true)
 local TouchOfDeath = SpellBook:GetSpell(322109):SetInterruptsManaTea(true):SetInterruptsSCK(true)
@@ -509,11 +509,14 @@ local function ShouldUseCocoon(unit)
     if unit:GetAuras():FindAny(BlessingofProtection):IsUp() or unit:GetAuras():FindAny(DivineShield):IsUp() or unit:GetAuras():FindAny(LifeCocoon):IsUp() or unit:GetAuras():FindMy(EnvelopingMist):IsUp() or (ObjectSpecializationID(unit:GetOMToken()) == 250) then -- not Blood DK
         return false
     end
-    if unit:GetHP() > 40 and cocoonThresholds[unit:GetGUID()] then
-        cocoonThresholds[unit:GetGUID()] = nil
-    elseif unit:GetHP() < 40 and not cocoonThresholds[unit:GetGUID()] then
-        cocoonThresholds[unit:GetGUID()] = GetTime() + GetRandomCocoonDelay()
-    elseif unit:GetHP() < 40 and cocoonThresholds[unit:GetGUID()] and (GetTime() > cocoonThresholds[unit:GetGUID()]) then
+    -- if unit:GetHP() > 40 and cocoonThresholds[unit:GetGUID()] then
+    --     cocoonThresholds[unit:GetGUID()] = nil
+    -- elseif unit:GetHP() < 40 and not cocoonThresholds[unit:GetGUID()] then
+    --     cocoonThresholds[unit:GetGUID()] = GetTime() + GetRandomCocoonDelay()
+    -- elseif unit:GetHP() < 40 and cocoonThresholds[unit:GetGUID()] and (GetTime() > cocoonThresholds[unit:GetGUID()]) then
+    --     return true
+    -- end
+    if not Casting:PlayerIsBusy(TigerPalm) then
         return true
     end
     return false
@@ -1178,7 +1181,7 @@ local function TFTEnvelope()
                         if Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
                             print("Using Crackling Jade Lightning for Jade Empowerment dump")
                             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
-                            SpellCancelQueuedSpell()
+                            --SpellCancelQueuedSpell()
                             break
                         end
                         CastSpellByName("Thunder Focus Tea", "player")
@@ -1188,7 +1191,7 @@ local function TFTEnvelope()
                         -- SpellCancelQueuedSpell()
                     end
                     CastSpellByName("Enveloping Mist", target:GetOMToken())
-                    SpellCancelQueuedSpell()
+                    -- SpellCancelQueuedSpell()
                     break -- Found a valid target, terminate the loops
                 end
             end
@@ -1331,7 +1334,7 @@ CooldownAPL:AddSpell(
             and (Player:GetPartyHPAround(40, 60) >= 2 or Player:GetPartyHPAround(40, 65) >= 3)
             and canCastAoE() then
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
-                SpellCancelQueuedSpell()
+                -- SpellCancelQueuedSpell()
                 CastSpellByName("Sheilun's Gift", "player")
                 -- SpellCancelQueuedSpell()
             end
@@ -1339,9 +1342,10 @@ CooldownAPL:AddSpell(
         end
     end):SetTarget(Player):PreCast(function()
         isAoEQueuedInThisTick = true
-    end):OnCast(function(self)
-        SpellCancelQueuedSpell()
     end)
+    -- :OnCast(function(self)
+    --     SpellCancelQueuedSpell()
+    -- end)
 )
 
 -- CooldownAPL:AddSpell(
@@ -1596,9 +1600,10 @@ DefensiveAPL:AddSpell(
             and canCastAoE()
     end):SetTarget(Player):PreCast(function()
         isAoEQueuedInThisTick = true
-    end):OnCast(function(self)
-        SpellCancelQueuedSpell()
     end)
+    -- :OnCast(function(self)
+    --     SpellCancelQueuedSpell()
+    -- end)
 )
 
 DefensiveAPL:AddSpell(
@@ -1619,7 +1624,7 @@ DefensiveAPL:AddSpell(
         isAoEQueuedInThisTick = true
     end):OnCast(function(self)
         Bastion.Notifications:AddNotification(CracklingJadeLightning:GetIcon(), "Crackling Jade Lightning")
-        SpellCancelQueuedSpell()
+        --SpellCancelQueuedSpell()
     end)
 )
 
@@ -1631,7 +1636,7 @@ DefensiveAPL:AddSpell(
             and (Player:GetAuras():FindMy(JadeEmpowerment):IsDown() or Player:IsMoving())
             and canCastAoE() then
             if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
-                SpellCancelQueuedSpell()
+                --SpellCancelQueuedSpell()
                 CastSpellByName("Sheilun's Gift", "player")
                 -- SpellCancelQueuedSpell()
             end
@@ -1639,9 +1644,10 @@ DefensiveAPL:AddSpell(
         end
     end):SetTarget(Player):PreCast(function()
         isAoEQueuedInThisTick = true
-    end):OnCast(function(self)
-        SpellCancelQueuedSpell()
     end)
+    -- :OnCast(function(self)
+    --     SpellCancelQueuedSpell()
+    -- end)
 )
 
 DefensiveAPL:AddSpell(
