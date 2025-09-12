@@ -516,7 +516,7 @@ local function ShouldUseCocoon(unit)
     -- elseif unit:GetHP() < 40 and cocoonThresholds[unit:GetGUID()] and (GetTime() > cocoonThresholds[unit:GetGUID()]) then
     --     return true
     -- end
-    if not Casting:PlayerIsBusy(TigerPalm) then
+    if unit:GetHP() < 40 and not Casting:PlayerIsBusy(TigerPalm) then
         return true
     end
     return false
