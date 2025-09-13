@@ -26,6 +26,10 @@ function Casting:PlayerIsBusy(action)
     if channel_spell_id and channel_end_time and channel_end_time > 0 then
         -- We are channeling. Check for special interrupt conditions.
         if action then
+            -- Off-GCD spells that don't interrupt casting can be used while channeling.
+            if action:IsOffGCD() and not action:InterruptsCast() then
+                return false
+            end
             if channel_spell_id == 101546 and action:InterruptsSCK() then
                 return false -- Not busy, because we are allowed to interrupt.
             end
