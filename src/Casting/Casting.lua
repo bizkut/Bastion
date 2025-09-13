@@ -22,9 +22,6 @@ function Casting:PlayerIsBusy(action)
             if action and action:InterruptsCast() then
                 return false -- Not busy, because we are allowed to interrupt.
             end
-            if action and action:IsOffGCD() then
-                return false -- Off-GCD spells can be cast during other casts.
-            end
             return true
         end
     end
@@ -34,9 +31,6 @@ function Casting:PlayerIsBusy(action)
     if channel_spell_id and channel_end_time and channel_end_time > 0 then
         -- We are channeling. Check for special interrupt conditions.
         if action then
-            if action:CanCastWhileChanneling() then
-                return false -- Not busy, because we can cast this while channeling Soothing Mist.
-            end
             if channel_spell_id == 101546 and action:InterruptsSCK() then
                 return false -- Not busy, because we are allowed to interrupt.
             end
