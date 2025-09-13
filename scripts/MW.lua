@@ -1133,7 +1133,7 @@ local function TFTEnvelope()
     local shouldUseForTank = ThunderFocusTea:GetCharges() >= 2 and TankTarget:IsValid() and
         ShouldUseEnvelopingMist(TankTarget) and
         (TankTarget:GetRealizedHP() < 70 or (HarmonyMax() and Player:GetAuras():FindMy(JadeEmpowerment):IsDown()))
-    local shouldUseForChiji = Player:GetAuras():FindMy(ChiJiBuff):IsUp() and envelopeLowestHP < 70 and
+    local shouldUseForChiji = Player:GetAuras():FindMy(ChiJiBuff):IsUp() and envelopeLowestHP < 90 and
         EnvelopeLowest:IsValid() and ShouldUseEnvelopingMist(EnvelopeLowest)
 
     if shouldUseLightning or shouldUseForChiji then
