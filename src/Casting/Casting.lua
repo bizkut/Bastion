@@ -18,7 +18,15 @@ function Casting:PlayerIsBusy(action)
     local _, _, _, _, cast_end_time, _, _, _, cast_spell_id = UnitCastingInfo("player")
     if cast_spell_id and cast_end_time and cast_end_time > 0 then
         local cast_time_left = (cast_end_time / 1000) - GetTime()
-        return cast_time_left > (self:GetSpellQueueWindow() / 1000)
+        if cast_time_left > (self:GetSpellQueueWindow() / 1000) then
+            if action and action:InterruptsCast() then
+                return false -- Not busy, because we are allowed to interrupt.
+            end
+            if action and action:IsOffGCD() then
+                return false -- Off-GCD spells can be cast during other casts.
+            end
+            return true
+        end
     end
 
     -- Check for channeled spell
@@ -26,6 +34,9 @@ function Casting:PlayerIsBusy(action)
     if channel_spell_id and channel_end_time and channel_end_time > 0 then
         -- We are channeling. Check for special interrupt conditions.
         if action then
+            if action:CanCastWhileChanneling() then
+                return false -- Not busy, because we can cast this while channeling Soothing Mist.
+            end
             if channel_spell_id == 101546 and action:InterruptsSCK() then
                 return false -- Not busy, because we are allowed to interrupt.
             end
@@ -35,10 +46,15 @@ function Casting:PlayerIsBusy(action)
         end
         -- If no special interrupt, we are busy for the remainder of the channel.
         local channel_time_left = (channel_end_time / 1000) - GetTime()
-        return channel_time_left > (self:GetSpellQueueWindow() / 1000)
+        if channel_time_left > (self:GetSpellQueueWindow() / 1000) then
+            return true
+        end
     end
 
     -- Check for GCD
+    if action and action:IsOffGCD() then
+        return false -- Not busy, because this spell is off the GCD.
+    end
     local gcd_time_left = Bastion.UnitManager:Get('player'):GetGCD()
     return gcd_time_left > (self:GetSpellQueueWindow() / 1000)
 end
