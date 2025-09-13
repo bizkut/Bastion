@@ -219,7 +219,7 @@ function Spell:Cast(unit, condition)
         return false
     end
 
-    if not self:IsOffGCD() and Casting:PlayerIsBusy(self) and not self:CanCastWhileChanneling() then
+    if Casting:PlayerIsBusy(self) and not self:CanCastWhileChanneling() then
         return false
     end
 

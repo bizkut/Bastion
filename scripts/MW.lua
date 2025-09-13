@@ -33,12 +33,12 @@ local ManaTea = SpellBook:GetSpell(115294)
 local CelestialConduit = SpellBook:GetSpell(443028)
 local UnityWithin = SpellBook:GetSpell(443591)
 local FortifyingBrew = SpellBook:GetSpell(115203):SetOffGCD(true)
-local DiffuseMagic = SpellBook:GetSpell(122783):SetInterruptsManaTea(true):SetInterruptsSCK(true)
-local LifeCocoon = SpellBook:GetSpell(116849):SetInterruptsManaTea(true):SetInterruptsSCK(true) -- :SetOffGCD(true)
+local DiffuseMagic = SpellBook:GetSpell(122783):SetInterruptsManaTea(true):SetInterruptsSCK(true):SetOffGCD(true)
+local LifeCocoon = SpellBook:GetSpell(116849):SetInterruptsManaTea(true):SetInterruptsSCK(true):SetOffGCD(true)
 local JadefireStomp = SpellBook:GetSpell(388193):SetInterruptsSCK(true)
 local SheilunsGift = SpellBook:GetSpell(399491):SetInterruptsManaTea(true):SetInterruptsSCK(true)
 local TouchOfDeath = SpellBook:GetSpell(322109):SetInterruptsManaTea(true):SetInterruptsSCK(true)
-local SpearHandStrike = SpellBook:GetSpell(116705):SetOffGCD(true):SetInterruptsCast(true)
+local SpearHandStrike = SpellBook:GetSpell(116705):SetInterruptsCast(true)
 local LegSweep = SpellBook:GetSpell(119381):SetInterruptsManaTea(true):SetInterruptsSCK(true)
 local Paralysis = SpellBook:GetSpell(115078):SetInterruptsManaTea(true):SetInterruptsSCK(true)
 local CracklingJadeLightning = SpellBook:GetSpell(117952)
@@ -87,8 +87,8 @@ local EnvelopingBreath = SpellBook:GetSpell(325209) -- Chiji buff after envelopi
 local Polymorph = SpellBook:GetSpell(118)
 
 -- Items
-local Healthstone = ItemBook:GetItem(5512):SetOffGCD(true):SetInterruptsCast(true)
-local AlgariHealingPotion = ItemBook:GetItem(211880):SetOffGCD(true):SetInterruptsCast(true)
+local Healthstone = ItemBook:GetItem(5512):SetInterruptsCast(true)
+local AlgariHealingPotion = ItemBook:GetItem(211880):SetInterruptsCast(true)
 local Noggen = ItemBook:GetItem(232486)
 local KoD = ItemBook:GetItem(215174)    -- Kiss of Death
 local Signet = ItemBook:GetItem(219308) -- Signet of Priory
