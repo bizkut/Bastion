@@ -14,6 +14,10 @@ function Casting:GetSpellQueueWindow()
 end
 
 function Casting:PlayerIsBusy(action)
+    if action and action:InterruptsCast() then
+        return false
+    end
+
     -- Check for spell cast
     local _, _, _, _, cast_end_time, _, _, _, cast_spell_id = UnitCastingInfo("player")
     if cast_spell_id and cast_end_time and cast_end_time > 0 then
@@ -39,6 +43,9 @@ function Casting:PlayerIsBusy(action)
     end
 
     -- Check for GCD
+    if action and action:IsOffGCD() then
+        return false
+    end
     local gcd_time_left = Bastion.UnitManager:Get('player'):GetGCD()
     return gcd_time_left > (self:GetSpellQueueWindow() / 1000)
 end
