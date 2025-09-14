@@ -24,9 +24,9 @@ local ThunderFocusTea = SpellBook:GetSpell(116680):SetInterruptsManaTea(true):Se
 local TigerPalm = SpellBook:GetSpell(100780)
 local BlackoutKick = SpellBook:GetSpell(100784):SetInterruptsSCK(true)
 local SpinningCraneKick = SpellBook:GetSpell(101546)
-local Revival = SpellBook:GetSpell(115310):SetOffGCD(true)
-local Restoral = SpellBook:GetSpell(388615):SetOffGCD(true)
-local InvokeYulon = SpellBook:GetSpell(322118):SetOffGCD(true)
+local Revival = SpellBook:GetSpell(115310):SetOffGCD(true):SetInterruptsCast(true)
+local Restoral = SpellBook:GetSpell(388615):SetOffGCD(true):SetInterruptsCast(true)
+local InvokeYulon = SpellBook:GetSpell(322118)
 local InvokeChiJi = SpellBook:GetSpell(325197):SetInterruptsManaTea(true):SetInterruptsSCK(true)
 local SoothingMist = SpellBook:GetSpell(115175):SetInterruptsManaTea(true):SetInterruptsSCK(true)
 local ManaTea = SpellBook:GetSpell(115294)
@@ -43,7 +43,7 @@ local LegSweep = SpellBook:GetSpell(119381):SetInterruptsManaTea(true):SetInterr
 local Paralysis = SpellBook:GetSpell(115078):SetInterruptsManaTea(true):SetInterruptsSCK(true)
 local CracklingJadeLightning = SpellBook:GetSpell(117952)
 local ExpelHarm = SpellBook:GetSpell(322101)
-local Detox = SpellBook:GetSpell(115450):SetInterruptsManaTea(true):SetInterruptsSCK(true):SetOffGCD(true) -- special addition off-GCD/interrupt condition
+local Detox = SpellBook:GetSpell(115450):SetInterruptsManaTea(true):SetInterruptsSCK(true):SetInterruptsCast(true) -- special addition off-GCD/interrupt condition
 local Drinking = SpellBook:GetSpell(452389) -- Rocky Road
 local Eating = SpellBook:GetSpell(396918)
 local EatingDelves = SpellBook:GetSpell(458739)
@@ -1175,7 +1175,7 @@ local function TFTEnvelope()
                     print("Using Enveloping Mist on: " ..
                         target:GetName() .. " (HP: " .. target:GetRealizedHP() .. ", Reason: " .. name .. ")")
                     if ThunderFocusTea:GetCharges() >= 1 and Player:GetAuras():FindMy(ThunderFocusTea):IsDown() then
-                        if Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() then
+                        if Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and rangeTarget:IsValid() and not Player:IsMoving() and not stopCasting() and Lowest:GetHP() > 40 then
                             print("Using Crackling Jade Lightning for Jade Empowerment dump")
                             CastSpellByName("Crackling Jade Lightning", rangeTarget:GetOMToken())
                             --SpellCancelQueuedSpell()
@@ -1330,7 +1330,7 @@ CooldownAPL:AddSpell(
             and not Casting:PlayerIsBusy(Revival)
             and (Player:GetPartyHPAround(40, 60) >= 2 or Player:GetPartyHPAround(40, 65) >= 3)
             and canCastAoE() then
-            if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
+            if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() and not stopCasting() then
                 -- SpellCancelQueuedSpell()
                 CastSpellByName("Sheilun's Gift", "player")
                 -- SpellCancelQueuedSpell()
@@ -1476,16 +1476,6 @@ DispelAPL:AddSpell(
         end
     end)
 )
--- Always put it on tanks
-RenewAPL:AddSpell(
-    RenewingMist:CastableIf(function(self)
-        return MustUseRenewingMist(TankTarget)
-            -- and not Player:IsCastingOrChanneling()
-            and not Player:IsUnit(TankTarget)
-            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
-    end):SetTarget(TankTarget)
-)
-
 RenewAPL:AddSpell(
     RenewingMist:CastableIf(function(self)
         return MustUseRenewingMist(RenewLowest)
@@ -1494,6 +1484,16 @@ RenewAPL:AddSpell(
             and (RenewingMist:GetCharges() > 2 or not Player:IsAffectingCombat() or RenewLowest:GetRealizedHP() < 100)
             and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
     end):SetTarget(RenewLowest)
+)
+
+-- Always put it on tanks
+RenewAPL:AddSpell(
+    RenewingMist:CastableIf(function(self)
+        return MustUseRenewingMist(TankTarget)
+            -- and not Player:IsCastingOrChanneling()
+            and not Player:IsUnit(TankTarget)
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsDown()
+    end):SetTarget(TankTarget)
 )
 
 -- Defensive APL
@@ -1588,7 +1588,7 @@ DefensiveAPL:AddSpell(
     SheilunsGift:CastableIf(function(self)
         return self:IsKnownAndUsable() -- and (not Player:IsCastingOrChanneling() or spinningCrane())
             and
-            ((Player:GetPartyHPAround(40, 70) >= 2) or (Player:GetPartyHPAround(40, 75) >= 3) or (Player:GetPartyHPAround(40, 85) >= 2 and (SheilunsGift:GetCount() >= 9)))
+            ((Player:GetPartyHPAround(40, 75) >= 2) or (Player:GetPartyHPAround(40, 80) >= 3) or (Player:GetPartyHPAround(40, 85) >= 2 and (SheilunsGift:GetCount() >= 9)))
             and (SheilunsGift:GetCount() >= 4)
             and not Player:IsMoving()
             and not stopCasting()
@@ -1617,6 +1617,7 @@ DefensiveAPL:AddSpell(
             (CondCrackling() or CondChiji() or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and ThunderFocusTea:GetCharges() >= 2))
             --and (Player:GetPartyHPAround(40, 80) >= 2 or Player:GetPartyHPAround(40, 90) >= 3 or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Lowest:GetHP() < 90) or (Player:GetAuras():FindMy(JadeEmpowerment):GetCount() >= 2 and Player:GetAuras():FindMy(AspectDraining):IsUp()) or (ThunderFocusTea:GetCharges() >= 2))
             and canCastAoE()
+            and Lowest:GetHP() > 40 -- Don't waste it if someone is very low
     end):SetTarget(rangeTarget):PreCast(function()
         isAoEQueuedInThisTick = true
     end):OnCast(function(self)
@@ -1632,7 +1633,7 @@ DefensiveAPL:AddSpell(
             and CondChiji()
             and (Player:GetAuras():FindMy(JadeEmpowerment):IsDown() or Player:IsMoving())
             and canCastAoE() then
-            if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() then
+            if (SheilunsGift:GetCount() >= 1) and not Player:IsMoving() and not stopCasting() then
                 --SpellCancelQueuedSpell()
                 CastSpellByName("Sheilun's Gift", "player")
                 -- SpellCancelQueuedSpell()
