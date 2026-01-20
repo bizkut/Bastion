@@ -15,35 +15,34 @@ local ItemBook = Bastion.ItemBook:New()
 local MythicPlusUtils = Bastion.require("MythicPlusUtils"):New()
 
 -- ============================================================================
--- SPELL DEFINITIONS
+-- SPELL DEFINITIONS (Midnight Pre-Patch Rework)
 -- ============================================================================
 
 -- Core Damage Abilities
-local FesteringStrike = SpellBook:GetSpell(85948)
-local FesteringScythe = SpellBook:GetSpell(455397)  -- Talent-empowered Festering Strike
-local ScourgeStrike = SpellBook:GetSpell(55090)
-local ClawingShadows = SpellBook:GetSpell(207311)
-local DeathCoil = SpellBook:GetSpell(47541)
-local Epidemic = SpellBook:GetSpell(207317)
-local SoulReaper = SpellBook:GetSpell(343294)
-local Putrefy = SpellBook:GetSpell(1247378)  -- New S3 ability
+local FesteringStrike = SpellBook:GetSpell(85948)  -- Now applies buff for next SS to summon Lesser Ghoul
+local FesteringScythe = SpellBook:GetSpell(455397)  -- No rune cost, applies disease tick rate debuff
+local ScourgeStrike = SpellBook:GetSpell(55090)  -- 30yd range, consumes Lesser Ghoul stacks, spreads VP
+local ClawingShadows = SpellBook:GetSpell(207311)  -- Now buffs SS to cleave, doesn't replace SS
+local DeathCoil = SpellBook:GetSpell(47541)  -- Extends VP and Dread Plague duration
+local Epidemic = SpellBook:GetSpell(207317)  -- Extends VP and Dread Plague duration
+local SoulReaper = SpellBook:GetSpell(343294)  -- Only usable below 35% HP, applies pet/disease damage debuff
+local Putrefy = SpellBook:GetSpell(1247378)  -- New rotational cooldown
 
--- Wound Application
-local Outbreak = SpellBook:GetSpell(77575)
-local UnholyBlight = SpellBook:GetSpell(115989)
+-- Disease Application
+local Outbreak = SpellBook:GetSpell(77575)  -- May be replaced by Pestilence talent
+local Pestilence = SpellBook:GetSpell(467290)  -- Replaces Outbreak, consumes diseases instead of applying
 
 -- AoE
 local DeathAndDecay = SpellBook:GetSpell(43265)
-local Defile = SpellBook:GetSpell(152280)
 local VileContagion = SpellBook:GetSpell(390279)
 
 -- Major Cooldowns
-local DarkTransformation = SpellBook:GetSpell(63560)
-local Apocalypse = SpellBook:GetSpell(275699)
-local ArmyOfTheDead = SpellBook:GetSpell(42650)
+local DarkTransformation = SpellBook:GetSpell(63560)  -- 12s duration
+local ArmyOfTheDead = SpellBook:GetSpell(42650)  -- 6s ghoul duration, 6 ghouls
 local SummonGargoyle = SpellBook:GetSpell(49206)
 local UnholyAssault = SpellBook:GetSpell(207289)
 local RaiseDead = SpellBook:GetSpell(46585)
+local Reanimation = SpellBook:GetSpell(467298)  -- New capstone, summons Magi
 
 -- Utility
 local DeathGrip = SpellBook:GetSpell(49576)
@@ -74,18 +73,19 @@ local GCD = SpellBook:GetSpell(61304)
 -- ============================================================================
 
 -- Buffs
-local SuddenDoom = SpellBook:GetSpell(81340)
+local SuddenDoom = SpellBook:GetSpell(81340)  -- Now procs from Dread Plague, +35% DC/Epidemic damage
 local DarkTransformationBuff = SpellBook:GetSpell(63560)
 local RunicCorruption = SpellBook:GetSpell(51460)
 local DeathAndDecayBuff = SpellBook:GetSpell(188290)
 local UnholyAssaultBuff = SpellBook:GetSpell(207289)
-local FesteringScytheBuff = SpellBook:GetSpell(458128)  -- Buff that empowers next Festering Strike
-local LesserGhoul = SpellBook:GetSpell(1254252)  -- Lesser Ghoul stacks
+local LesserGhoulBuff = SpellBook:GetSpell(1254252)  -- Stacks from Festering Strike, consumed by Scourge Strike
+local ClawingShadowsBuff = SpellBook:GetSpell(207311)  -- Stacking buff allowing SS to cleave
 
 -- Debuffs
 local VirulentPlague = SpellBook:GetSpell(191587)
-local FesteringWound = SpellBook:GetSpell(194310)
-local FesteringScytheDebuff = SpellBook:GetSpell(455397)  -- Debuff applied by Festering Scythe
+local DreadPlague = SpellBook:GetSpell(458040)  -- Secondary disease
+local FesteringScytheDebuff = SpellBook:GetSpell(455397)  -- Increases disease tick rate
+local SoulReaperDebuff = SpellBook:GetSpell(343294)  -- Increases pet and disease damage
 
 -- ============================================================================
 -- STATE VARIABLES
@@ -117,18 +117,16 @@ local function GetEnemiesInRange(range)
     return count
 end
 
-local function GetFesteringWoundCount(unit)
-    if not unit or not unit:IsValid() then return 0 end
-    local aura = unit:GetAuras():FindMy(FesteringWound)
-    if aura:IsUp() then
-        return aura:GetCount()
-    end
-    return 0
-end
+-- REMOVED: GetFesteringWoundCount - Festering Wounds no longer exist
 
 local function HasVirulentPlague(unit)
     if not unit or not unit:IsValid() then return false end
     return unit:GetAuras():FindMy(VirulentPlague):IsUp()
+end
+
+local function HasDreadPlague(unit)
+    if not unit or not unit:IsValid() then return false end
+    return unit:GetAuras():FindMy(DreadPlague):IsUp()
 end
 
 local function HasFesteringScytheDebuff(unit)
@@ -143,6 +141,11 @@ local function GetFesteringScytheDebuffRemaining(unit)
         return aura:GetRemainingTime()
     end
     return 0
+end
+
+-- Alias for compatibility
+local function GetFesteringScytheDuration(unit)
+    return GetFesteringScytheDebuffRemaining(unit)
 end
 
 local function ShouldUseAoE()
@@ -172,12 +175,22 @@ local function HasSuddenDoom()
     return Player:GetAuras():FindMy(SuddenDoom):IsUp()
 end
 
-local function HasFesteringScytheBuff()
-    return Player:GetAuras():FindMy(FesteringScytheBuff):IsUp()
+-- Lesser Ghoul stacks (from Festering Strike, consumed by Scourge Strike)
+local function GetLesserGhoulStacks()
+    local aura = Player:GetAuras():FindMy(LesserGhoulBuff)
+    if aura:IsUp() then
+        return aura:GetCount()
+    end
+    return 0
 end
 
-local function GetLesserGhoulStacks()
-    local aura = Player:GetAuras():FindMy(LesserGhoul)
+local function HasLesserGhoul()
+    return GetLesserGhoulStacks() > 0
+end
+
+-- Clawing Shadows buff stacks (allows Scourge Strike to cleave)
+local function GetClawingShadowsStacks()
+    local aura = Player:GetAuras():FindMy(ClawingShadowsBuff)
     if aura:IsUp() then
         return aura:GetCount()
     end
@@ -250,7 +263,7 @@ local function FindInterruptTarget()
             return
         end
         if unit:IsInterruptible() and unit:IsCastingOrChanneling() then
-            local castRemaining = unit:GetCastingOrChannelingPercentComplete()
+            local castRemaining = unit:GetChannelOrCastPercentComplete()
             -- Only interrupt after 30% cast progress for humanization
             if castRemaining >= 30 then
                 if not interruptThresholds[unit:GetGUID()] then
@@ -426,18 +439,11 @@ CooldownAPL:AddSpell(
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and CanDamage(Target)
-            and GetFesteringWoundCount(Target) >= 1
+            -- Festering Wounds removed, use on CD or save for DT windows
     end):SetTarget(Target)
 )
 
-CooldownAPL:AddSpell(
-    Apocalypse:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Target:IsValid()
-            and CanDamage(Target)
-            and GetFesteringWoundCount(Target) >= 4
-    end):SetTarget(Target)
-)
+-- REMOVED: Apocalypse - no longer exists in Midnight pre-patch
 
 CooldownAPL:AddSpell(
     SummonGargoyle:CastableIf(function(self)
@@ -447,31 +453,41 @@ CooldownAPL:AddSpell(
     end):SetTarget(Target)
 )
 
+-- Vile Contagion - Festering Wounds removed, needs alternative condition
+-- Now we use it when we have Lesser Ghoul stacks and multiple targets
 CooldownAPL:AddSpell(
     VileContagion:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and CanDamage(Target)
-            and GetFesteringWoundCount(Target) >= 4
             and GetEnemiesInRange(10) >= 3
             and GetRunicPower() >= 30
     end):SetTarget(Target)
 )
 
+-- Reanimation (new capstone) - summons Magi
+CooldownAPL:AddSpell(
+    Reanimation:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Target:IsValid()
+            and CanDamage(Target)
+    end):SetTarget(Target)
+)
+
 -- ============================================================================
--- SINGLE TARGET APL (Priority from user's guide)
+-- SINGLE TARGET APL (Midnight Pre-Patch Rework)
 -- Priority:
--- 1. Outbreak if VP not active
+-- 1. Outbreak if VP not active (or Pestilence if talented)
 -- 2. Army of the Dead on cooldown (in CooldownAPL)
 -- 3. Dark Transformation on cooldown (in CooldownAPL)
--- 4. Putrefy if 2 charges
--- 5. Soul Reaper on cooldown
+-- 4. Putrefy if 2 charges (never cap)
+-- 5. Soul Reaper if target < 35% HP
 -- 6. Putrefy if DT CD >= 15s
--- 7. Festering Scythe if target missing debuff or expiring
--- 8. Death Coil if Sudden Doom or 80+ RP
--- 9. Festering Strike if no Lesser Ghoul stacks
--- 10. Scourge Strike if has Lesser Ghoul stacks
--- 11. Death Coil filler
+-- 7. Festering Scythe if debuff missing or expiring (no rune cost now!)
+-- 8. Death Coil if Sudden Doom or 80+ RP (extends diseases)
+-- 9. Festering Strike if no Lesser Ghoul stacks (applies buff for SS)
+-- 10. Scourge Strike if has Lesser Ghoul stacks (consumes stacks, spreads VP)
+-- 11. Death Coil filler (extends diseases)
 -- ============================================================================
 
 -- 1. Outbreak if Virulent Plague not active
@@ -479,17 +495,20 @@ SingleTargetAPL:AddSpell(
     Outbreak:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and not HasVirulentPlague(Target)
     end):SetTarget(Target)
 )
+
+-- 2. Army of the Dead (handled in CooldownAPL)
+-- 3. Dark Transformation (handled in CooldownAPL)
 
 -- 4. Putrefy if 2 charges (never cap on charges)
 SingleTargetAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and GetPutrefyCharges() >= 2
             -- Always use at 2 charges to avoid wasting CD
     end):SetTarget(Target)
@@ -500,7 +519,8 @@ SingleTargetAPL:AddSpell(
     SoulReaper:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
+            and Target:GetHP() < 35
             and GetRunes() >= 1
     end):SetTarget(Target)
 )
@@ -512,22 +532,22 @@ SingleTargetAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and GetPutrefyCharges() >= 1
             and not ShouldSavePutrefyForSoulReaper()  -- Don't use if SR coming soon in execute
-            and (IsDarkTransformationActive() or GetDarkTransformationCooldownRemaining() >= 15)
+            and GetDarkTransformationCooldownRemaining() >= 15
     end):SetTarget(Target)
 )
 
 -- 7. Festering Scythe if target missing debuff or about to expire
+-- Note: Festering Scythe no longer costs runes in Midnight pre-patch!
 SingleTargetAPL:AddSpell(
-    FesteringStrike:CastableIf(function(self)
+    FesteringScythe:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            and HasFesteringScytheBuff()
             and Target:IsValid()
-            and CanDamage(Target)
-            and GetRunes() >= 2
-            and (not HasFesteringScytheDebuff(Target) or GetFesteringScytheDebuffRemaining(Target) < 3)
+            and self:IsInRange(Target)
+            -- No rune cost in Midnight pre-patch
+            and (not HasFesteringScytheDebuff(Target) or GetFesteringScytheDuration(Target) < 1.5)
     end):SetTarget(Target)
 )
 
@@ -536,42 +556,44 @@ SingleTargetAPL:AddSpell(
     DeathCoil:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and (HasSuddenDoom() or GetRunicPower() >= 80)
     end):SetTarget(Target)
 )
 
 -- 9. Festering Strike if no Lesser Ghoul stacks
+-- In Midnight pre-patch: Festering Strike applies buff allowing next SS to summon Lesser Ghoul
 SingleTargetAPL:AddSpell(
     FesteringStrike:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and GetRunes() >= 2
-            and GetLesserGhoulStacks() == 0
+            and not HasLesserGhoul()  -- Only use when we need more Lesser Ghoul stacks
     end):SetTarget(Target)
 )
 
 -- 10. Scourge Strike if has Lesser Ghoul stacks
+-- In Midnight pre-patch: Consumes Lesser Ghoul stacks to summon ghouls, spreads VP, 30yd range
 SingleTargetAPL:AddSpell(
     ScourgeStrike:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and GetRunes() >= 1
-            and GetLesserGhoulStacks() > 0
+            and HasLesserGhoul()  -- Consume stacks to summon ghouls
     end):SetTarget(Target)
 )
 
--- Also support Clawing Shadows if talented
+-- Clawing Shadows - Now buffs Scourge Strike to cleave, doesn't replace SS
+-- Use to build up cleave stacks for AoE situations
 SingleTargetAPL:AddSpell(
     ClawingShadows:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            and not ScourgeStrike:IsKnown()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and GetRunes() >= 1
-            and GetLesserGhoulStacks() > 0
+            and ShouldUseAoE()  -- Only use in AoE to build cleave stacks
     end):SetTarget(Target)
 )
 
@@ -580,47 +602,32 @@ SingleTargetAPL:AddSpell(
     DeathCoil:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and GetRunicPower() >= 40
     end):SetTarget(Target)
 )
 
 -- ============================================================================
--- AOE APL (3+ targets)
+-- AOE APL (3+ targets) - Midnight Pre-Patch Rework
 -- Priority:
 -- 1. Army of the Dead on cooldown (in CooldownAPL)
 -- 2. Dark Transformation on cooldown (in CooldownAPL)
--- 3. Putrefy on cooldown
--- 4. Festering Scythe if target missing debuff or expiring
--- 5. Epidemic if Sudden Doom or 80+ RP
--- 6. Festering Strike if no Lesser Ghoul stacks
--- 7. Scourge Strike if has Lesser Ghoul stacks
--- 8. Epidemic filler
+-- 3. Death and Decay (Defile removed in Midnight)
+-- 4. Putrefy on cooldown
+-- 5. Festering Scythe if debuff missing or expiring (no rune cost!)
+-- 6. Epidemic if Sudden Doom or 80+ RP (extends diseases)
+-- 7. Clawing Shadows to build SS cleave stacks
+-- 8. Festering Strike if no Lesser Ghoul stacks
+-- 9. Scourge Strike if has Lesser Ghoul stacks (spreads VP!)
+-- 10. Epidemic filler
 -- ============================================================================
 
--- Death and Decay / Defile (maintain for cleave)
-AoEAPL:AddSpell(
-    Defile:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Target:IsValid()
-            and CanDamage(Target)
-            and not IsInDeathAndDecay()
-            and not Player:IsMoving()
-            and GetRunes() >= 1
-    end):SetTarget(Target):OnCast(function(self)
-        local x, y, z = ObjectPosition(Target:GetOMToken())
-        if x and y and z then
-            self:Click(x, y, z)
-        end
-    end)
-)
-
+-- Death and Decay (Defile removed in Midnight pre-patch)
 AoEAPL:AddSpell(
     DeathAndDecay:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            and not Defile:IsKnown()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and not IsInDeathAndDecay()
             and not Player:IsMoving()
             and GetRunes() >= 1
@@ -632,29 +639,29 @@ AoEAPL:AddSpell(
     end)
 )
 
--- 3. Putrefy on cooldown
+-- 4. Putrefy on cooldown
 AoEAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and GetPutrefyCharges() >= 1
     end):SetTarget(Target)
 )
 
--- 4. Festering Scythe if target missing debuff or expiring
+-- 5. Festering Scythe if target missing debuff or expiring
+-- Note: No rune cost in Midnight pre-patch!
 AoEAPL:AddSpell(
-    FesteringStrike:CastableIf(function(self)
+    FesteringScythe:CastableIf(function(self)
         return self:IsKnownAndUsable()
-            and HasFesteringScytheBuff()
             and Target:IsValid()
-            and CanDamage(Target)
-            and GetRunes() >= 2
-            and (not HasFesteringScytheDebuff(Target) or GetFesteringScytheDebuffRemaining(Target) < 3)
+            and self:IsInRange(Target)
+            -- No rune cost in Midnight pre-patch
+            and (not HasFesteringScytheDebuff(Target) or GetFesteringScytheDuration(Target) < 1.5)
     end):SetTarget(Target)
 )
 
--- 5. Epidemic if Sudden Doom or 80+ RP
+-- 6. Epidemic if Sudden Doom or 80+ RP (extends diseases)
 AoEAPL:AddSpell(
     Epidemic:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -662,41 +669,40 @@ AoEAPL:AddSpell(
     end):SetTarget(Player)
 )
 
--- 6. Festering Strike if no Lesser Ghoul stacks
+-- 7. Clawing Shadows to build Scourge Strike cleave stacks
+AoEAPL:AddSpell(
+    ClawingShadows:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Target:IsValid()
+            and self:IsInRange(Target)
+            and GetRunes() >= 1
+            -- Build cleave stacks for SS
+    end):SetTarget(Target)
+)
+
+-- 8. Festering Strike if no Lesser Ghoul stacks
 AoEAPL:AddSpell(
     FesteringStrike:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and GetRunes() >= 2
-            and GetLesserGhoulStacks() == 0
+            and not HasLesserGhoul()  -- Only use when we need more Lesser Ghoul stacks
     end):SetTarget(Target)
 )
 
--- 7. Scourge Strike if has Lesser Ghoul stacks
+-- 9. Scourge Strike if has Lesser Ghoul stacks (spreads VP in Midnight!)
 AoEAPL:AddSpell(
     ScourgeStrike:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
-            and CanDamage(Target)
+            and self:IsInRange(Target)
             and GetRunes() >= 1
-            and GetLesserGhoulStacks() > 0
+            and HasLesserGhoul()  -- Consume stacks to summon ghouls and spread VP
     end):SetTarget(Target)
 )
 
--- Also support Clawing Shadows if talented
-AoEAPL:AddSpell(
-    ClawingShadows:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and not ScourgeStrike:IsKnown()
-            and Target:IsValid()
-            and CanDamage(Target)
-            and GetRunes() >= 1
-            and GetLesserGhoulStacks() > 0
-    end):SetTarget(Target)
-)
-
--- 8. Epidemic filler
+-- 10. Epidemic filler
 AoEAPL:AddSpell(
     Epidemic:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -719,32 +725,32 @@ local function RunOpener()
         return false
     end
     
-    -- Step 1: Outbreak
+    -- Step 1: Outbreak (30yd)
     if openerStep == 0 then
-        if Outbreak:IsKnownAndUsable() and not HasVirulentPlague(Target) then
-            CastSpellByName("Outbreak", Target:GetOMToken())
+        if Outbreak:IsKnownAndUsable() and Outbreak:IsInRange(Target) then
+            Outbreak:Cast(Target)
             openerStep = 1
             return true
-        elseif HasVirulentPlague(Target) then
+        elseif not Outbreak:IsKnown() then
             openerStep = 1
         end
     end
     
-    -- Step 2: Army of the Dead
+    -- Step 2: Army of the Dead (No target required)
     if openerStep == 1 then
-        if ArmyOfTheDead:IsKnownAndUsable() and not Player:IsMoving() then
-            CastSpellByName("Army of the Dead")
+        if ArmyOfTheDead:IsKnownAndUsable() then
+            ArmyOfTheDead:Cast(Player)
             openerStep = 2
             return true
-        elseif not ArmyOfTheDead:IsKnownAndUsable() then
+        elseif not ArmyOfTheDead:IsKnown() then
             openerStep = 2
         end
     end
     
-    -- Step 3: Dark Transformation (off-GCD)
+    -- Step 3: Dark Transformation (No target required)
     if openerStep == 2 then
-        if DarkTransformation:IsKnownAndUsable() and IsPetAlive() then
-            CastSpellByName("Dark Transformation")
+        if DarkTransformation:IsKnownAndUsable() then
+            DarkTransformation:Cast(Player)
             openerStep = 3
             return true
         elseif not DarkTransformation:IsKnownAndUsable() then
@@ -764,8 +770,8 @@ local function RunOpener()
     
     -- Step 5: Putrefy
     if openerStep == 4 then
-        if Putrefy:IsKnownAndUsable() and GetPutrefyCharges() >= 1 then
-            CastSpellByName("Putrefy", Target:GetOMToken())
+        if Putrefy:IsKnownAndUsable() and GetPutrefyCharges() >= 1 and Putrefy:IsInRange(Target) then
+            Putrefy:Cast(Target)
             openerStep = 5
             return true
         elseif not Putrefy:IsKnown() or GetPutrefyCharges() == 0 then
@@ -775,8 +781,8 @@ local function RunOpener()
     
     -- Step 6: Death Coil
     if openerStep == 5 then
-        if DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 then
-            CastSpellByName("Death Coil", Target:GetOMToken())
+        if DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and DeathCoil:IsInRange(Target) then
+            DeathCoil:Cast(Target)
             openerStep = 6
             return true
         elseif GetRunicPower() < 40 then
@@ -786,8 +792,8 @@ local function RunOpener()
     
     -- Step 7: Soul Reaper
     if openerStep == 6 then
-        if SoulReaper:IsKnownAndUsable() and GetRunes() >= 1 then
-            CastSpellByName("Soul Reaper", Target:GetOMToken())
+        if SoulReaper:IsKnownAndUsable() and GetRunes() >= 1 and SoulReaper:IsInRange(Target) then
+            SoulReaper:Cast(Target)
             openerStep = 7
             return true
         elseif not SoulReaper:IsKnown() then
@@ -797,8 +803,8 @@ local function RunOpener()
     
     -- Step 8: Death Coil
     if openerStep == 7 then
-        if DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 then
-            CastSpellByName("Death Coil", Target:GetOMToken())
+        if DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and DeathCoil:IsInRange(Target) then
+            DeathCoil:Cast(Target)
             openerStep = 8
             return true
         elseif GetRunicPower() < 40 then
@@ -808,8 +814,8 @@ local function RunOpener()
     
     -- Step 9: Putrefy (final opener step)
     if openerStep == 8 then
-        if Putrefy:IsKnownAndUsable() and GetPutrefyCharges() >= 1 then
-            CastSpellByName("Putrefy", Target:GetOMToken())
+        if Putrefy:IsKnownAndUsable() and GetPutrefyCharges() >= 1 and Putrefy:IsInRange(Target) then
+            Putrefy:Cast(Target)
             isOpenerComplete = true
             return true
         else
