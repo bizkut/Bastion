@@ -94,6 +94,11 @@ local FesteringScytheDebuff = SpellBook:GetSpell(455397)  -- Debuff applied by F
 local interruptThresholds = {}
 local hasUsedOffGCDDefensive = false
 
+-- Opener tracking
+local combatStartTime = 0
+local openerStep = 0
+local isOpenerComplete = false
+
 -- ============================================================================
 -- HELPER FUNCTIONS
 -- ============================================================================
@@ -197,6 +202,39 @@ local function GetPutrefyCharges()
     return Putrefy:GetCharges() or 0
 end
 
+local function GetArmyCooldownRemaining()
+    local info = C_Spell.GetSpellCooldown(ArmyOfTheDead:GetID())
+    if info and info.startTime and info.duration then
+        local remaining = (info.startTime + info.duration) - GetTime()
+        return remaining > 0 and remaining or 0
+    end
+    return 0
+end
+
+local function GetSoulReaperCooldownRemaining()
+    local info = C_Spell.GetSpellCooldown(SoulReaper:GetID())
+    if info and info.startTime and info.duration then
+        local remaining = (info.startTime + info.duration) - GetTime()
+        return remaining > 0 and remaining or 0
+    end
+    return 0
+end
+
+local function IsDarkTransformationActive()
+    return Player:GetAuras():FindMy(DarkTransformationBuff):IsUp()
+end
+
+-- Should we save Putrefy for Soul Reaper (when target is in execute range)?
+local function ShouldSavePutrefyForSoulReaper()
+    if not SoulReaper:IsKnown() then return false end
+    if not Target:IsValid() then return false end
+    -- If target is below 35% HP and Soul Reaper coming off CD soon, save Putrefy
+    if Target:GetHP() < 35 and GetSoulReaperCooldownRemaining() < 15 then
+        return true
+    end
+    return false
+end
+
 local function CanDamage(unit)
     if not unit or not unit:IsValid() or unit:IsDead() then
         return false
@@ -269,6 +307,7 @@ local CooldownAPL = Bastion.APL:New('cooldown')
 local SingleTargetAPL = Bastion.APL:New('singletarget')
 local AoEAPL = Bastion.APL:New('aoe')
 local PetAPL = Bastion.APL:New('pet')
+local OpenerAPL = Bastion.APL:New('opener')
 
 -- ============================================================================
 -- INTERRUPT APL
@@ -351,25 +390,34 @@ PetAPL:AddSpell(
 
 -- ============================================================================
 -- COOLDOWN APL
+-- Commander of the Dead sync: Army + Dark Transformation should be used together
 -- ============================================================================
 
--- Army of the Dead on cooldown
+-- Army of the Dead - use on cooldown, DT will follow immediately after
 CooldownAPL:AddSpell(
     ArmyOfTheDead:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and CanDamage(Target)
             and not Player:IsMoving()
-    end):SetTarget(Player)
+            and IsPetAlive()  -- Ensure pet is up for DT sync
+    end):SetTarget(Player):OnCast(function()
+        -- Immediately try to cast Dark Transformation after Army
+        if DarkTransformation:IsKnownAndUsable() and IsPetAlive() then
+            CastSpellByName("Dark Transformation")
+        end
+    end)
 )
 
--- Dark Transformation on cooldown
+-- Dark Transformation - sync with Army when possible, otherwise use on CD
+-- DT is off-GCD so it can be macroed with Army
 CooldownAPL:AddSpell(
     DarkTransformation:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and IsPetAlive()
             and Target:IsValid()
             and CanDamage(Target)
+            -- Use immediately after Army, or on cooldown between Army windows
     end):SetTarget(Player)
 )
 
@@ -436,17 +484,18 @@ SingleTargetAPL:AddSpell(
     end):SetTarget(Target)
 )
 
--- 4. Putrefy if 2 charges
+-- 4. Putrefy if 2 charges (never cap on charges)
 SingleTargetAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and CanDamage(Target)
             and GetPutrefyCharges() >= 2
+            -- Always use at 2 charges to avoid wasting CD
     end):SetTarget(Target)
 )
 
--- 5. Soul Reaper on cooldown
+-- 5. Soul Reaper on cooldown (will consume Putrefy charges due to Reaping talent)
 SingleTargetAPL:AddSpell(
     SoulReaper:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -457,13 +506,16 @@ SingleTargetAPL:AddSpell(
 )
 
 -- 6. Putrefy if Dark Transformation CD >= 15s
+-- But don't use if we should save for Soul Reaper (target in execute range)
+-- Try to bank 1 charge for DT windows (use during DT or when DT on CD)
 SingleTargetAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and CanDamage(Target)
             and GetPutrefyCharges() >= 1
-            and GetDarkTransformationCooldownRemaining() >= 15
+            and not ShouldSavePutrefyForSoulReaper()  -- Don't use if SR coming soon in execute
+            and (IsDarkTransformationActive() or GetDarkTransformationCooldownRemaining() >= 15)
     end):SetTarget(Target)
 )
 
@@ -653,6 +705,122 @@ AoEAPL:AddSpell(
 )
 
 -- ============================================================================
+-- OPENER SEQUENCE (Single Target)
+-- Priority: Outbreak -> Army -> DT -> Trinket -> Putrefy -> Death Coil -> Soul Reaper -> Death Coil -> Putrefy
+-- ============================================================================
+
+local function RunOpener()
+    -- Track opener progress with steps
+    local timeInCombat = GetTime() - combatStartTime
+    
+    -- Opener only runs for first 10 seconds of combat
+    if timeInCombat > 10 then
+        isOpenerComplete = true
+        return false
+    end
+    
+    -- Step 1: Outbreak
+    if openerStep == 0 then
+        if Outbreak:IsKnownAndUsable() and not HasVirulentPlague(Target) then
+            CastSpellByName("Outbreak", Target:GetOMToken())
+            openerStep = 1
+            return true
+        elseif HasVirulentPlague(Target) then
+            openerStep = 1
+        end
+    end
+    
+    -- Step 2: Army of the Dead
+    if openerStep == 1 then
+        if ArmyOfTheDead:IsKnownAndUsable() and not Player:IsMoving() then
+            CastSpellByName("Army of the Dead")
+            openerStep = 2
+            return true
+        elseif not ArmyOfTheDead:IsKnownAndUsable() then
+            openerStep = 2
+        end
+    end
+    
+    -- Step 3: Dark Transformation (off-GCD)
+    if openerStep == 2 then
+        if DarkTransformation:IsKnownAndUsable() and IsPetAlive() then
+            CastSpellByName("Dark Transformation")
+            openerStep = 3
+            return true
+        elseif not DarkTransformation:IsKnownAndUsable() then
+            openerStep = 3
+        end
+    end
+    
+    -- Step 4: On-Use Trinket (slot 13)
+    if openerStep == 3 then
+        -- Try to use trinket slot 13
+        local trinket1Start, trinket1Duration = GetInventoryItemCooldown("player", 13)
+        if trinket1Start == 0 then
+            UseInventoryItem(13)
+        end
+        openerStep = 4
+    end
+    
+    -- Step 5: Putrefy
+    if openerStep == 4 then
+        if Putrefy:IsKnownAndUsable() and GetPutrefyCharges() >= 1 then
+            CastSpellByName("Putrefy", Target:GetOMToken())
+            openerStep = 5
+            return true
+        elseif not Putrefy:IsKnown() or GetPutrefyCharges() == 0 then
+            openerStep = 5
+        end
+    end
+    
+    -- Step 6: Death Coil
+    if openerStep == 5 then
+        if DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 then
+            CastSpellByName("Death Coil", Target:GetOMToken())
+            openerStep = 6
+            return true
+        elseif GetRunicPower() < 40 then
+            openerStep = 6
+        end
+    end
+    
+    -- Step 7: Soul Reaper
+    if openerStep == 6 then
+        if SoulReaper:IsKnownAndUsable() and GetRunes() >= 1 then
+            CastSpellByName("Soul Reaper", Target:GetOMToken())
+            openerStep = 7
+            return true
+        elseif not SoulReaper:IsKnown() then
+            openerStep = 7
+        end
+    end
+    
+    -- Step 8: Death Coil
+    if openerStep == 7 then
+        if DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 then
+            CastSpellByName("Death Coil", Target:GetOMToken())
+            openerStep = 8
+            return true
+        elseif GetRunicPower() < 40 then
+            openerStep = 8
+        end
+    end
+    
+    -- Step 9: Putrefy (final opener step)
+    if openerStep == 8 then
+        if Putrefy:IsKnownAndUsable() and GetPutrefyCharges() >= 1 then
+            CastSpellByName("Putrefy", Target:GetOMToken())
+            isOpenerComplete = true
+            return true
+        else
+            isOpenerComplete = true
+        end
+    end
+    
+    return false
+end
+
+-- ============================================================================
 -- MAIN ROTATION LOOP
 -- ============================================================================
 
@@ -663,6 +831,17 @@ UnholyDKModule:Sync(function()
     
     -- Reset off-GCD defensive flag each tick
     hasUsedOffGCDDefensive = false
+    
+    -- Track combat start for opener
+    if Player:IsAffectingCombat() and combatStartTime == 0 then
+        combatStartTime = GetTime()
+        openerStep = 0
+        isOpenerComplete = false
+    elseif not Player:IsAffectingCombat() then
+        combatStartTime = 0
+        openerStep = 0
+        isOpenerComplete = false
+    end
     
     -- Check if we have a valid target
     if not Target:IsValid() or Target:IsDead() or not Target:IsHostile() then
@@ -683,15 +862,22 @@ UnholyDKModule:Sync(function()
     -- 3. Defensives
     DefensiveAPL:Execute()
     
-    -- 4. Major Cooldowns (Army, DT, etc.)
+    -- 4. Run opener if not complete (single target only)
+    if not isOpenerComplete and not ShouldUseAoE() then
+        if RunOpener() then
+            return
+        end
+    end
+    
+    -- 5. Major Cooldowns (Army, DT, etc.)
     CooldownAPL:Execute()
     
-    -- 5. AoE rotation if 3+ targets
+    -- 6. AoE rotation if 3+ targets
     if ShouldUseAoE() then
         AoEAPL:Execute()
     end
     
-    -- 6. Single target rotation
+    -- 7. Single target rotation
     SingleTargetAPL:Execute()
 end)
 
