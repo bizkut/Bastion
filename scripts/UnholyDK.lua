@@ -58,6 +58,10 @@ local Outbreak = SpellBook:GetSpell(77575)
 --   Consumes all VP and Dread Plague within 8yd for instant damage + 1 Putrefy charge.
 local Pestilence = SpellBook:GetSpell(467290)
 
+-- Forbidden Knowledge replacements (during AotD window)
+local NecroticCoil = SpellBook:GetSpell(467287)  -- Replaces Death Coil for 30s
+local Graveyard = SpellBook:GetSpell(467149)      -- Replaces Epidemic for 30s
+
 -- AoE
 local DeathAndDecay = SpellBook:GetSpell(43265)
 local VileContagion = SpellBook:GetSpell(390279)
@@ -283,6 +287,15 @@ local function IsDarkTransformationActive()
     return Player:GetAuras():FindMy(DarkTransformationBuff):IsUp()
 end
 
+-- Forbidden Knowledge talent: AotD grantsNecrotic Coil/Graveyard for 30s
+-- We need to track the time since last Army cast to determine this window
+local lastArmyCastTime = 0
+local function IsForbiddenKnowledgeActive()
+    if not ArmyOfTheDead:IsKnown() then return false end
+    -- Window lasts 30 seconds after Army is cast
+    return GetTime() - lastArmyCastTime < 30
+end
+
 -- Should we save Putrefy for Soul Reaper (when target is in execute range)?
 local function ShouldSavePutrefyForSoulReaper()
     if not SoulReaper:IsKnown() then return false end
@@ -461,6 +474,7 @@ CooldownAPL:AddSpell(
             and not Player:IsMoving()
             and IsPetAlive()  -- Ensure pet is up for DT sync
     end):SetTarget(Player):OnCast(function()
+        lastArmyCastTime = GetTime()
         -- Immediately try to cast Dark Transformation after Army
         if DarkTransformation:IsKnownAndUsable() and IsPetAlive() then
             CastSpellByName("Dark Transformation")
@@ -536,7 +550,18 @@ CooldownAPL:AddSpell(
 -- 11. Death Coil filler (extends diseases)
 -- ============================================================================
 
--- 1. Outbreak if Virulent Plague not active
+-- 1. Outbreak/Pestilence if Virulent Plague not active
+-- Use Pestilence if talented and diseases are up for burst damage + Putrefy charge
+SingleTargetAPL:AddSpell(
+    Pestilence:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Target:IsValid()
+            and self:IsInRange(Target)
+            and HasVirulentPlague(Target)
+            -- Use Pestilence to consume diseases and gain Putrefy charge
+    end):SetTarget(Target)
+)
+
 SingleTargetAPL:AddSpell(
     Outbreak:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -549,18 +574,8 @@ SingleTargetAPL:AddSpell(
 -- 2. Army of the Dead (handled in CooldownAPL)
 -- 3. Dark Transformation (handled in CooldownAPL)
 
--- 4. Putrefy if 2 charges (never cap on charges)
-SingleTargetAPL:AddSpell(
-    Putrefy:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Target:IsValid()
-            and self:IsInRange(Target)
-            and GetPutrefyCharges() >= 2
-            -- Always use at 2 charges to avoid wasting CD
-    end):SetTarget(Target)
-)
-
--- 5. Soul Reaper on cooldown (will consume Putrefy charges due to Reaping talent)
+-- 4. Soul Reaper on cooldown below 35% HP
+-- Prioritized because it provides a massive minion/disease damage buff
 SingleTargetAPL:AddSpell(
     SoulReaper:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -571,68 +586,72 @@ SingleTargetAPL:AddSpell(
     end):SetTarget(Target)
 )
 
--- 6. Putrefy if Dark Transformation CD >= 15s
--- But don't use if we should save for Soul Reaper (target in execute range)
--- Try to bank 1 charge for DT windows (use during DT or when DT on CD)
+-- 5. Putrefy if charges >= 1 and ghouls active
 SingleTargetAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
             and GetPutrefyCharges() >= 1
-            and not ShouldSavePutrefyForSoulReaper()  -- Don't use if SR coming soon in execute
-            and GetDarkTransformationCooldownRemaining() >= 15
+            and not ShouldSavePutrefyForSoulReaper()
+            and (GetDarkTransformationCooldownRemaining() >= 15 or IsDarkTransformationActive())
     end):SetTarget(Target)
 )
 
--- 7. Festering Scythe (when buff is up from previous Festering Strike)
--- Festering Scythe: FREE (no runes), 14yd cone, 2-3 Lesser Ghoul stacks, applies debuff for 25s
--- Use whenever the buff is available - it's free and always good to use
+-- 6. Necrotic Coil (Forbidden Knowledge window)
+SingleTargetAPL:AddSpell(
+    NecroticCoil:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Target:IsValid()
+            and self:IsInRange(Target)
+            and IsForbiddenKnowledgeActive()
+            and (HasSuddenDoom() or GetRunicPower() >= 40)
+    end):SetTarget(Target)
+)
+
+-- 7. Festering Scythe (when buff is up)
 SingleTargetAPL:AddSpell(
     FesteringScythe:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
-            and HasFesteringScytheBuff()  -- Must have the buff from previous FS
+            and HasFesteringScytheBuff()
     end):SetTarget(Target)
 )
 
--- 8. Death Coil if Sudden Doom proc or 80+ RP
+-- 8. Death Coil if Sudden Doom or High RP
 SingleTargetAPL:AddSpell(
     DeathCoil:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
             and (HasSuddenDoom() or GetRunicPower() >= 80)
+            and not IsForbiddenKnowledgeActive() -- Use Necrotic Coil instead if in window
     end):SetTarget(Target)
 )
 
--- 9. Festering Strike if no Lesser Ghoul stacks (and no Scythe buff)
--- Festering Strike: 2 Runes, applies 2-3 Lesser Ghoul stacks, gives buff for next FS -> Scythe
-SingleTargetAPL:AddSpell(
-    FesteringStrike:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Target:IsValid()
-            and self:IsInRange(Target)
-            and GetRunes() >= 2
-            and not HasFesteringScytheBuff()  -- Use Scythe first if buff is up
-            and not HasLesserGhoul()  -- Only use when we need more Lesser Ghoul stacks
-    end):SetTarget(Target)
-)
-
--- 10. Scourge Strike if has Lesser Ghoul stacks
--- In Midnight pre-patch: Consumes Lesser Ghoul stacks to summon ghouls, spreads VP, 30yd range
+-- 9. Scourge Strike to summon ghouls from stacks
 SingleTargetAPL:AddSpell(
     ScourgeStrike:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
             and GetRunes() >= 1
-            and HasLesserGhoul()  -- Consume stacks to summon ghouls
+            and HasLesserGhoul()
     end):SetTarget(Target)
 )
 
--- REMOVED: Clawing Shadows - It is a passive talent that buffs Scourge Strike, not an active ability.
+-- 10. Festering Strike to build Lesser Ghoul stacks
+SingleTargetAPL:AddSpell(
+    FesteringStrike:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Target:IsValid()
+            and self:IsInRange(Target)
+            and GetRunes() >= 2
+            and not HasFesteringScytheBuff()
+            and not HasLesserGhoul()
+    end):SetTarget(Target)
+)
 
 -- 11. Death Coil filler
 SingleTargetAPL:AddSpell(
@@ -641,6 +660,7 @@ SingleTargetAPL:AddSpell(
             and Target:IsValid()
             and self:IsInRange(Target)
             and GetRunicPower() >= 40
+            and not IsForbiddenKnowledgeActive()
     end):SetTarget(Target)
 )
 
@@ -659,7 +679,7 @@ SingleTargetAPL:AddSpell(
 -- 10. Epidemic filler
 -- ============================================================================
 
--- Death and Decay (Defile removed in Midnight pre-patch)
+-- 1. Death and Decay (Defile removed in Midnight pre-patch)
 AoEAPL:AddSpell(
     DeathAndDecay:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -676,7 +696,17 @@ AoEAPL:AddSpell(
     end)
 )
 
--- 4. Putrefy on cooldown
+-- 2. Pestilence if diseases active for burst damage + Putrefy charge
+AoEAPL:AddSpell(
+    Pestilence:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Target:IsValid()
+            and self:IsInRange(Target)
+            and HasVirulentPlague(Target)
+    end):SetTarget(Target)
+)
+
+-- 3. Putrefy on cooldown
 AoEAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -686,26 +716,44 @@ AoEAPL:AddSpell(
     end):SetTarget(Target)
 )
 
--- 5. Festering Scythe (when buff is up from previous Festering Strike)
--- FREE (no runes), 14yd cone, 2-3 Lesser Ghoul stacks, applies debuff for 25s
+-- 4. Graveyard (Forbidden Knowledge window)
+AoEAPL:AddSpell(
+    Graveyard:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and IsForbiddenKnowledgeActive()
+            and (HasSuddenDoom() or GetRunicPower() >= 40)
+    end):SetTarget(Player)
+)
+
+-- 5. Festering Scythe (when buff is up)
 AoEAPL:AddSpell(
     FesteringScythe:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
-            and HasFesteringScytheBuff()  -- Must have the buff from previous FS
+            and HasFesteringScytheBuff()
     end):SetTarget(Target)
 )
 
--- 6. Epidemic if Sudden Doom or 80+ RP (extends diseases)
+-- 6. Epidemic if Sudden Doom or High RP
 AoEAPL:AddSpell(
     Epidemic:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and (GetRunicPower() >= 80 or HasSuddenDoom())
+            and not IsForbiddenKnowledgeActive()
     end):SetTarget(Player)
 )
 
--- REMOVED: Clawing Shadows (Passive) - Scourge Strike handles the cleave logic naturally
+-- 7. Scourge Strike to summon ghouls and spread VP
+AoEAPL:AddSpell(
+    ScourgeStrike:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Target:IsValid()
+            and self:IsInRange(Target)
+            and GetRunes() >= 1
+            and HasLesserGhoul()
+    end):SetTarget(Target)
+)
 
 -- 8. Festering Strike if no Lesser Ghoul stacks
 AoEAPL:AddSpell(
@@ -714,26 +762,16 @@ AoEAPL:AddSpell(
             and Target:IsValid()
             and self:IsInRange(Target)
             and GetRunes() >= 2
-            and not HasLesserGhoul()  -- Only use when we need more Lesser Ghoul stacks
+            and not HasLesserGhoul()
     end):SetTarget(Target)
 )
 
--- 9. Scourge Strike if has Lesser Ghoul stacks (spreads VP in Midnight!)
-AoEAPL:AddSpell(
-    ScourgeStrike:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Target:IsValid()
-            and self:IsInRange(Target)
-            and GetRunes() >= 1
-            and HasLesserGhoul()  -- Consume stacks to summon ghouls and spread VP
-    end):SetTarget(Target)
-)
-
--- 10. Epidemic filler
+-- 9. Epidemic filler
 AoEAPL:AddSpell(
     Epidemic:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and GetRunicPower() >= 30
+            and not IsForbiddenKnowledgeActive()
     end):SetTarget(Player)
 )
 
@@ -751,50 +789,54 @@ local function RunOpener()
         isOpenerComplete = true
         return false
     end
-    
-    -- Step 1: Outbreak (30yd)
+
+    -- Step 1: Diseases (Outbreak/Pestilence)
     if openerStep == 0 then
-        if Outbreak:IsKnownAndUsable() and Outbreak:IsInRange(Target) then
+        if Pestilence:IsKnownAndUsable() and HasVirulentPlague(Target) and Pestilence:IsInRange(Target) then
+            Pestilence:Cast(Target)
+            openerStep = 1
+            return true
+        elseif Outbreak:IsKnownAndUsable() and not HasVirulentPlague(Target) and Outbreak:IsInRange(Target) then
             Outbreak:Cast(Target)
             openerStep = 1
             return true
-        elseif not Outbreak:IsKnown() then
+        elseif HasVirulentPlague(Target) then
             openerStep = 1
         end
     end
-    
-    -- Step 2: Army of the Dead (No target required)
+
+    -- Step 2: Army of the Dead
     if openerStep == 1 then
-        if ArmyOfTheDead:IsKnownAndUsable() then
+        if ArmyOfTheDead:IsKnownAndUsable() and not Player:IsMoving() then
             ArmyOfTheDead:Cast(Player)
+            lastArmyCastTime = GetTime()
             openerStep = 2
             return true
         elseif not ArmyOfTheDead:IsKnown() then
             openerStep = 2
         end
     end
-    
-    -- Step 3: Dark Transformation (No target required)
+
+    -- Step 3: Dark Transformation
     if openerStep == 2 then
-        if DarkTransformation:IsKnownAndUsable() then
+        if DarkTransformation:IsKnownAndUsable() and IsPetAlive() then
             DarkTransformation:Cast(Player)
             openerStep = 3
             return true
-        elseif not DarkTransformation:IsKnownAndUsable() then
+        elseif not DarkTransformation:IsKnown() then
             openerStep = 3
         end
     end
-    
-    -- Step 4: On-Use Trinket (slot 13)
+
+    -- Step 4: Trinket (if applicable)
     if openerStep == 3 then
-        -- Try to use trinket slot 13
         local trinket1Start, trinket1Duration = GetInventoryItemCooldown("player", 13)
         if trinket1Start == 0 then
             UseInventoryItem(13)
         end
         openerStep = 4
     end
-    
+
     -- Step 5: Putrefy
     if openerStep == 4 then
         if Putrefy:IsKnownAndUsable() and GetPutrefyCharges() >= 1 and Putrefy:IsInRange(Target) then
@@ -806,9 +848,14 @@ local function RunOpener()
         end
     end
     
-    -- Step 6: Death Coil
+    -- Step 6: Necrotic Coil (Forbidden Knowledge window)
+    -- If FK is active, use Necrotic Coil. Otherwise use standard Death Coil.
     if openerStep == 5 then
-        if DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and DeathCoil:IsInRange(Target) then
+        if NecroticCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and NecroticCoil:IsInRange(Target) and IsForbiddenKnowledgeActive() then
+            NecroticCoil:Cast(Target)
+            openerStep = 6
+            return true
+        elseif DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and DeathCoil:IsInRange(Target) then
             DeathCoil:Cast(Target)
             openerStep = 6
             return true
@@ -828,13 +875,17 @@ local function RunOpener()
         end
     end
     
-    -- Step 8: Death Coil
+    -- Step 8: Necrotic Coil (Step 2)
     if openerStep == 7 then
-        if DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and DeathCoil:IsInRange(Target) then
+        if NecroticCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and NecroticCoil:IsInRange(Target) and IsForbiddenKnowledgeActive() then
+            NecroticCoil:Cast(Target)
+            openerStep = 8
+            return true
+        elseif DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and DeathCoil:IsInRange(Target) then
             DeathCoil:Cast(Target)
             openerStep = 8
             return true
-        elseif GetRunicPower() < 40 then
+        else
             openerStep = 8
         end
     end
