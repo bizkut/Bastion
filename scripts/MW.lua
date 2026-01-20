@@ -1312,7 +1312,7 @@ VivifyAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and ShouldUseEnvelopingMist(EnvelopeLowest)
-            --and Player:GetAuras():FindMy(ThunderFocusTea):IsUp() -- Only cast with TFT buff active
+            and Player:GetAuras():FindMy(ThunderFocusTea):IsUp() -- Only cast with TFT buff active
             and (not Player:IsCastingOrChanneling() or isChannelingSoothingMistOnTarget(EnvelopeLowest))
             and not Player:IsMoving()
             and not stopCasting()
