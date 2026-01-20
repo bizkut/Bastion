@@ -66,6 +66,42 @@ function ObjectManager:GetList(name)
     return self._lists[name].list
 end
 
+-- Process a unit for standard lists
+---@param object table
+function ObjectManager:ProcessUnit(object)
+    local unit = Bastion.UnitManager:GetObject(ObjectGUID(object))
+    if not unit then
+        unit = Bastion.Unit:New(object)
+        Bastion.UnitManager:SetObject(unit)
+    end
+    if unit:GetID() == 120651 then
+        self.explosives:push(unit)
+    elseif unit:IsPlayer() and (unit:IsInParty() or unit == Bastion.UnitManager['player']) then
+        self.friends:push(unit)
+        -- add Brannt as friend
+    elseif unit:GetID() == 210759 then
+        self.friends:push(unit)
+    elseif unit:GetID() == 209057 then -- Captain Garric
+        self.friends:push(unit)
+    elseif unit:GetID() == 209059 then -- Meredy
+        self.friends:push(unit)
+    elseif unit:GetID() == 209065 then -- Austin
+        self.friends:push(unit)
+    elseif unit:GetID() == 214390 then -- Shuja
+        self.friends:push(unit)
+    elseif unit:GetID() == 210318 then -- Speaker Kuldas
+        self.friends:push(unit)
+    elseif unit:GetID() == 229296 then -- Orb of Ascendance
+        self.enemies:push(unit)
+    elseif unit:IsEnemy() then
+        self.enemies:push(unit)
+
+        if unit:InCombatOdds() > 80 then
+            self.activeEnemies:push(unit)
+        end
+    end
+end
+
 -- Refresh all lists
 ---@return nil
 function ObjectManager:Refresh()
@@ -75,43 +111,25 @@ function ObjectManager:Refresh()
     self.explosives:clear()
     self:ResetLists()
 
-    local objects = Objects()
+    if next(self._lists) then
+        local objects = Objects()
 
-    for _, object in pairs(objects) do
-        self:EnumLists(object)
+        for _, object in pairs(objects) do
+            self:EnumLists(object)
 
-        if ({ [5] = true,[6] = true,[7] = true })[ObjectType(object)] then
-            local unit = Bastion.UnitManager:GetObject(ObjectGUID(object))
-            if not unit then
-                unit = Bastion.Unit:New(object)
-                Bastion.UnitManager:SetObject(unit)
+            if ({ [5] = true,[6] = true,[7] = true })[ObjectType(object)] then
+                self:ProcessUnit(object)
             end
-            if unit:GetID() == 120651 then
-                self.explosives:push(unit)
-            elseif unit:IsPlayer() and (unit:IsInParty() or unit == Bastion.UnitManager['player']) then
-                self.friends:push(unit)
-				-- add Brannt as friend
-            elseif unit:GetID() == 210759 then
-                self.friends:push(unit)
-            elseif unit:GetID() == 209057 then -- Captain Garric
-                self.friends:push(unit)
-            elseif unit:GetID() == 209059 then -- Meredy
-                self.friends:push(unit)
-            elseif unit:GetID() == 209065 then -- Austin
-                self.friends:push(unit)
-            elseif unit:GetID() == 214390 then -- Shuja
-                self.friends:push(unit)
-            elseif unit:GetID() == 210318 then -- Speaker Kuldas
-                self.friends:push(unit)
-            elseif unit:GetID() == 229296 then -- Orb of Ascendance
-                self.enemies:push(unit)
-            elseif unit:IsEnemy() then
-                self.enemies:push(unit)
-
-                if unit:InCombatOdds() > 80 then
-                    self.activeEnemies:push(unit)
-                end
-            end
+        end
+    else
+        for _, object in pairs(Objects(5)) do
+            self:ProcessUnit(object)
+        end
+        for _, object in pairs(Objects(6)) do
+            self:ProcessUnit(object)
+        end
+        for _, object in pairs(Objects(7)) do
+            self:ProcessUnit(object)
         end
     end
 end
