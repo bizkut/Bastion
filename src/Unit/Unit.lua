@@ -187,10 +187,7 @@ end
 ---@param unit Unit
 ---@return number
 function Unit:GetDistance(unit)
-    local pself = self:GetPosition()
-    local punit = unit:GetPosition()
-
-    return pself:Distance(punit)
+    return ObjectDistance(self.unit, unit.unit)
 end
 
 -- Is the unit dead
@@ -711,10 +708,9 @@ end
 ---@param unit Unit
 ---@return boolean
 function Unit:InMelee(unit)
-    local x, y, z = ObjectPosition(self.unit)
-    local x2, y2, z2 = ObjectPosition(unit.unit)
+    local dist = self:GetDistance(unit)
 
-    if not x or not x2 then
+    if not dist then
         return false
     end
 
@@ -725,7 +721,6 @@ function Unit:InMelee(unit)
         return false
     end
 
-    local dist = math.sqrt((x - x2) ^ 2 + (y - y2) ^ 2 + (z - z2) ^ 2)
     local maxDist = math.max((scr + 1.3333) + ucr, 5.0)
     maxDist = maxDist + 1.0 + self:GetMeleeBoost()
 
