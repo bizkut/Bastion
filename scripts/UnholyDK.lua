@@ -15,34 +15,68 @@ local ItemBook = Bastion.ItemBook:New()
 local MythicPlusUtils = Bastion.require("MythicPlusUtils"):New()
 
 -- ============================================================================
--- SPELL DEFINITIONS (Midnight Pre-Patch Rework)
+-- SPELL DEFINITIONS (Midnight Pre-Patch - Detailed Mechanics)
 -- ============================================================================
 
 -- Core Damage Abilities
-local FesteringStrike = SpellBook:GetSpell(85948)  -- Now applies buff for next SS to summon Lesser Ghoul
-local FesteringScythe = SpellBook:GetSpell(455397)  -- No rune cost, applies disease tick rate debuff
-local ScourgeStrike = SpellBook:GetSpell(55090)  -- 30yd range, consumes Lesser Ghoul stacks, spreads VP
-local ClawingShadows = SpellBook:GetSpell(207311)  -- Now buffs SS to cleave, doesn't replace SS
-local DeathCoil = SpellBook:GetSpell(47541)  -- Extends VP and Dread Plague duration
-local Epidemic = SpellBook:GetSpell(207317)  -- Extends VP and Dread Plague duration
-local SoulReaper = SpellBook:GetSpell(343294)  -- Only usable below 35% HP, applies pet/disease damage debuff
-local Putrefy = SpellBook:GetSpell(1247378)  -- New rotational cooldown
+-- Festering Strike: Deals Physical damage, applies 2-3 stacks of Lesser Ghoul buff.
+--   Next FS becomes Festering Scythe if you have the buff.
+local FesteringStrike = SpellBook:GetSpell(85948)
+
+-- Festering Scythe: Buff-based transformation of Festering Strike.
+--   Costs NO runes, 14yd cone, 2-3 Lesser Ghoul stacks, makes diseases tick faster for 25s.
+local FesteringScythe = SpellBook:GetSpell(455397)
+local FesteringScytheBuff = SpellBook:GetSpell(455397)  -- Buff allowing next FS to become Scythe
+
+-- Scourge Strike: Consumes 1 Lesser Ghoul stack to summon a Lesser Ghoul.
+--   30yd range in Midnight. Spreads VP to nearby target if not already applied.
+local ScourgeStrike = SpellBook:GetSpell(55090)
+
+-- Clawing Shadows: Each SS cast increases targets hit by next SS (stacking, caps at 5-7).
+--   Reduces damage by 25% per target hit. NOT a replacement for SS.
+local ClawingShadows = SpellBook:GetSpell(207311)
+
+-- Death Coil: 30yd single-target RP spender. Extends VP and Dread Plague duration.
+local DeathCoil = SpellBook:GetSpell(47541)
+
+-- Epidemic: 40yd (not 30!) AoE RP spender. Extends VP and Dread Plague on all targets.
+local Epidemic = SpellBook:GetSpell(207317)
+
+-- Soul Reaper: Only usable below 35% HP (unless Reaping talented).
+--   Applies debuff increasing pet and disease damage for 8s.
+local SoulReaper = SpellBook:GetSpell(343294)
+
+-- Putrefy: Sacrifices your OLDEST active Lesser Ghoul for ST + AoE damage.
+--   Needs active ghouls to use! Lost damage if used too soon after summoning.
+local Putrefy = SpellBook:GetSpell(1247378)
 
 -- Disease Application
-local Outbreak = SpellBook:GetSpell(77575)  -- May be replaced by Pestilence talent
-local Pestilence = SpellBook:GetSpell(467290)  -- Replaces Outbreak, consumes diseases instead of applying
+-- Outbreak: Basic disease application, no cooldown.
+local Outbreak = SpellBook:GetSpell(77575)
+
+-- Pestilence: Capstone talent replacing Outbreak.
+--   Consumes all VP and Dread Plague within 8yd for instant damage + 1 Putrefy charge.
+local Pestilence = SpellBook:GetSpell(467290)
 
 -- AoE
 local DeathAndDecay = SpellBook:GetSpell(43265)
 local VileContagion = SpellBook:GetSpell(390279)
 
 -- Major Cooldowns
-local DarkTransformation = SpellBook:GetSpell(63560)  -- 12s duration
-local ArmyOfTheDead = SpellBook:GetSpell(42650)  -- 6s ghoul duration, 6 ghouls
-local SummonGargoyle = SpellBook:GetSpell(49206)
+-- Dark Transformation: 15s duration, transforms pet, empowers minions for 30s (CotD).
+local DarkTransformation = SpellBook:GetSpell(63560)
+
+-- Army of the Dead: Summons 8 ghouls over 3.5s, each lasting 15s (19s total duration).
+--   Also summons 1 Magus if talented.
+local ArmyOfTheDead = SpellBook:GetSpell(42650)
+
+local SummonGargoyle = SpellBook:GetSpell(49206)  -- Instantly Putrefies 2 ghouls on Army
+local RaiseAbomination = SpellBook:GetSpell(288853)  -- Alternative to Gargoyle
 local UnholyAssault = SpellBook:GetSpell(207289)
 local RaiseDead = SpellBook:GetSpell(46585)
-local Reanimation = SpellBook:GetSpell(467298)  -- New capstone, summons Magi
+
+-- Reanimation: Capstone - Putrefied ghouls summon Magus of the Dead for 15s.
+local Reanimation = SpellBook:GetSpell(467298)
 
 -- Utility
 local DeathGrip = SpellBook:GetSpell(49576)
@@ -73,19 +107,25 @@ local GCD = SpellBook:GetSpell(61304)
 -- ============================================================================
 
 -- Buffs
-local SuddenDoom = SpellBook:GetSpell(81340)  -- Now procs from Dread Plague, +35% DC/Epidemic damage
+-- Sudden Doom: Procs from Dread Plague ticks (35% base chance, unique system).
+--   Next DC/Epidemic costs 15 less RP and deals extra damage.
+local SuddenDoom = SpellBook:GetSpell(81340)
 local DarkTransformationBuff = SpellBook:GetSpell(63560)
 local RunicCorruption = SpellBook:GetSpell(51460)
 local DeathAndDecayBuff = SpellBook:GetSpell(188290)
 local UnholyAssaultBuff = SpellBook:GetSpell(207289)
-local LesserGhoulBuff = SpellBook:GetSpell(1254252)  -- Stacks from Festering Strike, consumed by Scourge Strike
-local ClawingShadowsBuff = SpellBook:GetSpell(207311)  -- Stacking buff allowing SS to cleave
+
+-- Lesser Ghoul: Stacks from Festering Strike/Scythe, consumed by Scourge Strike.
+local LesserGhoulBuff = SpellBook:GetSpell(1254252)
+
+-- Clawing Shadows: Stacking buff increasing SS target count (caps at 5-7).
+local ClawingShadowsBuff = SpellBook:GetSpell(207311)
 
 -- Debuffs
 local VirulentPlague = SpellBook:GetSpell(191587)
-local DreadPlague = SpellBook:GetSpell(458040)  -- Secondary disease
-local FesteringScytheDebuff = SpellBook:GetSpell(455397)  -- Increases disease tick rate
-local SoulReaperDebuff = SpellBook:GetSpell(343294)  -- Increases pet and disease damage
+local DreadPlague = SpellBook:GetSpell(458040)  -- Applied by Superstrain, can generate RP
+local FesteringScytheDebuff = SpellBook:GetSpell(455397)  -- Increases disease tick rate for 25s
+local SoulReaperDebuff = SpellBook:GetSpell(343294)  -- +pet/disease damage for 8s
 
 -- ============================================================================
 -- STATE VARIABLES
@@ -176,6 +216,7 @@ local function HasSuddenDoom()
 end
 
 -- Lesser Ghoul stacks (from Festering Strike, consumed by Scourge Strike)
+-- Each SS consumes 1 stack to summon a Lesser Ghoul minion
 local function GetLesserGhoulStacks()
     local aura = Player:GetAuras():FindMy(LesserGhoulBuff)
     if aura:IsUp() then
@@ -188,7 +229,12 @@ local function HasLesserGhoul()
     return GetLesserGhoulStacks() > 0
 end
 
--- Clawing Shadows buff stacks (allows Scourge Strike to cleave)
+-- Festering Scythe buff (after casting Festering Strike, next FS becomes Scythe)
+local function HasFesteringScytheBuff()
+    return Player:GetAuras():FindMy(FesteringScytheBuff):IsUp()
+end
+
+-- Clawing Shadows buff stacks (increases SS target count, caps at 5-7)
 local function GetClawingShadowsStacks()
     local aura = Player:GetAuras():FindMy(ClawingShadowsBuff)
     if aura:IsUp() then
@@ -539,15 +585,15 @@ SingleTargetAPL:AddSpell(
     end):SetTarget(Target)
 )
 
--- 7. Festering Scythe if target missing debuff or about to expire
--- Note: Festering Scythe no longer costs runes in Midnight pre-patch!
+-- 7. Festering Scythe (when buff is up from previous Festering Strike)
+-- Festering Scythe: FREE (no runes), 14yd cone, 2-3 Lesser Ghoul stacks, applies debuff for 25s
+-- Use whenever the buff is available - it's free and always good to use
 SingleTargetAPL:AddSpell(
     FesteringScythe:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
-            -- No rune cost in Midnight pre-patch
-            and (not HasFesteringScytheDebuff(Target) or GetFesteringScytheDuration(Target) < 1.5)
+            and HasFesteringScytheBuff()  -- Must have the buff from previous FS
     end):SetTarget(Target)
 )
 
@@ -561,14 +607,15 @@ SingleTargetAPL:AddSpell(
     end):SetTarget(Target)
 )
 
--- 9. Festering Strike if no Lesser Ghoul stacks
--- In Midnight pre-patch: Festering Strike applies buff allowing next SS to summon Lesser Ghoul
+-- 9. Festering Strike if no Lesser Ghoul stacks (and no Scythe buff)
+-- Festering Strike: 2 Runes, applies 2-3 Lesser Ghoul stacks, gives buff for next FS -> Scythe
 SingleTargetAPL:AddSpell(
     FesteringStrike:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
             and GetRunes() >= 2
+            and not HasFesteringScytheBuff()  -- Use Scythe first if buff is up
             and not HasLesserGhoul()  -- Only use when we need more Lesser Ghoul stacks
     end):SetTarget(Target)
 )
@@ -585,17 +632,7 @@ SingleTargetAPL:AddSpell(
     end):SetTarget(Target)
 )
 
--- Clawing Shadows - Now buffs Scourge Strike to cleave, doesn't replace SS
--- Use to build up cleave stacks for AoE situations
-SingleTargetAPL:AddSpell(
-    ClawingShadows:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Target:IsValid()
-            and self:IsInRange(Target)
-            and GetRunes() >= 1
-            and ShouldUseAoE()  -- Only use in AoE to build cleave stacks
-    end):SetTarget(Target)
-)
+-- REMOVED: Clawing Shadows - It is a passive talent that buffs Scourge Strike, not an active ability.
 
 -- 11. Death Coil filler
 SingleTargetAPL:AddSpell(
@@ -649,15 +686,14 @@ AoEAPL:AddSpell(
     end):SetTarget(Target)
 )
 
--- 5. Festering Scythe if target missing debuff or expiring
--- Note: No rune cost in Midnight pre-patch!
+-- 5. Festering Scythe (when buff is up from previous Festering Strike)
+-- FREE (no runes), 14yd cone, 2-3 Lesser Ghoul stacks, applies debuff for 25s
 AoEAPL:AddSpell(
     FesteringScythe:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
-            -- No rune cost in Midnight pre-patch
-            and (not HasFesteringScytheDebuff(Target) or GetFesteringScytheDuration(Target) < 1.5)
+            and HasFesteringScytheBuff()  -- Must have the buff from previous FS
     end):SetTarget(Target)
 )
 
@@ -669,16 +705,7 @@ AoEAPL:AddSpell(
     end):SetTarget(Player)
 )
 
--- 7. Clawing Shadows to build Scourge Strike cleave stacks
-AoEAPL:AddSpell(
-    ClawingShadows:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Target:IsValid()
-            and self:IsInRange(Target)
-            and GetRunes() >= 1
-            -- Build cleave stacks for SS
-    end):SetTarget(Target)
-)
+-- REMOVED: Clawing Shadows (Passive) - Scourge Strike handles the cleave logic naturally
 
 -- 8. Festering Strike if no Lesser Ghoul stacks
 AoEAPL:AddSpell(
