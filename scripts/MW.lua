@@ -1189,12 +1189,12 @@ local function TFTEnvelope()
                         end
                         CastSpellByName("Thunder Focus Tea", "player")
                         -- SpellCancelQueuedSpell()
-                    elseif ThunderFocusTea:GetCharges() < 1 and SoothingMist:IsKnownAndUsable() then
-                        CastSpellByName("Soothing Mist", target:GetOMToken())
+                    end
+                    -- Only cast EnvelopingMist when ThunderFocusTea buff is active
+                    if Player:GetAuras():FindMy(ThunderFocusTea):IsUp() then
+                        CastSpellByName("Enveloping Mist", target:GetOMToken())
                         -- SpellCancelQueuedSpell()
                     end
-                    CastSpellByName("Enveloping Mist", target:GetOMToken())
-                    -- SpellCancelQueuedSpell()
                     break -- Found a valid target, terminate the loops
                 end
             end
@@ -1312,6 +1312,7 @@ VivifyAPL:AddSpell(
     EnvelopingMist:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and ShouldUseEnvelopingMist(EnvelopeLowest)
+            --and Player:GetAuras():FindMy(ThunderFocusTea):IsUp() -- Only cast with TFT buff active
             and (not Player:IsCastingOrChanneling() or isChannelingSoothingMistOnTarget(EnvelopeLowest))
             and not Player:IsMoving()
             and not stopCasting()
@@ -1830,7 +1831,7 @@ RestoMonkModule:Sync(function()
         --     _G.SpellStopCasting()
         --     return
         -- end
-        if soothingTarget:GetRealizedHP() < 50 and ShouldUseEnvelopingMist(soothingTarget) and EnvelopingMist:GetTimeSinceLastCastAttempt() >= 0.5 then
+        if soothingTarget:GetRealizedHP() < 50 and ShouldUseEnvelopingMist(soothingTarget) and Player:GetAuras():FindMy(ThunderFocusTea):IsUp() and EnvelopingMist:GetTimeSinceLastCastAttempt() >= 0.5 then
             CastSpellByName("Enveloping Mist", soothingTarget:GetOMToken())
             -- SpellCancelQueuedSpell()
             return
