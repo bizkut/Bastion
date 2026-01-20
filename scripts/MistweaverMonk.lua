@@ -11,6 +11,13 @@ local Target = Bastion.UnitManager:Get('target')
 local SpellBook = Bastion.SpellBook:New()
 local ItemBook = Bastion.ItemBook:New()
 
+local function waitingGCD()
+    return Player:GetGCD() * 1000 < (select(4, GetNetStats()) and select(3, GetNetStats()))
+end
+local function waitingGCDcast(spell)
+    return spell:GetTimeSinceLastCastAttempt() > Player:GetGCD()
+end
+
 local MythicPlusUtils = Bastion.require("MythicPlusUtils"):New()
 
 -- Spells
@@ -100,17 +107,6 @@ local isCastingCrackling = false
 local hasUsedOffGCDDefensive = false
 local hasUsedOffGCDInterrupt = false
 local hasUsedOffGCDDps = false
-
--- Add this helper function near the top of the file
-
--- Add this helper function near the top of the file, after the SpellBook initialization
-
-local function waitingGCD()
-    return Player:GetGCD() * 1000 < (select(4, GetNetStats()) and select(3, GetNetStats()))
-end
-local function waitingGCDcast(spell)
-    return spell:GetTimeSinceLastCastAttempt() > Player:GetGCD()
-end
 
 local function GetRandomInterruptDelay()
     return math.random(40, 60)

@@ -10,6 +10,14 @@ local Target = Bastion.UnitManager:Get('target')
 local SpellBook = Bastion.SpellBook:New()
 local ItemBook = Bastion.ItemBook:New()
 
+local function waitingGCD()
+    return Player:GetGCD() * 1000 < (select(4, GetNetStats()) and select(3, GetNetStats()))
+end
+local function waitingGCDcast(spell)
+    --return spell:GetTimeSinceLastCastAttempt() >= gcdDuration() -- Player:GetGCD()
+    return spell:GetTimeSinceLastCastAttempt() >= Player:GetGCD()
+end
+
 local MythicPlusUtils = Bastion.require("MythicPlusUtils"):New()
 local LastSpell = Bastion.require("LastSpell")
 local lastSpell = Bastion.LastSpell:Get()
@@ -122,14 +130,6 @@ local function gcdDuration()
         return 1.25
     end
     return info.duration
-end
-
-local function waitingGCD()
-    return Player:GetGCD() * 1000 < (select(4, GetNetStats()) and select(3, GetNetStats()))
-end
-local function waitingGCDcast(spell)
-    --return spell:GetTimeSinceLastCastAttempt() >= gcdDuration() -- Player:GetGCD()
-    return spell:GetTimeSinceLastCastAttempt() >= Player:GetGCD()
 end
 
 local function GetRandomInterruptDelay()
