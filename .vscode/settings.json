@@ -1,0 +1,12 @@
+{
+    "Lua.diagnostics.globals": [
+        "UIParent",
+        "SlashCmdList",
+        "Object",
+        "UIFrameFadeOut",
+        "UIFrameFadeIn",
+        "SetCVar",
+        "GetCVar"
+    ],
+    "Lua.type.weakUnionCheck": true
+}

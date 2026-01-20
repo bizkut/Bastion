@@ -1108,6 +1108,12 @@ local function NeedsUrgentHealing()
 end
 
 local function TFTEnvelope()
+    -- Guard against double casting EnvelopingMist when TFT buff is active (no GCD)
+    -- If EnvelopingMist was cast recently, skip this tick to prevent race condition
+    if EnvelopingMist:GetTimeSinceLastCastAttempt() < 0.5 then
+        return
+    end
+    
     --local envelopingTarget = Bastion.UnitManager:Get('none')
     local busterTarget = BusterTargetWithTFT
     local tankTarget = Bastion.UnitManager:Get('none')
@@ -1824,7 +1830,7 @@ RestoMonkModule:Sync(function()
         --     _G.SpellStopCasting()
         --     return
         -- end
-        if soothingTarget:GetRealizedHP() < 50 and ShouldUseEnvelopingMist(soothingTarget) then
+        if soothingTarget:GetRealizedHP() < 50 and ShouldUseEnvelopingMist(soothingTarget) and EnvelopingMist:GetTimeSinceLastCastAttempt() >= 0.5 then
             CastSpellByName("Enveloping Mist", soothingTarget:GetOMToken())
             -- SpellCancelQueuedSpell()
             return
