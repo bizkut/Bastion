@@ -59,13 +59,13 @@ local Putrefy = SpellBook:GetSpell(1247378)
 -- Outbreak: Basic disease application, no cooldown.
 local Outbreak = SpellBook:GetSpell(77575)
 
--- Pestilence: Capstone talent replacing Outbreak.
---   Consumes all VP and Dread Plague within 8yd for instant damage + 1 Putrefy charge.
-local Pestilence = SpellBook:GetSpell(467290)
+-- Pestilence: Available after Dark Transformation (replaces Outbreak temporarily).
+--   Deals 150% of remaining DoT damage. Grants 1 Putrefy charge.
+local Pestilence = SpellBook:GetSpell(1271974)
 
 -- Forbidden Knowledge replacements (during AotD window)
-local NecroticCoil = SpellBook:GetSpell(467287)  -- Replaces Death Coil for 30s
-local Graveyard = SpellBook:GetSpell(467149)      -- Replaces Epidemic for 30s
+local NecroticCoil = SpellBook:GetSpell(1242174)  -- Replaces Death Coil for 30s
+local Graveyard = SpellBook:GetSpell(1263602)       -- Replaces Epidemic for 30s
 
 -- AoE
 local DeathAndDecay = SpellBook:GetSpell(43265)
@@ -79,16 +79,20 @@ local DarkTransformation = SpellBook:GetSpell(63560)
 --   Also summons 1 Magus if talented.
 local ArmyOfTheDead = SpellBook:GetSpell(42650)
 
-local SummonGargoyle = SpellBook:GetSpell(49206)  -- Auto-Putrefies 2 ghouls, ramps damage with RP spent
-local RaiseAbomination = SpellBook:GetSpell(288853)  -- Auto-Putrefies 2 ghouls, +20% minion damage aura
+local SummonGargoyle = SpellBook:GetSpell(49206)  -- Ramps damage with RP spent (no longer auto-Putrefy in Midnight)
+local RaiseAbomination = SpellBook:GetSpell(288853)  -- +20% minion damage aura (no longer auto-Putrefy in Midnight)
 local UnholyAssault = SpellBook:GetSpell(207289)
 local RaiseDead = SpellBook:GetSpell(46585)
 
+-- Scythe of Decay: Auto-casts Death and Decay when using Festering Scythe (if talented)
+local ScytheOfDecay = SpellBook:GetSpell(1242561)  -- Talent: auto-casts DnD on Festering Scythe
+
 -- Reanimation: Capstone - Putrefied ghouls summon Magus of the Dead for 15s.
-local Reanimation = SpellBook:GetSpell(467298)
+local Reanimation = SpellBook:GetSpell(1256813)
 
 -- San'layn talent: prioritize RP spending during Dark Transformation
-local Sanlayn = SpellBook:GetSpell(467288)
+-- Vampiric Strike is the key ability for San'layn hero talent
+local VampiricStrike = SpellBook:GetSpell(433901)
 
 -- Racial Abilities (for opener)
 local BloodFury = SpellBook:GetSpell(33697)       -- Orc
@@ -143,7 +147,7 @@ local ClawingShadowsBuff = SpellBook:GetSpell(207311)
 
 -- Debuffs
 local VirulentPlague = SpellBook:GetSpell(191587)
-local DreadPlague = SpellBook:GetSpell(458040)  -- Applied by Superstrain, can generate RP
+local DreadPlague = SpellBook:GetSpell(1240996)  -- Applied by Outbreak, single-target DoT
 local FesteringScytheDebuff = SpellBook:GetSpell(455397)  -- Increases disease tick rate for 25s
 local SoulReaperDebuff = SpellBook:GetSpell(343294)  -- +pet/disease damage for 8s
 
@@ -335,8 +339,8 @@ end
 local function ShouldSpendRunicPower()
     -- Always spend during Gargoyle (ramping damage)
     if IsGargoyleActive() then return true end
-    -- Always spend during DT with San'layn talent (maximize RP expenditure)
-    if Sanlayn:IsKnown() and IsDarkTransformationActive() then return true end
+    -- Always spend during DT with San'layn hero talent (maximize RP expenditure)
+    if VampiricStrike:IsKnown() and IsDarkTransformationActive() then return true end
     -- Always spend at 80+ RP to avoid cap
     if GetRunicPower() >= 80 then return true end
     -- Only spend when 3+ runes are recharging (maximize rune recharge rate)
@@ -620,17 +624,29 @@ SingleTargetAPL:AddSpell(
 -- 2. Army of the Dead (handled in CooldownAPL)
 -- 3. Dark Transformation (handled in CooldownAPL)
 
--- 4. Putrefy if 2 charges (never cap)
+-- 4. Pestilence during DT (replaces Outbreak, deals 150% DoT damage, grants Putrefy charge)
+SingleTargetAPL:AddSpell(
+    Pestilence:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Target:IsValid()
+            and self:IsInRange(Target)
+            and IsDarkTransformationActive()
+            and HasVirulentPlague(Target)
+    end):SetTarget(Target)
+)
+
+-- 5. Putrefy if 2 charges (never cap) - but NOT in execute (Soul Reaper auto-consumes)
 SingleTargetAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
             and GetPutrefyCharges() >= 2
+            and Target:GetHP() >= 35  -- Don't use in execute, Soul Reaper consumes
     end):SetTarget(Target)
 )
 
--- 5. Putrefy during Dark Transformation (Commander of the Dead 50% buff)
+-- 6. Putrefy during Dark Transformation (Commander of the Dead 50% buff) - but NOT in execute
 SingleTargetAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -638,10 +654,11 @@ SingleTargetAPL:AddSpell(
             and self:IsInRange(Target)
             and GetPutrefyCharges() >= 1
             and IsDarkTransformationActive()
+            and Target:GetHP() >= 35  -- Don't use in execute, Soul Reaper consumes
     end):SetTarget(Target)
 )
 
--- 6. Putrefy if plagues missing (Blightburst will apply them)
+-- 7. Putrefy if plagues missing (Blightburst will apply them)
 SingleTargetAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -652,7 +669,8 @@ SingleTargetAPL:AddSpell(
     end):SetTarget(Target)
 )
 
--- 7. Soul Reaper if <35% HP OR Reaping proc (from DT with Reaping talent)
+-- 5. Soul Reaper if <35% HP OR Reaping proc
+-- NOTE: Soul Reaper AUTO-CONSUMES all Putrefy charges in execute (no manual Putrefy needed below 35%)
 SingleTargetAPL:AddSpell(
     SoulReaper:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -758,12 +776,13 @@ SingleTargetAPL:AddSpell(
 -- Death and Decay REMOVED from AoE rotation (Midnight rework - AoE decoupled from DnD)
 -- Can still be cast manually for utility (Grip of the Dead slow)
 
--- 1. Pestilence if diseases active for burst damage + Putrefy charge
+-- 1. Pestilence (only during Dark Transformation - replaces Outbreak, deals 150% DoT damage)
 AoEAPL:AddSpell(
     Pestilence:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
+            and IsDarkTransformationActive()  -- Only available after DT
             and HasVirulentPlague(Target)
     end):SetTarget(Target)
 )
