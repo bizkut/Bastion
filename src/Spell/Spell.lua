@@ -119,12 +119,12 @@ end
 function Spell:GetFullRechargeTime()
     if C_Spell.GetSpellCooldown then
         local info = C_Spell.GetSpellCooldown(self:GetID())
-        if info.isEnabled == 0 then
+        if not info or info.isEnabled == 0 then
             return 0
         end
 
         local chargeInfo = C_Spell.GetSpellCharges(self:GetID())
-        if chargeInfo.currentCharges == chargeInfo.maxCharges then
+        if not chargeInfo or chargeInfo.currentCharges == chargeInfo.maxCharges then
             return 0
         end
 
@@ -516,6 +516,9 @@ end
 function Spell:GetChargesFractional()
     if C_Spell.GetSpellCharges then
         local info = C_Spell.GetSpellCharges(self:GetID())
+        if not info then
+            return 0
+        end
 
         if info.currentCharges == info.maxCharges then
             return info.maxCharges
