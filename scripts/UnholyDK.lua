@@ -14,6 +14,9 @@ local ItemBook = Bastion.ItemBook:New()
 -- Utils
 local MythicPlusUtils = Bastion.require("MythicPlusUtils"):New()
 
+-- Items
+local TemperedPotion = ItemBook:GetItem(212265)  -- Combat potion for opener
+
 -- ============================================================================
 -- SPELL DEFINITIONS (Midnight Pre-Patch - Detailed Mechanics)
 -- ============================================================================
@@ -815,10 +818,11 @@ local function RunOpener()
         openerStep = 4
     end
 
-    -- Step 5: Combat Potion
+    -- Step 5: Combat Potion (Tempered Potion)
     if openerStep == 4 then
-        -- Attempt to use combat potion (slot varies, commonly in bags)
-        -- This is a placeholder - potions are typically macro'd or handled externally
+        if TemperedPotion:IsUsable() then
+            TemperedPotion:Use()
+        end
         openerStep = 5
     end
 
