@@ -1,5 +1,5 @@
 -- Unholy Death Knight M+ Script for Bastion
--- TWW S3 Talents: CwPAAAAAAAAAAAAAAAAAAAAAAAYmhZMmZYWmZmZaYMmZGDAAAAAAAAzMYGAsMMzsNzMGGgFzCMEwsxQjFMgZAYmZmhBwMYG
+-- Midnight Pre-patch Unholy DK M+ Talents: CwPAAAAAAAAAAAAAAAAAAAAAAAYmZMjZAz2MzMTDzMzYGAAAAAAAAYGMzAglZMmtZmxMzMgNzihBAzGDNWwAmBAmZGzAwMMD
 
 local Tinkr, Bastion = ...
 
