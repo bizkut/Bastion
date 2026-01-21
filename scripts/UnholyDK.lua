@@ -535,33 +535,22 @@ CooldownAPL:AddSpell(
 )
 
 -- ============================================================================
--- SINGLE TARGET APL (Midnight Pre-Patch Rework)
+-- SINGLE TARGET APL (Wowhead Midnight Priority)
 -- Priority:
--- 1. Outbreak if VP not active (or Pestilence if talented)
+-- 1. Outbreak if VP not active
 -- 2. Army of the Dead on cooldown (in CooldownAPL)
 -- 3. Dark Transformation on cooldown (in CooldownAPL)
--- 4. Putrefy if 2 charges (never cap)
--- 5. Soul Reaper if target < 35% HP
+-- 4. Putrefy if 2 charges
+-- 5. Soul Reaper on cooldown
 -- 6. Putrefy if DT CD >= 15s
--- 7. Festering Scythe if debuff missing or expiring (no rune cost now!)
--- 8. Death Coil if Sudden Doom or 80+ RP (extends diseases)
--- 9. Festering Strike if no Lesser Ghoul stacks (applies buff for SS)
--- 10. Scourge Strike if has Lesser Ghoul stacks (consumes stacks, spreads VP)
--- 11. Death Coil filler (extends diseases)
+-- 7. Festering Scythe if debuff missing or expiring
+-- 8. Death Coil if Sudden Doom or 80+ RP
+-- 9. Festering Strike if no Lesser Ghoul stacks
+-- 10. Scourge Strike if has Lesser Ghoul stacks
+-- 11. Death Coil filler
 -- ============================================================================
 
--- 1. Outbreak/Pestilence if Virulent Plague not active
--- Use Pestilence if talented and diseases are up for burst damage + Putrefy charge
-SingleTargetAPL:AddSpell(
-    Pestilence:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Target:IsValid()
-            and self:IsInRange(Target)
-            and HasVirulentPlague(Target)
-            -- Use Pestilence to consume diseases and gain Putrefy charge
-    end):SetTarget(Target)
-)
-
+-- 1. Outbreak if VP not active
 SingleTargetAPL:AddSpell(
     Outbreak:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -574,27 +563,34 @@ SingleTargetAPL:AddSpell(
 -- 2. Army of the Dead (handled in CooldownAPL)
 -- 3. Dark Transformation (handled in CooldownAPL)
 
--- 4. Soul Reaper on cooldown below 35% HP
--- Prioritized because it provides a massive minion/disease damage buff
+-- 4. Putrefy if 2 charges (never cap)
+SingleTargetAPL:AddSpell(
+    Putrefy:CastableIf(function(self)
+        return self:IsKnownAndUsable()
+            and Target:IsValid()
+            and self:IsInRange(Target)
+            and GetPutrefyCharges() >= 2
+    end):SetTarget(Target)
+)
+
+-- 5. Soul Reaper on cooldown
 SingleTargetAPL:AddSpell(
     SoulReaper:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
-            and Target:GetHP() < 35
             and GetRunes() >= 1
     end):SetTarget(Target)
 )
 
--- 5. Putrefy if charges >= 1 and ghouls active
+-- 6. Putrefy if DT CD >= 15s
 SingleTargetAPL:AddSpell(
     Putrefy:CastableIf(function(self)
         return self:IsKnownAndUsable()
             and Target:IsValid()
             and self:IsInRange(Target)
             and GetPutrefyCharges() >= 1
-            and not ShouldSavePutrefyForSoulReaper()
-            and (GetDarkTransformationCooldownRemaining() >= 15 or IsDarkTransformationActive())
+            and GetDarkTransformationCooldownRemaining() >= 15
     end):SetTarget(Target)
 )
 
@@ -679,24 +675,10 @@ SingleTargetAPL:AddSpell(
 -- 10. Epidemic filler
 -- ============================================================================
 
--- 1. Death and Decay (Defile removed in Midnight pre-patch)
-AoEAPL:AddSpell(
-    DeathAndDecay:CastableIf(function(self)
-        return self:IsKnownAndUsable()
-            and Target:IsValid()
-            and self:IsInRange(Target)
-            and not IsInDeathAndDecay()
-            and not Player:IsMoving()
-            and GetRunes() >= 1
-    end):SetTarget(Target):OnCast(function(self)
-        local x, y, z = ObjectPosition(Target:GetOMToken())
-        if x and y and z then
-            self:Click(x, y, z)
-        end
-    end)
-)
+-- Death and Decay REMOVED from AoE rotation (Midnight rework - AoE decoupled from DnD)
+-- Can still be cast manually for utility (Grip of the Dead slow)
 
--- 2. Pestilence if diseases active for burst damage + Putrefy charge
+-- 1. Pestilence if diseases active for burst damage + Putrefy charge
 AoEAPL:AddSpell(
     Pestilence:CastableIf(function(self)
         return self:IsKnownAndUsable()
@@ -776,8 +758,8 @@ AoEAPL:AddSpell(
 )
 
 -- ============================================================================
--- OPENER SEQUENCE (Single Target)
--- Priority: Outbreak -> Army -> DT -> Trinket -> Putrefy -> Death Coil -> Soul Reaper -> Death Coil -> Putrefy
+-- OPENER SEQUENCE (Wowhead Priority)
+-- Priority: Outbreak -> Army -> DT -> Trinket -> Potion -> Putrefy -> Death Coil -> Soul Reaper -> Death Coil -> Putrefy
 -- ============================================================================
 
 local function RunOpener()
@@ -790,13 +772,9 @@ local function RunOpener()
         return false
     end
 
-    -- Step 1: Diseases (Outbreak/Pestilence)
+    -- Step 1: Outbreak
     if openerStep == 0 then
-        if Pestilence:IsKnownAndUsable() and HasVirulentPlague(Target) and Pestilence:IsInRange(Target) then
-            Pestilence:Cast(Target)
-            openerStep = 1
-            return true
-        elseif Outbreak:IsKnownAndUsable() and not HasVirulentPlague(Target) and Outbreak:IsInRange(Target) then
+        if Outbreak:IsKnownAndUsable() and not HasVirulentPlague(Target) and Outbreak:IsInRange(Target) then
             Outbreak:Cast(Target)
             openerStep = 1
             return true
@@ -837,61 +815,67 @@ local function RunOpener()
         openerStep = 4
     end
 
-    -- Step 5: Putrefy
+    -- Step 5: Combat Potion
     if openerStep == 4 then
+        -- Attempt to use combat potion (slot varies, commonly in bags)
+        -- This is a placeholder - potions are typically macro'd or handled externally
+        openerStep = 5
+    end
+
+    -- Step 6: Putrefy
+    if openerStep == 5 then
         if Putrefy:IsKnownAndUsable() and GetPutrefyCharges() >= 1 and Putrefy:IsInRange(Target) then
             Putrefy:Cast(Target)
-            openerStep = 5
+            openerStep = 6
             return true
         elseif not Putrefy:IsKnown() or GetPutrefyCharges() == 0 then
-            openerStep = 5
+            openerStep = 6
         end
     end
     
-    -- Step 6: Necrotic Coil (Forbidden Knowledge window)
-    -- If FK is active, use Necrotic Coil. Otherwise use standard Death Coil.
-    if openerStep == 5 then
+    -- Step 7: Death Coil (or Necrotic Coil if Forbidden Knowledge active)
+    if openerStep == 6 then
         if NecroticCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and NecroticCoil:IsInRange(Target) and IsForbiddenKnowledgeActive() then
             NecroticCoil:Cast(Target)
-            openerStep = 6
+            openerStep = 7
             return true
         elseif DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and DeathCoil:IsInRange(Target) then
             DeathCoil:Cast(Target)
-            openerStep = 6
+            openerStep = 7
             return true
         elseif GetRunicPower() < 40 then
-            openerStep = 6
+            openerStep = 7
         end
     end
     
-    -- Step 7: Soul Reaper
-    if openerStep == 6 then
+    -- Step 8: Soul Reaper
+    if openerStep == 7 then
         if SoulReaper:IsKnownAndUsable() and GetRunes() >= 1 and SoulReaper:IsInRange(Target) then
             SoulReaper:Cast(Target)
-            openerStep = 7
+            openerStep = 8
             return true
         elseif not SoulReaper:IsKnown() then
-            openerStep = 7
+            openerStep = 8
         end
     end
     
-    -- Step 8: Necrotic Coil (Step 2)
-    if openerStep == 7 then
+    -- Step 9: Death Coil (second)
+    if openerStep == 8 then
         if NecroticCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and NecroticCoil:IsInRange(Target) and IsForbiddenKnowledgeActive() then
             NecroticCoil:Cast(Target)
-            openerStep = 8
+            openerStep = 9
             return true
         elseif DeathCoil:IsKnownAndUsable() and GetRunicPower() >= 40 and DeathCoil:IsInRange(Target) then
             DeathCoil:Cast(Target)
-            openerStep = 8
+            openerStep = 9
             return true
         else
-            openerStep = 8
+            openerStep = 9
         end
     end
     
-    -- Step 9: Putrefy (final opener step)
-    if openerStep == 8 then
+    -- Step 10: Putrefy (final opener step)
+    if openerStep == 9 then
         if Putrefy:IsKnownAndUsable() and GetPutrefyCharges() >= 1 and Putrefy:IsInRange(Target) then
             Putrefy:Cast(Target)
             isOpenerComplete = true
