@@ -253,17 +253,15 @@ function Bastion.Bootstrap()
 
     function Bastion:Print(...)
         local args = {...}
-        local str = "|cFFDF362D[Bastion]|r |cFFFFFFFF"
-        for i = 1, #args do str = str .. tostring(args[i]) .. " " end
-        print(str)
+        for i = 1, #args do args[i] = tostring(args[i]) end
+        print("|cFFDF362D[Bastion]|r |cFFFFFFFF " .. table.concat(args, " "))
     end
 
     function Bastion:Debug(...)
         if not Bastion.DebugMode then return end
         local args = {...}
-        local str = "|cFFDF6520[Bastion]|r |cFFFFFFFF"
-        for i = 1, #args do str = str .. tostring(args[i]) .. " " end
-        print(str)
+        for i = 1, #args do args[i] = tostring(args[i]) end
+        print("|cFFDF6520[Bastion]|r |cFFFFFFFF " .. table.concat(args, " "))
     end
 
     local Command = Bastion.Command:New('pele')
