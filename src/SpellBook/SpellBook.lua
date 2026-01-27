@@ -27,7 +27,8 @@ end
 ---@return Spell, ... Spell
 function SpellBook:GetSpells(...)
     local spells = {}
-    for _, id in ipairs({...}) do
+    for i = 1, select("#", ...) do
+        local id = select(i, ...)
         table.insert(spells, self:GetSpell(id))
     end
 
@@ -38,7 +39,8 @@ end
 ---@return List
 function SpellBook:GetList(...)
     local spells = {}
-    for _, id in ipairs({...}) do
+    for i = 1, select("#", ...) do
+        local id = select(i, ...)
         table.insert(spells, self:GetSpell(id))
     end
 
