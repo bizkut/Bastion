@@ -955,36 +955,55 @@ function Unit:GetSwingTimers()
 end
 
 ---@return nil
+local swingListeners = setmetatable({}, { __mode = "v" })
+local swingHandlerRegistered = false
+
+local function SwingHandler()
+    local _, _, _, sourceGUID = CombatLogGetCurrentEventInfo()
+    local unit = swingListeners[sourceGUID]
+    if unit then
+        unit:OnCombatLogEvent()
+    end
+end
+
 function Unit:WatchForSwings()
-    Bastion.Globals.EventManager:RegisterWoWEvent("COMBAT_LOG_EVENT_UNFILTERED", function()
-        local _, subtype, _, sourceGUID, sourceName, _, _, destGUID, destName, destFlags, _, spellID, spellName, _, amount, interrupt, a, b, c, d, offhand, multistrike =
-            CombatLogGetCurrentEventInfo()
+    local guid = self:GetGUID()
+    if not guid then return end
 
-        if sourceGUID == self:GetGUID() then
-            if subtype == "SPELL_ENERGIZE" and spellID == 196911 then
-                self.last_shadow_techniques = GetTime()
-                self.swings_since_sht = 0
-            end
+    if not swingHandlerRegistered then
+        Bastion.Globals.EventManager:RegisterWoWEvent("COMBAT_LOG_EVENT_UNFILTERED", SwingHandler)
+        swingHandlerRegistered = true
+    end
 
-            if subtype:sub(1, 5) == "SWING" and not multistrike then
-                if subtype == "SWING_MISSED" then
-                    offhand = spellName
-                end
+    swingListeners[guid] = self
+end
 
-                local now = GetTime()
+function Unit:OnCombatLogEvent()
+    local _, subtype, _, sourceGUID, sourceName, _, _, destGUID, destName, destFlags, _, spellID, spellName, _, amount, interrupt, a, b, c, d, offhand, multistrike =
+        CombatLogGetCurrentEventInfo()
 
-                if now > self.last_shadow_techniques + 3 then
-                    self.swings_since_sht = self.swings_since_sht + 1
-                end
+    if subtype == "SPELL_ENERGIZE" and spellID == 196911 then
+        self.last_shadow_techniques = GetTime()
+        self.swings_since_sht = 0
+    end
 
-                if offhand then
-                    self.last_off_attack = GetTime()
-                else
-                    self.last_main_attack = GetTime()
-                end
-            end
+    if subtype:sub(1, 5) == "SWING" and not multistrike then
+        if subtype == "SWING_MISSED" then
+            offhand = spellName
         end
-    end)
+
+        local now = GetTime()
+
+        if now > self.last_shadow_techniques + 3 then
+            self.swings_since_sht = self.swings_since_sht + 1
+        end
+
+        if offhand then
+            self.last_off_attack = GetTime()
+        else
+            self.last_main_attack = GetTime()
+        end
+    end
 end
 
 -- ismounted
