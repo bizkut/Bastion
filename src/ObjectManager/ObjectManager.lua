@@ -27,15 +27,17 @@ end
 -- Register a custom list with a callback
 ---@param name string
 ---@param cb function
+---@param objectType? number
 ---@return List | false
-function ObjectManager:RegisterList(name, cb)
+function ObjectManager:RegisterList(name, cb, objectType)
     if self._lists[name] then
         return false
     end
 
     self._lists[name] = {
         list = Bastion.List:New(),
-        cb = cb
+        cb = cb,
+        objectType = objectType
     }
 
     return self._lists[name].list
@@ -51,12 +53,15 @@ end
 
 -- Refresh custom lists
 ---@param object table
+---@param objectType? number
 ---@return nil
-function ObjectManager:EnumLists(object)
+function ObjectManager:EnumLists(object, objectType)
     for _, list in pairs(self._lists) do
-        local r = list.cb(object)
-        if r then
-            list.list:push(r)
+        if not list.objectType or list.objectType == objectType then
+            local r = list.cb(object)
+            if r then
+                list.list:push(r)
+            end
         end
     end
 end
@@ -113,25 +118,41 @@ function ObjectManager:Refresh()
     self.explosives:clear()
     self:ResetLists()
 
+    local iterateAll = false
+    -- Always iterate standard types for ProcessUnit
+    local typesToIterate = { [5] = true, [6] = true, [7] = true }
+
     if next(self._lists) then
+        for _, listData in pairs(self._lists) do
+            if listData.objectType then
+                typesToIterate[listData.objectType] = true
+            else
+                iterateAll = true
+                break
+            end
+        end
+    end
+
+    if iterateAll then
         local objects = Objects()
 
         for _, object in pairs(objects) do
-            self:EnumLists(object)
+            local typeID = ObjectType(object)
+            self:EnumLists(object, typeID)
 
-            if VALID_UNIT_TYPES[ObjectType(object)] then
+            if VALID_UNIT_TYPES[typeID] then
                 self:ProcessUnit(object)
             end
         end
     else
-        for _, object in pairs(Objects(5)) do
-            self:ProcessUnit(object)
-        end
-        for _, object in pairs(Objects(6)) do
-            self:ProcessUnit(object)
-        end
-        for _, object in pairs(Objects(7)) do
-            self:ProcessUnit(object)
+        for typeID, _ in pairs(typesToIterate) do
+            for _, object in pairs(Objects(typeID)) do
+                self:EnumLists(object, typeID)
+
+                if VALID_UNIT_TYPES[typeID] then
+                    self:ProcessUnit(object)
+                end
+            end
         end
     end
 end
@@ -139,7 +160,7 @@ end
 return ObjectManager
 
 
--- -- Register a list of objects that are training dummies
+-- -- Register a list of of objects that are training dummies
 -- local dummies = Bastion.ObjectManager:RegisterList('dummies', function(object)
 --     if ObjectType(object) == 5 or ObjectType(object) == 6 then
 --         local unit = Bastion.UnitManager:GetObject(ObjectGUID(object))
