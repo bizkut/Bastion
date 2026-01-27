@@ -84,17 +84,35 @@ function UnitManager:Get(token)
         end
     end
 
-    return Bastion.Refreshable:New(self.objects[tguid], function()
-        local tguid = ObjectGUID(token) or "none"
+    -- Optimization: Cache GUID if token is static (player or explicit GUID)
+    local cached_guid = nil
+    if tguid and tguid ~= "none" and (token == 'player' or token == tguid) then
+        cached_guid = tguid
+    end
 
-        if self.objects[tguid] == nil then
+    return Bastion.Refreshable:New(self.objects[tguid], function()
+        if cached_guid then
+            if self.objects[cached_guid] == nil then
+                self.objects[cached_guid] = Unit:New(Object(cached_guid))
+            end
+            return self.objects[cached_guid]
+        end
+
+        local current_guid = ObjectGUID(token) or "none"
+
+        -- Lazy cache: If we resolved a static token, cache it for future calls
+        if current_guid ~= "none" and (token == 'player' or token == current_guid) then
+            cached_guid = current_guid
+        end
+
+        if self.objects[current_guid] == nil then
             if token == 'none' then
                 self.objects['none'] = Unit:New()
             else
-                self.objects[tguid] = Unit:New(Object(tguid))
+                self.objects[current_guid] = Unit:New(Object(current_guid))
             end
         end
-        return self.objects[tguid]
+        return self.objects[current_guid]
     end)
 end
 
