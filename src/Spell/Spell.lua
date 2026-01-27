@@ -26,6 +26,24 @@ local usableExcludes = {
     [18562] = true
 }
 
+local magicDispels = {
+    [88423] = true,
+    [115450] = true
+}
+
+local curseDispels = {
+    [88423] = true
+}
+
+local poisonDispels = {
+    [88423] = true,
+    [115450] = true
+}
+
+local diseaseDispels = {
+    [115450] = true
+}
+
 function Spell:__index(k)
     local response = Bastion.ClassMagic:Resolve(Spell, k)
 
@@ -677,35 +695,25 @@ end
 -- IsMagicDispel
 ---@return boolean
 function Spell:IsMagicDispel()
-    return ({
-        [88423] = true,
-		[115450] = true
-    })[self:GetID()]
+    return magicDispels[self:GetID()]
 end
 
 -- IsCurseDispel
 ---@return boolean
 function Spell:IsCurseDispel()
-    return ({
-        [88423] = true
-    })[self:GetID()]
+    return curseDispels[self:GetID()]
 end
 
 -- IsPoisonDispel
 ---@return boolean
 function Spell:IsPoisonDispel()
-    return ({
-        [88423] = true,
-		[115450] = true
-    })[self:GetID()]
+    return poisonDispels[self:GetID()]
 end
 
 -- IsDiseaseDispel
 ---@return boolean
 function Spell:IsDiseaseDispel()
-    return ({
-	    [115450] = true
-    })[self:GetID()]
+    return diseaseDispels[self:GetID()]
 end
 
 -- IsSpell
