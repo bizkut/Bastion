@@ -54,7 +54,8 @@ end
 ---@param ... APLTrait
 ---@return APLActor
 function APLActor:AddTraits(...)
-    for _, trait in ipairs({...}) do
+    for i = 1, select("#", ...) do
+        local trait = select(i, ...)
         table.insert(self.traits, trait)
     end
 
