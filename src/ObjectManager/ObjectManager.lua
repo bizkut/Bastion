@@ -9,6 +9,8 @@ local Tinkr, Bastion = ...
 local ObjectManager = {}
 ObjectManager.__index = ObjectManager
 
+local VALID_UNIT_TYPES = { [5] = true, [6] = true, [7] = true }
+
 function ObjectManager:New()
     local self = setmetatable({}, ObjectManager)
 
@@ -117,7 +119,7 @@ function ObjectManager:Refresh()
         for _, object in pairs(objects) do
             self:EnumLists(object)
 
-            if ({ [5] = true,[6] = true,[7] = true })[ObjectType(object)] then
+            if VALID_UNIT_TYPES[ObjectType(object)] then
                 self:ProcessUnit(object)
             end
         end
