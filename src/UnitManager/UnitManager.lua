@@ -250,33 +250,68 @@ end
 
 -- Get the enemy with the most enemies within a given radius
 function UnitManager:GetEnemiesWithMostEnemies(radius)
-    local unit = nil
-    local count = 0
-    local enemies = {}
+    local candidates = {}
+    local num_candidates = 0
+
+    -- Pass 1: Collect candidates
     self:EnumEnemies(function(u)
         if u:IsAlive() and u:IsAffectingCombat() then
-            local c = 0
-            self:EnumEnemies(function(other)
-                if other:IsAlive() and other:IsAffectingCombat() and u:GetDistance(other) <= radius then
-                    c = c + 1
-                end
-                return false
-            end)
-            if c > count then
-                unit = u
-                count = c
-                enemies = {}
-                self:EnumEnemies(function(other)
-                    if other:IsAlive() and u:GetDistance(other) <= radius then
-                        table.insert(enemies, other)
-                    end
-                    return false
-                end)
-            end
+            num_candidates = num_candidates + 1
+            candidates[num_candidates] = u
         end
         return false
     end)
-    return unit, enemies
+
+    if num_candidates == 0 then
+        return nil, {}
+    end
+
+    local counts = {}
+    for i = 1, num_candidates do
+        counts[i] = 0
+    end
+
+    -- Pass 2: Symmetric count
+    for i = 1, num_candidates do
+        local u = candidates[i]
+        counts[i] = counts[i] + 1 -- Count self
+
+        for j = i + 1, num_candidates do
+            local other = candidates[j]
+            if u:GetDistance(other) <= radius then
+                counts[i] = counts[i] + 1
+                counts[j] = counts[j] + 1
+            end
+        end
+    end
+
+    -- Pass 3: Find winner
+    local max_count = -1
+    local winner_index = 0
+
+    for i = 1, num_candidates do
+        if counts[i] > max_count then
+            max_count = counts[i]
+            winner_index = i
+        end
+    end
+
+    if winner_index == 0 then
+        return nil, {}
+    end
+
+    local winner = candidates[winner_index]
+
+    -- Pass 4: Generate result list
+    local enemies = {}
+    self:EnumEnemies(function(other)
+        if other:IsAlive() and winner:GetDistance(other) <= radius then
+            table.insert(enemies, other)
+        end
+        return false
+    end)
+
+    return winner, enemies
 end
 
 -- Find the centroid of the most dense area of friends (party/raid members) of a given radius within a given range
