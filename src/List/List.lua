@@ -186,14 +186,7 @@ end
 ---@param separator string
 ---@return string
 function List:join(separator)
-    local result = ""
-    for i, v in ipairs(self._list) do
-        result = result .. v
-        if i < #self._list then
-            result = result .. separator
-        end
-    end
-    return result
+    return table.concat(self._list, separator)
 end
 
 ---@return string
