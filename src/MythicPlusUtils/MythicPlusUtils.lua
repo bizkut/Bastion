@@ -8,7 +8,9 @@ local MythicPlusUtils = {
     loggedCasts = {},
     loggedDebuffs = {},
     kickList = {},
-    aoeBosses = {}
+    aoeBosses = {},
+    debuffBuffer = {},
+    castBuffer = {}
 }
 
 MythicPlusUtils.__index = MythicPlusUtils
@@ -19,6 +21,12 @@ function MythicPlusUtils:New()
 
     ---@diagnostic disable-next-line: assign-type-mismatch
     self.random = math.random(1000000, 9999999)
+    self.debuffBuffer = {}
+    self.castBuffer = {}
+
+    C_Timer.NewTicker(2, function()
+        self:FlushLogs()
+    end)
 
     self.aoeBosses = {
         [196482] = true,
@@ -1062,10 +1070,10 @@ function MythicPlusUtils:New()
                     local aura = Bastion.Aura:CreateFromUnitAuraInfo(addedAuras[i])
 
                     if not self.loggedDebuffs[aura:GetSpell():GetID()] and not aura:IsBuff() then
-                        WriteFile('bastion-MPlusDebuffs-' .. self.random .. '.lua', [[
+                        table.insert(self.debuffBuffer, [[
                         AuraName: ]] .. aura:GetName() .. [[
                         AuraID: ]] .. aura:GetSpell():GetID() .. "\n" .. [[
-                    ]], true)
+                    ]])
                     end
                 end
             end
@@ -1092,10 +1100,10 @@ function MythicPlusUtils:New()
 
         self.loggedCasts[spellID] = true
 
-        WriteFile('bastion-MPlusCasts-' .. self.random .. '.lua', [[
+        table.insert(self.castBuffer, [[
             CastName: ]] .. name .. [[
             CastID: ]] .. spellID .. "\n" .. [[
-        ]], true)
+        ]])
     end)
 
     Bastion.Globals.EventManager:RegisterWoWEvent('UNIT_SPELLCAST_CHANNEL_START', function(unitTarget, castGUID, spellID)
@@ -1118,13 +1126,25 @@ function MythicPlusUtils:New()
 
         self.loggedCasts[spellID] = true
 
-        WriteFile('bastion-MPlusCasts-' .. self.random .. '.lua', [[
+        table.insert(self.castBuffer, [[
             CastName: ]] .. name .. [[
             CastID: ]] .. spellID .. "\n" .. [[
-        ]], true)
+        ]])
     end)
 
     return self
+end
+
+function MythicPlusUtils:FlushLogs()
+    if #self.debuffBuffer > 0 then
+        WriteFile('bastion-MPlusDebuffs-' .. self.random .. '.lua', table.concat(self.debuffBuffer, ""), true)
+        self.debuffBuffer = {}
+    end
+
+    if #self.castBuffer > 0 then
+        WriteFile('bastion-MPlusCasts-' .. self.random .. '.lua', table.concat(self.castBuffer, ""), true)
+        self.castBuffer = {}
+    end
 end
 
 ---@return nil
